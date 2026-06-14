@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+
+commit_msg_file="$1"
+subject="$(sed -n '1p' "$commit_msg_file")"
+
+if grep -qi '^Co-Authored-By:' "$commit_msg_file"; then
+  echo "commit-msg: Co-Authored-By 시그니처는 사용할 수 없습니다."
+  exit 1
+fi
+
+if ! printf '%s\n' "$subject" | grep -Eq '^(feat|fix|refactor|docs|chore|test|ci|style): [a-z]'; then
+  echo "commit-msg: 제목은 '<type>: <description>' 형식이어야 하며 description은 영문 소문자로 시작해야 합니다."
+  echo "commit-msg: 허용 type: feat, fix, refactor, docs, chore, test, ci, style"
+  exit 1
+fi
+
+if printf '%s\n' "$subject" | grep -Eq '\.$'; then
+  echo "commit-msg: 제목 끝에는 마침표를 붙이지 않습니다."
+  exit 1
+fi

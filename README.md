@@ -40,6 +40,10 @@ pnpm lint
 
 Git hooks run `lint-staged` before commits, so staged files are automatically linted and formatted. CI still runs the full checks, so hooks are a convenience rather than the source of truth.
 
+## Commit Convention
+
+커밋 메시지는 [CONTRIBUTING.md](./CONTRIBUTING.md)의 프로젝트 컨벤션을 따릅니다.
+
 ## Project Structure
 
 ```txt
