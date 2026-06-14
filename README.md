@@ -44,6 +44,10 @@ Git hooks run `lint-staged` before commits, so staged files are automatically li
 
 커밋 메시지는 [CONTRIBUTING.md](./CONTRIBUTING.md)의 프로젝트 컨벤션을 따릅니다.
 
+## Agent Guide
+
+AI 에이전트가 작업할 때는 [AGENTS.md](./AGENTS.md)의 작업 가이드를 따릅니다.
+
 ## Project Structure
 
 ```txt
