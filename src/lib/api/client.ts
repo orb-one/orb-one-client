@@ -1,5 +1,3 @@
-const DEFAULT_API_BASE_URL = 'http://localhost:3000'
-
 type RequestOptions = Omit<RequestInit, 'body'> & {
   body?: unknown
 }
@@ -63,13 +61,23 @@ function buildApiUrl(path: string) {
     throw new TypeError('apiClient only accepts relative paths')
   }
 
-  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL
+  const baseUrl = getApiBaseUrl()
 
   // `users`, `/users` 모두 base URL의 `/api` 같은 경로 보존
   return new URL(
     stripLeadingSlashes(path),
     ensureTrailingSlash(baseUrl),
   ).toString()
+}
+
+function getApiBaseUrl() {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL
+
+  if (!baseUrl) {
+    throw new TypeError('VITE_API_BASE_URL is required')
+  }
+
+  return baseUrl
 }
 
 async function parseResponseBody(response: Response): Promise<unknown> {

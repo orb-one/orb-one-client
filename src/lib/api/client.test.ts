@@ -1,6 +1,10 @@
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 import { ApiError, apiClient } from '@/lib/api/client'
+
+beforeEach(() => {
+  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
+})
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -66,6 +70,17 @@ it('rejects absolute urls', async () => {
 
   await expect(apiClient('https://example.com/users')).rejects.toThrow(
     'apiClient only accepts relative paths',
+  )
+  expect(fetchMock).not.toHaveBeenCalled()
+})
+
+it('requires an api base url environment variable', async () => {
+  const fetchMock = mockFetch(new Response('{}', jsonResponseInit()))
+
+  vi.stubEnv('VITE_API_BASE_URL', '')
+
+  await expect(apiClient('/users')).rejects.toThrow(
+    'VITE_API_BASE_URL is required',
   )
   expect(fetchMock).not.toHaveBeenCalled()
 })

@@ -92,12 +92,13 @@ cp .env.example .env.local
 현재 사용하는 환경변수:
 
 ```txt
-VITE_API_BASE_URL=http://localhost:3000
+VITE_API_BASE_URL=http://localhost:8080
 ```
 
 주의:
 
 - `VITE_` prefix 환경변수는 browser bundle에 노출됩니다.
+- `VITE_API_BASE_URL`은 필수 값이며 fallback URL은 사용하지 않습니다.
 - `.env`, `.env.*` 파일은 커밋하지 않습니다.
 - 공유 가능한 예시는 `.env.example`에만 작성합니다.
 

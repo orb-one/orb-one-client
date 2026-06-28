@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useMutation } from '@tanstack/react-query'
 import { ArrowLeft, Mail, ShieldCheck, UserPlus } from 'lucide-react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { registerAccount } from '@/lib/api/auth'
+import { ApiError } from '@/lib/api/client'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export const Route = createFileRoute('/register')({
@@ -11,6 +15,17 @@ export const Route = createFileRoute('/register')({
 export function RegisterPage() {
   const t = useTranslations()
   const copy = t.auth.register
+  const [formError, setFormError] = useState<string | null>(null)
+  const registerMutation = useMutation({
+    mutationFn: registerAccount,
+  })
+
+  const mutationError = registerMutation.isError
+    ? getRegisterErrorMessage(registerMutation.error, copy.genericError)
+    : null
+  const feedbackMessage = formError ?? mutationError
+  const isPasswordMismatch = formError === copy.passwordMismatch
+  const isSubmitting = registerMutation.isPending
 
   return (
     <main className="mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-5xl items-center px-4 py-10">
@@ -40,6 +55,38 @@ export function RegisterPage() {
           className="bg-card text-card-foreground rounded-md border p-6 shadow-sm"
           onSubmit={(event) => {
             event.preventDefault()
+
+            const form = event.currentTarget
+            const formData = new FormData(form)
+            const password = getStringFormValue(formData, 'password')
+            const passwordConfirm = getStringFormValue(
+              formData,
+              'passwordConfirm',
+            )
+
+            // 이전 제출의 server/form 오류가 다음 제출 결과와 섞이지 않도록 초기화
+            registerMutation.reset()
+            setFormError(null)
+
+            // 서버 호출 전 클라이언트에서 확인 가능한 입력 오류 차단
+            if (password !== passwordConfirm) {
+              setFormError(copy.passwordMismatch)
+              return
+            }
+
+            registerMutation.mutate(
+              {
+                email: getStringFormValue(formData, 'email').trim(),
+                password,
+                nickname: getStringFormValue(formData, 'nickname').trim(),
+              },
+              {
+                onSuccess: () => {
+                  // mock API 응답 이후 실제 계정 상태 복원 불가로 입력값만 정리
+                  form.reset()
+                },
+              },
+            )
           }}
         >
           <div className="mb-6">
@@ -59,6 +106,7 @@ export function RegisterPage() {
                   type="email"
                   autoComplete="email"
                   required
+                  disabled={isSubmitting}
                   placeholder={copy.emailPlaceholder}
                   className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-9 text-sm transition-colors outline-none focus-visible:ring-3"
                 />
@@ -78,6 +126,7 @@ export function RegisterPage() {
                 type="text"
                 autoComplete="username"
                 required
+                disabled={isSubmitting}
                 placeholder={copy.nicknamePlaceholder}
                 className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
               />
@@ -97,6 +146,7 @@ export function RegisterPage() {
                 autoComplete="new-password"
                 required
                 minLength={8}
+                disabled={isSubmitting}
                 placeholder={copy.passwordPlaceholder}
                 className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
               />
@@ -116,15 +166,37 @@ export function RegisterPage() {
                 autoComplete="new-password"
                 required
                 minLength={8}
+                disabled={isSubmitting}
+                aria-invalid={isPasswordMismatch || undefined}
                 placeholder={copy.passwordConfirmPlaceholder}
                 className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
               />
             </div>
           </div>
 
-          <Button className="mt-6 w-full" type="submit" size="lg">
+          {feedbackMessage ? (
+            <p className="text-destructive mt-4 text-sm" role="alert">
+              {feedbackMessage}
+            </p>
+          ) : null}
+
+          {registerMutation.isSuccess ? (
+            <p
+              className="mt-4 text-sm text-emerald-700 dark:text-emerald-400"
+              role="status"
+            >
+              {copy.successMessage}
+            </p>
+          ) : null}
+
+          <Button
+            className="mt-6 w-full"
+            type="submit"
+            size="lg"
+            disabled={isSubmitting}
+          >
             <UserPlus className="size-4" />
-            {copy.submit}
+            {isSubmitting ? copy.submitting : copy.submit}
           </Button>
 
           <p className="text-muted-foreground mt-4 text-center text-sm">
@@ -140,4 +212,19 @@ export function RegisterPage() {
       </section>
     </main>
   )
+}
+
+function getStringFormValue(formData: FormData, key: string) {
+  const value = formData.get(key)
+
+  return typeof value === 'string' ? value : ''
+}
+
+function getRegisterErrorMessage(error: Error, fallback: string) {
+  // ApiError의 server message 우선 노출, 그 외 오류는 일반 문구로 대체
+  if (error instanceof ApiError && error.message.trim().length > 0) {
+    return error.message
+  }
+
+  return fallback
 }
