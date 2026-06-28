@@ -1,16 +1,16 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, LogIn, Mail, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Mail, ShieldCheck, UserPlus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
-export const Route = createFileRoute('/login')({
-  component: LoginPage,
+export const Route = createFileRoute('/register')({
+  component: RegisterPage,
 })
 
-export function LoginPage() {
+export function RegisterPage() {
   const t = useTranslations()
-  const copy = t.auth.login
+  const copy = t.auth.register
 
   return (
     <main className="mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-5xl items-center px-4 py-10">
@@ -29,9 +29,9 @@ export function LoginPage() {
             </p>
           </div>
           <Button asChild type="button" variant="outline">
-            <Link to="/">
+            <Link to="/login">
               <ArrowLeft className="size-4" />
-              {copy.backToHome}
+              {copy.backToLogin}
             </Link>
           </Button>
         </div>
@@ -48,13 +48,13 @@ export function LoginPage() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="login-email">
+              <label className="text-sm font-medium" htmlFor="register-email">
                 {copy.emailLabel}
               </label>
               <div className="relative">
                 <Mail className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                 <input
-                  id="login-email"
+                  id="register-email"
                   name="email"
                   type="email"
                   autoComplete="email"
@@ -66,33 +66,74 @@ export function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="login-password">
+              <label
+                className="text-sm font-medium"
+                htmlFor="register-nickname"
+              >
+                {copy.nicknameLabel}
+              </label>
+              <input
+                id="register-nickname"
+                name="nickname"
+                type="text"
+                autoComplete="username"
+                required
+                placeholder={copy.nicknamePlaceholder}
+                className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium"
+                htmlFor="register-password"
+              >
                 {copy.passwordLabel}
               </label>
               <input
-                id="login-password"
+                id="register-password"
                 name="password"
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 required
+                minLength={8}
                 placeholder={copy.passwordPlaceholder}
+                className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium"
+                htmlFor="register-password-confirm"
+              >
+                {copy.passwordConfirmLabel}
+              </label>
+              <input
+                id="register-password-confirm"
+                name="passwordConfirm"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                placeholder={copy.passwordConfirmPlaceholder}
                 className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
               />
             </div>
           </div>
 
           <Button className="mt-6 w-full" type="submit" size="lg">
-            <LogIn className="size-4" />
+            <UserPlus className="size-4" />
             {copy.submit}
           </Button>
 
           <p className="text-muted-foreground mt-4 text-center text-sm">
-            {copy.registerPrompt}{' '}
+            {copy.loginPrompt}{' '}
             <Link
-              to="/register"
+              to="/login"
               className="text-foreground font-medium underline-offset-4 hover:underline"
             >
-              {copy.registerLink}
+              {copy.loginLink}
             </Link>
           </p>
         </form>
