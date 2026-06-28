@@ -1,31 +1,74 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { ArrowLeft, Mail, ShieldCheck, UserPlus } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState, type ComponentProps } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { registerAccount } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
+import {
+  REGISTER_PASSWORD_MIN_LENGTH,
+  validateRegisterForm,
+  type RegisterFormError,
+} from '@/lib/auth/register-validation'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export const Route = createFileRoute('/register')({
   component: RegisterPage,
 })
 
+type FormSubmitHandler = NonNullable<ComponentProps<'form'>['onSubmit']>
+
 export function RegisterPage() {
   const t = useTranslations()
   const copy = t.auth.register
-  const [formError, setFormError] = useState<string | null>(null)
+  const submittedFormRef = useRef<HTMLFormElement | null>(null)
+  const [formError, setFormError] = useState<RegisterFormError | null>(null)
   const registerMutation = useMutation({
     mutationFn: registerAccount,
+    onSuccess: handleRegisterSuccess,
   })
 
   const mutationError = registerMutation.isError
     ? getRegisterErrorMessage(registerMutation.error, copy.genericError)
     : null
-  const feedbackMessage = formError ?? mutationError
-  const isPasswordMismatch = formError === copy.passwordMismatch
+  const formErrorMessage = formError ? copy[formError] : null
+  const feedbackMessage = formErrorMessage ?? mutationError
+  const isEmailInvalid =
+    formError === 'emailRequired' || formError === 'emailInvalid'
+  const isPasswordMismatch = formError === 'passwordMismatch'
+  const isNicknameInvalid = formError === 'nicknameRequired'
+  const isPasswordInvalid =
+    formError === 'passwordRequired' || formError === 'passwordTooShort'
   const isSubmitting = registerMutation.isPending
+
+  function handleRegisterSuccess() {
+    // mock API 응답 이후 실제 계정 상태 복원 불가로 입력값만 정리
+    submittedFormRef.current?.reset()
+  }
+
+  function resetRegisterFeedback() {
+    // 이전 제출의 server/form 오류가 다음 제출 결과와 섞이지 않도록 초기화
+    registerMutation.reset()
+    setFormError(null)
+  }
+
+  const handleSubmit: FormSubmitHandler = (event) => {
+    event.preventDefault()
+
+    const form = event.currentTarget
+    const validation = validateRegisterForm(new FormData(form))
+
+    resetRegisterFeedback()
+
+    if (!validation.ok) {
+      setFormError(validation.error)
+      return
+    }
+
+    submittedFormRef.current = form
+    registerMutation.mutate(validation.request)
+  }
 
   return (
     <main className="mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-5xl items-center px-4 py-10">
@@ -51,43 +94,11 @@ export function RegisterPage() {
           </Button>
         </div>
 
+        {/* 브라우저 기본 validation UI 대신 i18n 가능한 검증 결과만 노출 */}
         <form
           className="bg-card text-card-foreground rounded-md border p-6 shadow-sm"
-          onSubmit={(event) => {
-            event.preventDefault()
-
-            const form = event.currentTarget
-            const formData = new FormData(form)
-            const password = getStringFormValue(formData, 'password')
-            const passwordConfirm = getStringFormValue(
-              formData,
-              'passwordConfirm',
-            )
-
-            // 이전 제출의 server/form 오류가 다음 제출 결과와 섞이지 않도록 초기화
-            registerMutation.reset()
-            setFormError(null)
-
-            // 서버 호출 전 클라이언트에서 확인 가능한 입력 오류 차단
-            if (password !== passwordConfirm) {
-              setFormError(copy.passwordMismatch)
-              return
-            }
-
-            registerMutation.mutate(
-              {
-                email: getStringFormValue(formData, 'email').trim(),
-                password,
-                nickname: getStringFormValue(formData, 'nickname').trim(),
-              },
-              {
-                onSuccess: () => {
-                  // mock API 응답 이후 실제 계정 상태 복원 불가로 입력값만 정리
-                  form.reset()
-                },
-              },
-            )
-          }}
+          noValidate
+          onSubmit={handleSubmit}
         >
           <div className="mb-6">
             <p className="font-semibold">{copy.title}</p>
@@ -107,6 +118,7 @@ export function RegisterPage() {
                   autoComplete="email"
                   required
                   disabled={isSubmitting}
+                  aria-invalid={isEmailInvalid || undefined}
                   placeholder={copy.emailPlaceholder}
                   className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-9 text-sm transition-colors outline-none focus-visible:ring-3"
                 />
@@ -127,6 +139,7 @@ export function RegisterPage() {
                 autoComplete="username"
                 required
                 disabled={isSubmitting}
+                aria-invalid={isNicknameInvalid || undefined}
                 placeholder={copy.nicknamePlaceholder}
                 className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
               />
@@ -145,8 +158,9 @@ export function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={REGISTER_PASSWORD_MIN_LENGTH}
                 disabled={isSubmitting}
+                aria-invalid={isPasswordInvalid || undefined}
                 placeholder={copy.passwordPlaceholder}
                 className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
               />
@@ -165,7 +179,7 @@ export function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={REGISTER_PASSWORD_MIN_LENGTH}
                 disabled={isSubmitting}
                 aria-invalid={isPasswordMismatch || undefined}
                 placeholder={copy.passwordConfirmPlaceholder}
@@ -212,12 +226,6 @@ export function RegisterPage() {
       </section>
     </main>
   )
-}
-
-function getStringFormValue(formData: FormData, key: string) {
-  const value = formData.get(key)
-
-  return typeof value === 'string' ? value : ''
 }
 
 function getRegisterErrorMessage(error: Error, fallback: string) {
