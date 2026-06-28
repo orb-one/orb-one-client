@@ -43,7 +43,7 @@ export function RegisterPage() {
   const isSubmitting = registerMutation.isPending
 
   function handleRegisterSuccess() {
-    // mock API 응답 이후 실제 계정 상태 복원 불가로 입력값만 정리
+    // mock API 응답 이후 실제 계정 상태 반영 없이 입력값만 정리
     submittedFormRef.current?.reset()
   }
 

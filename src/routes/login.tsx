@@ -1,16 +1,70 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useMutation } from '@tanstack/react-query'
 import { ArrowLeft, LogIn, Mail, ShieldCheck } from 'lucide-react'
+import { useRef, useState, type ComponentProps } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { loginAccount } from '@/lib/api/auth'
+import { ApiError } from '@/lib/api/client'
+import {
+  validateLoginForm,
+  type LoginFormError,
+} from '@/lib/auth/login-validation'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
 })
 
+type FormSubmitHandler = NonNullable<ComponentProps<'form'>['onSubmit']>
+
 export function LoginPage() {
   const t = useTranslations()
   const copy = t.auth.login
+  const submittedFormRef = useRef<HTMLFormElement | null>(null)
+  const [formError, setFormError] = useState<LoginFormError | null>(null)
+  const loginMutation = useMutation({
+    mutationFn: loginAccount,
+    onSuccess: handleLoginSuccess,
+  })
+
+  const mutationError = loginMutation.isError
+    ? getLoginErrorMessage(loginMutation.error, copy.genericError)
+    : null
+  const formErrorMessage = formError ? copy[formError] : null
+  const feedbackMessage = formErrorMessage ?? mutationError
+  const isEmailInvalid =
+    formError === 'emailRequired' || formError === 'emailInvalid'
+  const isPasswordInvalid = formError === 'passwordRequired'
+  const isSubmitting = loginMutation.isPending
+
+  function handleLoginSuccess() {
+    // mock API 응답 이후 실제 인증 상태 반영 없이 입력값만 정리
+    submittedFormRef.current?.reset()
+  }
+
+  function resetLoginFeedback() {
+    // 이전 제출의 server/form 오류가 다음 제출 결과와 섞이지 않도록 초기화
+    loginMutation.reset()
+    setFormError(null)
+  }
+
+  const handleSubmit: FormSubmitHandler = (event) => {
+    event.preventDefault()
+
+    const form = event.currentTarget
+    const validation = validateLoginForm(new FormData(form))
+
+    resetLoginFeedback()
+
+    if (!validation.ok) {
+      setFormError(validation.error)
+      return
+    }
+
+    submittedFormRef.current = form
+    loginMutation.mutate(validation.request)
+  }
 
   return (
     <main className="mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-5xl items-center px-4 py-10">
@@ -36,11 +90,11 @@ export function LoginPage() {
           </Button>
         </div>
 
+        {/* 브라우저 기본 validation UI 대신 i18n 가능한 검증 결과만 노출 */}
         <form
           className="bg-card text-card-foreground rounded-md border p-6 shadow-sm"
-          onSubmit={(event) => {
-            event.preventDefault()
-          }}
+          noValidate
+          onSubmit={handleSubmit}
         >
           <div className="mb-6">
             <p className="font-semibold">{copy.title}</p>
@@ -59,6 +113,8 @@ export function LoginPage() {
                   type="email"
                   autoComplete="email"
                   required
+                  disabled={isSubmitting}
+                  aria-invalid={isEmailInvalid || undefined}
                   placeholder={copy.emailPlaceholder}
                   className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-9 text-sm transition-colors outline-none focus-visible:ring-3"
                 />
@@ -75,15 +131,37 @@ export function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
+                disabled={isSubmitting}
+                aria-invalid={isPasswordInvalid || undefined}
                 placeholder={copy.passwordPlaceholder}
                 className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
               />
             </div>
           </div>
 
-          <Button className="mt-6 w-full" type="submit" size="lg">
+          {feedbackMessage ? (
+            <p className="text-destructive mt-4 text-sm" role="alert">
+              {feedbackMessage}
+            </p>
+          ) : null}
+
+          {loginMutation.isSuccess ? (
+            <p
+              className="mt-4 text-sm text-emerald-700 dark:text-emerald-400"
+              role="status"
+            >
+              {copy.successMessage}
+            </p>
+          ) : null}
+
+          <Button
+            className="mt-6 w-full"
+            type="submit"
+            size="lg"
+            disabled={isSubmitting}
+          >
             <LogIn className="size-4" />
-            {copy.submit}
+            {isSubmitting ? copy.submitting : copy.submit}
           </Button>
 
           <p className="text-muted-foreground mt-4 text-center text-sm">
@@ -99,4 +177,13 @@ export function LoginPage() {
       </section>
     </main>
   )
+}
+
+function getLoginErrorMessage(error: Error, fallback: string) {
+  // ApiError의 server message 우선 노출, 그 외 오류는 일반 문구로 대체
+  if (error instanceof ApiError && error.message.trim().length > 0) {
+    return error.message
+  }
+
+  return fallback
 }
