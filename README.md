@@ -96,10 +96,20 @@ cp .env.example .env.local
 VITE_API_BASE_URL=http://localhost:8080
 ```
 
+로컬에서 실제 개발 API를 같은 origin처럼 호출하려면 proxy mode를 사용할 수 있습니다.
+
+```txt
+VITE_API_BASE_URL=http://localhost:5173
+API_PROXY_TARGET=https://api.example.com
+```
+
+이 경우 브라우저 요청은 `http://localhost:5173/auth/...`로 나가고, Vite dev server가 `API_PROXY_TARGET`으로 전달합니다.
+
 주의:
 
 - `VITE_` prefix 환경변수는 browser bundle에 노출됩니다.
 - `VITE_API_BASE_URL`은 필수 값이며 fallback URL은 사용하지 않습니다.
+- `API_PROXY_TARGET`은 Vite dev server 전용 값이며 browser bundle에 노출되지 않습니다.
 - `.env`, `.env.*` 파일은 커밋하지 않습니다.
 - 공유 가능한 예시는 `.env.example`에만 작성합니다.
 
@@ -172,6 +182,13 @@ E2E_REUSE_SERVER=true pnpm test:e2e
 사용 환경변수:
 
 - `VITE_API_BASE_URL`: 실제 API 서버 URL. `.env`에서 로드됩니다.
+- `API_PROXY_TARGET`: 로컬 proxy 대상 API URL입니다. 설정하면 `/auth`, `/users` 요청을 이 URL로 전달합니다.
 - `E2E_TEST_EMAIL_DOMAIN`: 랜덤 테스트 이메일 domain. 기본값은 `example.com`입니다.
 - `E2E_TEST_PASSWORD`: 테스트 계정 비밀번호. 기본값은 `password123!`입니다.
 - `E2E_EXPECT_AUTH_COOKIES`: `true`이면 로그인 후 auth cookie 저장까지 검증합니다.
+
+로컬 proxy mode에서 auth cookie 저장까지 확인하려면:
+
+```bash
+VITE_API_BASE_URL=http://localhost:5173 API_PROXY_TARGET=https://api.example.com E2E_EXPECT_AUTH_COOKIES=true pnpm test:e2e
+```
