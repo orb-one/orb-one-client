@@ -7,6 +7,9 @@ export const messages = {
     },
     navigation: {
       login: '로그인',
+      logout: '로그아웃',
+      loggingOut: '로그아웃 중',
+      currentUser: '현재 로그인한 사용자',
     },
     auth: {
       login: {
@@ -62,6 +65,9 @@ export const messages = {
     },
     navigation: {
       login: 'Login',
+      logout: 'Log out',
+      loggingOut: 'Logging out',
+      currentUser: 'Current signed-in user',
     },
     auth: {
       login: {
