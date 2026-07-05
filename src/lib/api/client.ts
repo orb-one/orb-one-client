@@ -1,4 +1,4 @@
-type RequestOptions = Omit<RequestInit, 'body'> & {
+type RequestOptions = Omit<RequestInit, 'body' | 'credentials'> & {
   body?: unknown
 }
 
@@ -33,6 +33,7 @@ export async function apiClient<TResponse = unknown>(
 
   const requestInit: RequestInit = {
     ...options,
+    credentials: 'include',
     headers: requestHeaders,
   }
 

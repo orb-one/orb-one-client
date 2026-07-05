@@ -37,6 +37,7 @@ pnpm format        # Prettier write
 pnpm format:check  # Prettier check
 pnpm test          # Vitest run
 pnpm test:watch    # Vitest watch mode
+pnpm test:e2e      # Playwright e2e run
 pnpm check         # typecheck, lint, format:check, test, build 전체 실행
 ```
 
@@ -152,3 +153,25 @@ UI 변경 시 다음 상태를 함께 확인합니다.
 - UI component 변경 시 관련 component test를 고려합니다.
 - API client 변경 시 `src/lib/api/client.test.ts`를 함께 업데이트합니다.
 - PR 전 `pnpm check`를 실행합니다.
+
+### E2E Testing
+
+실제 API 서버를 대상으로 인증 화면 흐름을 확인할 때는 Playwright E2E를 사용합니다.
+테스트는 매 실행마다 랜덤 이메일을 만들어 회원가입 후 같은 계정으로 로그인합니다.
+
+```bash
+pnpm test:e2e
+```
+
+이미 `http://localhost:5173`에서 이 프로젝트의 Vite dev server를 실행 중이면:
+
+```bash
+E2E_REUSE_SERVER=true pnpm test:e2e
+```
+
+사용 환경변수:
+
+- `VITE_API_BASE_URL`: 실제 API 서버 URL. `.env`에서 로드됩니다.
+- `E2E_TEST_EMAIL_DOMAIN`: 랜덤 테스트 이메일 domain. 기본값은 `example.com`입니다.
+- `E2E_TEST_PASSWORD`: 테스트 계정 비밀번호. 기본값은 `password123!`입니다.
+- `E2E_EXPECT_AUTH_COOKIES`: `true`이면 로그인 후 auth cookie 저장까지 검증합니다.

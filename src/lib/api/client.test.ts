@@ -36,6 +36,19 @@ it('returns text for non-json responses', async () => {
   await expect(apiClient<string>('/jobs/1')).resolves.toBe('accepted')
 })
 
+it('includes credentials in API requests', async () => {
+  const fetchMock = mockFetch(new Response('{}', jsonResponseInit()))
+
+  await apiClient('/users/me')
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    'http://localhost:8080/users/me',
+    expect.objectContaining({
+      credentials: 'include',
+    }),
+  )
+})
+
 it('throws ApiError with parsed response body', async () => {
   mockFetch(
     new Response(JSON.stringify({ message: 'Invalid token' }), {
