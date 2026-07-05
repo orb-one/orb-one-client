@@ -9,6 +9,7 @@ export const messages = {
       login: '로그인',
       logout: '로그아웃',
       loggingOut: '로그아웃 중',
+      logoutError: '로그아웃에 실패했습니다. 다시 시도해 주세요.',
       currentUser: '현재 로그인한 사용자',
     },
     auth: {
@@ -67,6 +68,7 @@ export const messages = {
       login: 'Login',
       logout: 'Log out',
       loggingOut: 'Logging out',
+      logoutError: 'Could not log out. Please try again.',
       currentUser: 'Current signed-in user',
     },
     auth: {

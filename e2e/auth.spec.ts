@@ -14,6 +14,91 @@ test('registers a random account, logs in, and logs out through the auth pages',
   const account = createRandomAccount()
   const currentUserContract = await mockCurrentUserContract(page, account)
 
+  await registerAndLogin(page, account, currentUserContract)
+
+  if (expectAuthCookies) {
+    // 직접 API 호출은 cross-site가 될 수 있으므로 proxy 또는 same-site 환경에서 켠다.
+    const cookies = await page.context().cookies(apiBaseUrl)
+    const cookieNames = cookies.map((cookie) => cookie.name)
+
+    expect(cookieNames).toContain(accessCookieName)
+    expect(cookieNames).toContain(refreshCookieName)
+  }
+
+  const logoutResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url() === apiUrl('/auth/logout') &&
+      response.request().method() === 'POST',
+  )
+
+  currentUserContract.signOut()
+  await page.getByRole('button', { name: '로그아웃', exact: true }).click()
+
+  const logoutResponse = await logoutResponsePromise
+
+  expect(logoutResponse.status()).toBe(200)
+  await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
+
+  if (expectAuthCookies) {
+    const cookies = await page.context().cookies(apiBaseUrl)
+    const cookieNames = cookies.map((cookie) => cookie.name)
+
+    expect(cookieNames).not.toContain(accessCookieName)
+    expect(cookieNames).not.toContain(refreshCookieName)
+  }
+})
+
+test('keeps the signed-in state and shows a toast when logout fails', async ({
+  page,
+}) => {
+  const account = createRandomAccount()
+  const currentUserContract = await mockCurrentUserContract(page, account)
+
+  await registerAndLogin(page, account, currentUserContract)
+
+  await page.route(apiUrl('/auth/logout'), async (route) => {
+    await route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Internal Server Error' }),
+    })
+  })
+
+  const logoutResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url() === apiUrl('/auth/logout') &&
+      response.request().method() === 'POST',
+  )
+
+  await page.getByRole('button', { name: '로그아웃', exact: true }).click()
+
+  const logoutResponse = await logoutResponsePromise
+
+  expect(logoutResponse.status()).toBe(500)
+  await expect(
+    page.getByText('로그아웃에 실패했습니다. 다시 시도해 주세요.'),
+  ).toBeVisible()
+  await expect(page.getByLabel('현재 로그인한 사용자')).toContainText(
+    account.nickname,
+  )
+  await expect(
+    page.getByRole('button', { name: '로그아웃', exact: true }),
+  ).toBeEnabled()
+
+  if (expectAuthCookies) {
+    const cookies = await page.context().cookies(apiBaseUrl)
+    const cookieNames = cookies.map((cookie) => cookie.name)
+
+    expect(cookieNames).toContain(accessCookieName)
+    expect(cookieNames).toContain(refreshCookieName)
+  }
+})
+
+async function registerAndLogin(
+  page: Page,
+  account: ReturnType<typeof createRandomAccount>,
+  currentUserContract: Awaited<ReturnType<typeof mockCurrentUserContract>>,
+) {
   await page.goto('/register')
   await page.getByLabel('이메일').fill(account.email)
   await page.getByLabel('닉네임').fill(account.nickname)
@@ -52,38 +137,7 @@ test('registers a random account, logs in, and logs out through the auth pages',
   await expect(page.getByLabel('현재 로그인한 사용자')).toContainText(
     account.nickname,
   )
-
-  if (expectAuthCookies) {
-    // 직접 API 호출은 cross-site가 될 수 있으므로 proxy 또는 same-site 환경에서 켠다.
-    const cookies = await page.context().cookies(apiBaseUrl)
-    const cookieNames = cookies.map((cookie) => cookie.name)
-
-    expect(cookieNames).toContain(accessCookieName)
-    expect(cookieNames).toContain(refreshCookieName)
-  }
-
-  const logoutResponsePromise = page.waitForResponse(
-    (response) =>
-      response.url() === apiUrl('/auth/logout') &&
-      response.request().method() === 'POST',
-  )
-
-  currentUserContract.signOut()
-  await page.getByRole('button', { name: '로그아웃', exact: true }).click()
-
-  const logoutResponse = await logoutResponsePromise
-
-  expect(logoutResponse.status()).toBe(200)
-  await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
-
-  if (expectAuthCookies) {
-    const cookies = await page.context().cookies(apiBaseUrl)
-    const cookieNames = cookies.map((cookie) => cookie.name)
-
-    expect(cookieNames).not.toContain(accessCookieName)
-    expect(cookieNames).not.toContain(refreshCookieName)
-  }
-})
+}
 
 function createRandomAccount() {
   const token = `${String(Date.now())}-${randomUUID().slice(0, 8)}`

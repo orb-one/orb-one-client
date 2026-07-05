@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
 import { LogOut, UserCircle } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { logoutAccount } from '@/lib/api/auth'
@@ -9,6 +10,8 @@ import {
   currentUserQueryOptions,
 } from '@/lib/auth/auth-queries'
 import { useTranslations } from '@/lib/i18n/use-translations'
+
+const logoutErrorToastId = 'auth.logout.error'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -43,13 +46,21 @@ function RootAuthNav() {
   const logoutMutation = useMutation({
     mutationFn: logoutAccount,
     onSuccess: handleLogoutSuccess,
+    onError: handleLogoutError,
   })
   const currentUser = currentUserQuery.data ?? null
 
   function handleLogoutSuccess() {
+    toast.dismiss(logoutErrorToastId)
     queryClient.setQueryData(currentUserQueryKey, null)
     void queryClient.invalidateQueries({ queryKey: currentUserQueryKey })
     void navigate({ to: '/' })
+  }
+
+  function handleLogoutError() {
+    toast.error(copy.logoutError, {
+      id: logoutErrorToastId,
+    })
   }
 
   if (currentUser) {
@@ -70,6 +81,7 @@ function RootAuthNav() {
           variant="ghost"
           disabled={logoutMutation.isPending}
           onClick={() => {
+            toast.dismiss(logoutErrorToastId)
             logoutMutation.mutate()
           }}
         >
