@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, LogIn, Mail, ShieldCheck } from 'lucide-react'
-import { useRef, useState, type ComponentProps } from 'react'
+import { useState, type ComponentProps } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { loginAccount } from '@/lib/api/auth'
@@ -10,6 +10,7 @@ import {
   validateLoginForm,
   type LoginFormError,
 } from '@/lib/auth/login-validation'
+import { currentUserQueryKey } from '@/lib/auth/auth-queries'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export const Route = createFileRoute('/login')({
@@ -21,7 +22,8 @@ type FormSubmitHandler = NonNullable<ComponentProps<'form'>['onSubmit']>
 export function LoginPage() {
   const t = useTranslations()
   const copy = t.auth.login
-  const submittedFormRef = useRef<HTMLFormElement | null>(null)
+  const navigate = Route.useNavigate()
+  const queryClient = useQueryClient()
   const [formError, setFormError] = useState<LoginFormError | null>(null)
   const loginMutation = useMutation({
     mutationFn: loginAccount,
@@ -39,8 +41,8 @@ export function LoginPage() {
   const isSubmitting = loginMutation.isPending
 
   function handleLoginSuccess() {
-    // mock API 응답 이후 실제 인증 상태 반영 없이 입력값만 정리
-    submittedFormRef.current?.reset()
+    void queryClient.invalidateQueries({ queryKey: currentUserQueryKey })
+    void navigate({ to: '/' })
   }
 
   function resetLoginFeedback() {
@@ -62,7 +64,6 @@ export function LoginPage() {
       return
     }
 
-    submittedFormRef.current = form
     loginMutation.mutate(validation.request)
   }
 

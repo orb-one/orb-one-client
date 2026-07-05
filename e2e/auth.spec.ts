@@ -30,11 +30,8 @@ test('registers a random account and logs in through the auth pages', async ({
   const registerResponse = await registerResponsePromise
 
   expect(registerResponse.status()).toBe(201)
-  await expect(page.getByRole('status')).toContainText(
-    '회원가입 요청이 완료되었습니다.',
-  )
+  await page.waitForURL((url) => url.pathname === '/login')
 
-  await page.goto('/login')
   await page.getByLabel('이메일').fill(account.email)
   await page.getByLabel('비밀번호').fill(account.password)
 
@@ -49,12 +46,10 @@ test('registers a random account and logs in through the auth pages', async ({
   const loginResponse = await loginResponsePromise
 
   expect(loginResponse.status()).toBe(200)
-  await expect(page.getByRole('status')).toContainText(
-    '로그인 요청이 완료되었습니다.',
-  )
+  await page.waitForURL((url) => url.pathname === '/')
 
   if (expectAuthCookies) {
-    // Localhost -> dev API is cross-site; enable this after server cookies use browser-compatible attributes.
+    // 직접 API 호출은 cross-site가 될 수 있으므로 proxy 또는 same-site 환경에서 켠다.
     const cookies = await page.context().cookies(apiBaseUrl)
     const cookieNames = cookies.map((cookie) => cookie.name)
 

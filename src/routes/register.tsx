@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { ArrowLeft, Mail, ShieldCheck, UserPlus } from 'lucide-react'
-import { useRef, useState, type ComponentProps } from 'react'
+import { useState, type ComponentProps } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { registerAccount } from '@/lib/api/auth'
@@ -22,11 +22,13 @@ type FormSubmitHandler = NonNullable<ComponentProps<'form'>['onSubmit']>
 export function RegisterPage() {
   const t = useTranslations()
   const copy = t.auth.register
-  const submittedFormRef = useRef<HTMLFormElement | null>(null)
+  const navigate = Route.useNavigate()
   const [formError, setFormError] = useState<RegisterFormError | null>(null)
   const registerMutation = useMutation({
     mutationFn: registerAccount,
-    onSuccess: handleRegisterSuccess,
+    onSuccess: () => {
+      handleRegisterSuccess()
+    },
   })
 
   const mutationError = registerMutation.isError
@@ -43,8 +45,7 @@ export function RegisterPage() {
   const isSubmitting = registerMutation.isPending
 
   function handleRegisterSuccess() {
-    // mock API 응답 이후 실제 계정 상태 반영 없이 입력값만 정리
-    submittedFormRef.current?.reset()
+    void navigate({ to: '/login' })
   }
 
   function resetRegisterFeedback() {
@@ -66,7 +67,6 @@ export function RegisterPage() {
       return
     }
 
-    submittedFormRef.current = form
     registerMutation.mutate(validation.request)
   }
 
