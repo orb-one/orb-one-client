@@ -7,6 +7,7 @@ const emailDomain = process.env.E2E_TEST_EMAIL_DOMAIN ?? 'example.com'
 const accessCookieName = process.env.E2E_ACCESS_COOKIE_NAME ?? 'access_token'
 const refreshCookieName = process.env.E2E_REFRESH_COOKIE_NAME ?? 'refresh_token'
 const expectAuthCookies = process.env.E2E_EXPECT_AUTH_COOKIES === 'true'
+const isMswE2eEnabled = process.env.E2E_ENABLE_MSW === 'true'
 
 test('registers a random account, logs in, and logs out through the auth pages', async ({
   page,
@@ -56,13 +57,17 @@ test('keeps the signed-in state and shows a toast when logout fails', async ({
 
   await registerAndLogin(page, account, currentUserContract)
 
-  await page.route(apiUrl('/auth/logout'), async (route) => {
-    await route.fulfill({
-      status: 500,
-      contentType: 'application/json',
-      body: JSON.stringify({ message: 'Internal Server Error' }),
+  if (isMswE2eEnabled) {
+    await failNextMswLogout(page)
+  } else {
+    await page.route(apiUrl('/auth/logout'), async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Internal Server Error' }),
+      })
     })
-  })
+  }
 
   const logoutResponsePromise = page.waitForResponse(
     (response) =>
@@ -186,6 +191,21 @@ async function mockCurrentUserContract(
       isSignedIn = false
     },
   }
+}
+
+async function failNextMswLogout(page: Page) {
+  const response = await page.evaluate(async () => {
+    const response = await fetch('/__msw/auth/logout-failure', {
+      method: 'POST',
+    })
+
+    return {
+      ok: response.ok,
+      status: response.status,
+    }
+  })
+
+  expect(response).toEqual({ ok: true, status: 200 })
 }
 
 function apiUrl(path: string) {

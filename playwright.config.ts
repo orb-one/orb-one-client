@@ -8,6 +8,8 @@ for (const [key, value] of Object.entries(env)) {
   process.env[key] ??= value
 }
 
+process.env.VITE_ENABLE_MSW = process.env.E2E_ENABLE_MSW ?? 'false'
+
 const host = process.env.E2E_HOST ?? 'localhost'
 const port = process.env.E2E_PORT ?? '5173'
 const baseURL = process.env.E2E_BASE_URL ?? `http://${host}:${port}`
@@ -23,7 +25,7 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: `pnpm dev -- --host ${host} --port ${port} --strictPort`,
+    command: `pnpm dev --host ${host} --port ${port} --strictPort`,
     reuseExistingServer: process.env.E2E_REUSE_SERVER === 'true',
     timeout: 120_000,
     url: baseURL,

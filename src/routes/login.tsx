@@ -4,8 +4,9 @@ import { ArrowLeft, LogIn, Mail, ShieldCheck } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { loginAccount } from '@/lib/api/auth'
+import { loginAccount, type LoginRequest } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
+import { signInMockUser } from '@/lib/auth/mock-auth-session'
 import {
   validateLoginForm,
   type LoginFormError,
@@ -40,8 +41,10 @@ export function LoginPage() {
   const isPasswordInvalid = formError === 'passwordRequired'
   const isSubmitting = loginMutation.isPending
 
-  function handleLoginSuccess() {
-    void queryClient.invalidateQueries({ queryKey: currentUserQueryKey })
+  async function handleLoginSuccess(_response: unknown, request: LoginRequest) {
+    // 실제 로그인 성공 후 /users/me mock이 현재 사용자를 반환하도록 dev-only 세션을 맞춘다.
+    await signInMockUser(request)
+    await queryClient.invalidateQueries({ queryKey: currentUserQueryKey })
     void navigate({ to: '/' })
   }
 

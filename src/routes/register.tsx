@@ -4,8 +4,9 @@ import { ArrowLeft, Mail, ShieldCheck, UserPlus } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { registerAccount } from '@/lib/api/auth'
+import { registerAccount, type RegisterRequest } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
+import { rememberMockRegisteredUser } from '@/lib/auth/mock-auth-session'
 import {
   REGISTER_PASSWORD_MIN_LENGTH,
   validateRegisterForm,
@@ -26,9 +27,7 @@ export function RegisterPage() {
   const [formError, setFormError] = useState<RegisterFormError | null>(null)
   const registerMutation = useMutation({
     mutationFn: registerAccount,
-    onSuccess: () => {
-      handleRegisterSuccess()
-    },
+    onSuccess: handleRegisterSuccess,
   })
 
   const mutationError = registerMutation.isError
@@ -44,7 +43,12 @@ export function RegisterPage() {
     formError === 'passwordRequired' || formError === 'passwordTooShort'
   const isSubmitting = registerMutation.isPending
 
-  function handleRegisterSuccess() {
+  async function handleRegisterSuccess(
+    _response: unknown,
+    request: RegisterRequest,
+  ) {
+    // 실제 회원가입 성공 후 /users/me mock이 같은 nickname을 돌려주도록 표시 정보만 기억한다.
+    await rememberMockRegisteredUser(request)
     void navigate({ to: '/login' })
   }
 

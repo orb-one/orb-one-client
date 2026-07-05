@@ -9,6 +9,7 @@ import {
   currentUserQueryKey,
   currentUserQueryOptions,
 } from '@/lib/auth/auth-queries'
+import { signOutMockUser } from '@/lib/auth/mock-auth-session'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 const logoutErrorToastId = 'auth.logout.error'
@@ -50,7 +51,9 @@ function RootAuthNav() {
   })
   const currentUser = currentUserQuery.data ?? null
 
-  function handleLogoutSuccess() {
+  async function handleLogoutSuccess() {
+    // 실제 로그아웃 성공 후 /users/me mock도 비로그인 상태로 맞춘다.
+    await signOutMockUser()
     toast.dismiss(logoutErrorToastId)
     queryClient.setQueryData(currentUserQueryKey, null)
     void queryClient.invalidateQueries({ queryKey: currentUserQueryKey })
