@@ -143,6 +143,8 @@ apiClient('users')
 - empty response는 `undefined`를 반환합니다.
 - non-JSON response는 text를 반환합니다.
 - 실패 응답은 `ApiError`를 throw하며 status, 원본 `Response`, parsed body를 포함합니다.
+- 일반 API 요청이 401을 받으면 `/auth/refresh`를 호출하고 성공 시 원 요청을 1회 재시도합니다.
+- refresh 실패 시 `AuthSessionExpiredError`를 throw하며 app provider가 current user cache 정리와 세션 만료 toast를 처리합니다.
 
 ## Routing
 

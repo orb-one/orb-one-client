@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { logoutAccount } from '@/lib/api/auth'
+import { AuthSessionExpiredError } from '@/lib/api/client'
 import {
   currentUserQueryKey,
   currentUserQueryOptions,
@@ -60,7 +61,11 @@ function RootAuthNav() {
     void navigate({ to: '/' })
   }
 
-  function handleLogoutError() {
+  function handleLogoutError(error: Error) {
+    if (error instanceof AuthSessionExpiredError) {
+      return
+    }
+
     toast.error(copy.logoutError, {
       id: logoutErrorToastId,
     })

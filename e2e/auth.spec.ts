@@ -9,6 +9,64 @@ const refreshCookieName = process.env.E2E_REFRESH_COOKIE_NAME ?? 'refresh_token'
 const expectAuthCookies = process.env.E2E_EXPECT_AUTH_COOKIES === 'true'
 const isMswE2eEnabled = process.env.E2E_ENABLE_MSW === 'true'
 
+test('refreshes expired current user requests before showing signed-in UI', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  const account = createRandomAccount()
+  let currentUserRequestCount = 0
+
+  await page.route(apiUrl('/users/me'), async (route) => {
+    currentUserRequestCount += 1
+
+    if (currentUserRequestCount === 1) {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      })
+      return
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: account.id,
+        email: account.email,
+        nickname: account.nickname,
+      }),
+    })
+  })
+  await page.route(apiUrl('/auth/refresh'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Token refreshed' }),
+    })
+  })
+
+  const refreshResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url() === apiUrl('/auth/refresh') &&
+      response.request().method() === 'POST',
+  )
+
+  await page.goto('/')
+
+  const refreshResponse = await refreshResponsePromise
+
+  expect(refreshResponse.status()).toBe(200)
+  await expect(page.getByLabel('현재 로그인한 사용자')).toContainText(
+    account.nickname,
+  )
+  expect(currentUserRequestCount).toBe(2)
+})
+
 test('registers a random account, logs in, and logs out through the auth pages', async ({
   page,
 }) => {

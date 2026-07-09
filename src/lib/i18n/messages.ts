@@ -13,6 +13,7 @@ export const messages = {
       currentUser: '현재 로그인한 사용자',
     },
     auth: {
+      sessionExpired: '세션이 만료되었습니다. 다시 로그인해 주세요.',
       login: {
         eyebrow: '계정 접근',
         title: '로그인',
@@ -72,6 +73,7 @@ export const messages = {
       currentUser: 'Current signed-in user',
     },
     auth: {
+      sessionExpired: 'Your session has expired. Please sign in again.',
       login: {
         eyebrow: 'Account access',
         title: 'Log in',
