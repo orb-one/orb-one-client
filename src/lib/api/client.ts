@@ -1,8 +1,13 @@
-const DEFAULT_API_BASE_URL = 'http://localhost:3000'
-
-type RequestOptions = Omit<RequestInit, 'body'> & {
+type RequestOptions = Omit<RequestInit, 'body' | 'credentials'> & {
   body?: unknown
 }
+
+interface ApiResponseResult {
+  response: Response
+  body: unknown
+}
+
+let refreshPromise: Promise<boolean> | null = null
 
 export class ApiError extends Error {
   readonly status: number
@@ -23,10 +28,46 @@ export class ApiError extends Error {
   }
 }
 
+export class AuthSessionExpiredError extends Error {
+  constructor() {
+    super('Auth session expired')
+    this.name = 'AuthSessionExpiredError'
+  }
+}
+
 export async function apiClient<TResponse = unknown>(
   path: string,
-  { body, headers, ...options }: RequestOptions = {},
+  options: RequestOptions = {},
 ): Promise<TResponse> {
+  const result = await sendApiRequest(path, options)
+
+  if (result.response.ok) {
+    return result.body as TResponse
+  }
+
+  if (result.response.status === 401 && shouldAttemptAuthRefresh(path)) {
+    const didRefresh = await refreshAuthSession()
+
+    if (!didRefresh) {
+      throw new AuthSessionExpiredError()
+    }
+
+    const retryResult = await sendApiRequest(path, options)
+
+    if (retryResult.response.ok) {
+      return retryResult.body as TResponse
+    }
+
+    throw createApiError(retryResult)
+  }
+
+  throw createApiError(result)
+}
+
+async function sendApiRequest(
+  path: string,
+  { body, headers, ...options }: RequestOptions,
+): Promise<ApiResponseResult> {
   const requestHeaders = new Headers(headers)
 
   if (body !== undefined && !requestHeaders.has('Content-Type')) {
@@ -35,6 +76,7 @@ export async function apiClient<TResponse = unknown>(
 
   const requestInit: RequestInit = {
     ...options,
+    credentials: 'include',
     headers: requestHeaders,
   }
 
@@ -45,16 +87,10 @@ export async function apiClient<TResponse = unknown>(
   const response = await fetch(buildApiUrl(path), requestInit)
   const responseBody = await parseResponseBody(response)
 
-  if (!response.ok) {
-    throw new ApiError(
-      getApiErrorMessage(responseBody, response),
-      response.status,
-      response,
-      responseBody,
-    )
+  return {
+    response,
+    body: responseBody,
   }
-
-  return responseBody as TResponse
 }
 
 function buildApiUrl(path: string) {
@@ -63,13 +99,61 @@ function buildApiUrl(path: string) {
     throw new TypeError('apiClient only accepts relative paths')
   }
 
-  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL
+  const baseUrl = getApiBaseUrl()
 
   // `users`, `/users` 모두 base URL의 `/api` 같은 경로 보존
   return new URL(
     stripLeadingSlashes(path),
     ensureTrailingSlash(baseUrl),
   ).toString()
+}
+
+function getApiBaseUrl() {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL
+
+  if (!baseUrl) {
+    throw new TypeError('VITE_API_BASE_URL is required')
+  }
+
+  return baseUrl
+}
+
+function shouldAttemptAuthRefresh(path: string) {
+  const normalizedPath = stripLeadingSlashes(path).replace(/[?#].*$/, '')
+
+  return !['auth/login', 'auth/register', 'auth/refresh'].includes(
+    normalizedPath,
+  )
+}
+
+async function refreshAuthSession() {
+  refreshPromise ??= requestAuthRefresh().finally(() => {
+    refreshPromise = null
+  })
+
+  return refreshPromise
+}
+
+async function requestAuthRefresh() {
+  try {
+    const response = await fetch(buildApiUrl('/auth/refresh'), {
+      method: 'POST',
+      credentials: 'include',
+    })
+
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
+function createApiError({ response, body }: ApiResponseResult) {
+  return new ApiError(
+    getApiErrorMessage(body, response),
+    response.status,
+    response,
+    body,
+  )
 }
 
 async function parseResponseBody(response: Response): Promise<unknown> {
