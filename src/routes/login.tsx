@@ -5,14 +5,14 @@ import { useState, type ComponentProps } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { loginAccount, type LoginRequest } from '@/lib/api/auth'
-import { ApiError } from '@/lib/api/client'
+import { getAuthErrorMessage } from '@/lib/auth/auth-errors'
 import { signInMockUser } from '@/lib/auth/mock-auth-session'
 import {
   validateLoginForm,
   type LoginFormError,
 } from '@/lib/auth/login-validation'
 import { currentUserQueryKey } from '@/lib/auth/auth-queries'
-import { useTranslations } from '@/lib/i18n/use-translations'
+import { useI18n } from '@/lib/i18n/use-translations'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -21,7 +21,7 @@ export const Route = createFileRoute('/login')({
 type FormSubmitHandler = NonNullable<ComponentProps<'form'>['onSubmit']>
 
 export function LoginPage() {
-  const t = useTranslations()
+  const { locale, t } = useI18n()
   const copy = t.auth.login
   const navigate = Route.useNavigate()
   const queryClient = useQueryClient()
@@ -32,7 +32,7 @@ export function LoginPage() {
   })
 
   const mutationError = loginMutation.isError
-    ? getLoginErrorMessage(loginMutation.error, copy.genericError)
+    ? getAuthErrorMessage(loginMutation.error, locale, copy.genericError)
     : null
   const formErrorMessage = formError ? copy[formError] : null
   const feedbackMessage = formErrorMessage ?? mutationError
@@ -181,13 +181,4 @@ export function LoginPage() {
       </section>
     </main>
   )
-}
-
-function getLoginErrorMessage(error: Error, fallback: string) {
-  // ApiError의 server message 우선 노출, 그 외 오류는 일반 문구로 대체
-  if (error instanceof ApiError && error.message.trim().length > 0) {
-    return error.message
-  }
-
-  return fallback
 }

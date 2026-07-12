@@ -3,7 +3,8 @@ import { toast } from 'sonner'
 
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import { currentUserQueryKey } from '@/lib/auth/auth-queries'
-import { defaultLocale, messages } from '@/lib/i18n/messages'
+import { messages } from '@/lib/i18n/messages'
+import { useAppStore } from '@/stores/use-app-store'
 
 export const sessionExpiredToastId = 'auth.session.expired'
 
@@ -52,7 +53,9 @@ export function handleAuthSessionExpiredError(
     return
   }
 
-  toast.error(messages[defaultLocale].auth.sessionExpired, {
+  const locale = useAppStore.getState().locale
+
+  toast.error(messages[locale].auth.sessionExpired, {
     id: sessionExpiredToastId,
   })
 }

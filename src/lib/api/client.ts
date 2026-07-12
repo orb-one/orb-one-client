@@ -1,3 +1,5 @@
+import { parseApiErrorResponse, type ApiErrorCode } from '@/lib/api/errors'
+
 type RequestOptions = Omit<RequestInit, 'body' | 'credentials'> & {
   body?: unknown
 }
@@ -13,6 +15,7 @@ export class ApiError extends Error {
   readonly status: number
   readonly response: Response
   readonly body: unknown
+  readonly code: ApiErrorCode | undefined
 
   constructor(
     message: string,
@@ -25,6 +28,7 @@ export class ApiError extends Error {
     this.status = status
     this.response = response
     this.body = body
+    this.code = parseApiErrorResponse(body)?.code
   }
 }
 

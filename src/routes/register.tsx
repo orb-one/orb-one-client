@@ -5,14 +5,14 @@ import { useState, type ComponentProps } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { registerAccount, type RegisterRequest } from '@/lib/api/auth'
-import { ApiError } from '@/lib/api/client'
+import { getAuthErrorMessage } from '@/lib/auth/auth-errors'
 import { rememberMockRegisteredUser } from '@/lib/auth/mock-auth-session'
 import {
   REGISTER_PASSWORD_MIN_LENGTH,
   validateRegisterForm,
   type RegisterFormError,
 } from '@/lib/auth/register-validation'
-import { useTranslations } from '@/lib/i18n/use-translations'
+import { useI18n } from '@/lib/i18n/use-translations'
 
 export const Route = createFileRoute('/register')({
   component: RegisterPage,
@@ -21,7 +21,7 @@ export const Route = createFileRoute('/register')({
 type FormSubmitHandler = NonNullable<ComponentProps<'form'>['onSubmit']>
 
 export function RegisterPage() {
-  const t = useTranslations()
+  const { locale, t } = useI18n()
   const copy = t.auth.register
   const navigate = Route.useNavigate()
   const [formError, setFormError] = useState<RegisterFormError | null>(null)
@@ -31,7 +31,7 @@ export function RegisterPage() {
   })
 
   const mutationError = registerMutation.isError
-    ? getRegisterErrorMessage(registerMutation.error, copy.genericError)
+    ? getAuthErrorMessage(registerMutation.error, locale, copy.genericError)
     : null
   const formErrorMessage = formError ? copy[formError] : null
   const feedbackMessage = formErrorMessage ?? mutationError
@@ -230,13 +230,4 @@ export function RegisterPage() {
       </section>
     </main>
   )
-}
-
-function getRegisterErrorMessage(error: Error, fallback: string) {
-  // ApiError의 server message 우선 노출, 그 외 오류는 일반 문구로 대체
-  if (error instanceof ApiError && error.message.trim().length > 0) {
-    return error.message
-  }
-
-  return fallback
 }

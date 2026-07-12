@@ -39,6 +39,15 @@
 - app-level provider는 `src/app/`에 배치
 - framework-agnostic utility는 `src/lib/`에 배치
 
+## Naming Rules
+
+- 일반 source, Hook, store, utility, test 파일명은 `kebab-case` 사용
+- React component와 TypeScript type/class 식별자는 `PascalCase` 사용
+- 함수, 변수, Hook 식별자는 `camelCase` 사용, Hook은 `use`로 시작
+- test 파일은 대상 파일명에 `.test.ts` 또는 `.test.tsx`를 붙임
+- `src/routes/`는 TanStack Router 파일명 규칙을 우선하며, route tree 제외 파일은 `-` prefix 사용
+- framework, code generator, 외부 도구가 요구하는 파일명은 예외
+
 ## Generated Files
 
 - `src/routeTree.gen.ts`는 TanStack Router 생성 파일

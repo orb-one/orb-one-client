@@ -50,8 +50,14 @@ it('includes credentials in API requests', async () => {
 })
 
 it('throws ApiError with parsed response body', async () => {
+  const body = {
+    code: 'INVALID_CREDENTIALS',
+    message: 'Invalid token',
+    timestamp: '2026-07-12T00:00:00Z',
+  }
+
   mockFetch(
-    new Response(JSON.stringify({ message: 'Invalid token' }), {
+    new Response(JSON.stringify(body), {
       ...jsonResponseInit(),
       status: 401,
       statusText: 'Unauthorized',
@@ -61,9 +67,31 @@ it('throws ApiError with parsed response body', async () => {
   await expect(
     apiClient('/auth/login', { method: 'POST' }),
   ).rejects.toMatchObject({
-    body: { message: 'Invalid token' },
+    body,
+    code: 'INVALID_CREDENTIALS',
     message: 'Invalid token',
     status: 401,
+  } satisfies Partial<ApiError>)
+})
+
+it('does not expose unrecognized server error codes', async () => {
+  mockFetch(
+    new Response(
+      JSON.stringify({
+        code: 'FUTURE_ERROR',
+        message: 'Future server error',
+        timestamp: '2026-07-12T00:00:00Z',
+      }),
+      {
+        ...jsonResponseInit(),
+        status: 400,
+      },
+    ),
+  )
+
+  await expect(apiClient('/auth/login')).rejects.toMatchObject({
+    code: undefined,
+    message: 'Future server error',
   } satisfies Partial<ApiError>)
 })
 
