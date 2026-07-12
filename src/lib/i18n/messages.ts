@@ -1,3 +1,5 @@
+import type { ApiErrorCode } from '@/lib/api/errors'
+
 export const defaultLocale = 'ko'
 
 export const messages = {
@@ -124,3 +126,15 @@ export const messages = {
 } as const
 
 export type Locale = keyof typeof messages
+
+export const authErrorTranslations = {
+  en: {
+    UNAUTHENTICATED: 'Please sign in to continue.',
+    INVALID_CREDENTIALS: 'The email or password is incorrect.',
+    INVALID_REFRESH_TOKEN: 'Please sign in again.',
+    DUPLICATE_EMAIL: 'An account already exists for this email.',
+  },
+} as const satisfies Record<
+  Exclude<Locale, typeof defaultLocale>,
+  Readonly<Record<ApiErrorCode, string>>
+>
