@@ -2,6 +2,7 @@ import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Card } from '@astryxdesign/core/Card'
 import { Center } from '@astryxdesign/core/Center'
+import { FormLayout } from '@astryxdesign/core/FormLayout'
 import { Heading } from '@astryxdesign/core/Heading'
 import { Icon } from '@astryxdesign/core/Icon'
 import { Link } from '@astryxdesign/core/Link'
@@ -11,7 +12,7 @@ import { VStack } from '@astryxdesign/core/VStack'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { LogIn, Mail, ShieldCheck } from 'lucide-react'
-import { useState, type ComponentProps } from 'react'
+import { useRef, useState, type ComponentProps } from 'react'
 
 import { loginAccount, type LoginRequest } from '@/lib/api/auth'
 import { getAuthErrorMessage } from '@/lib/auth/auth-errors'
@@ -36,6 +37,8 @@ export function LoginPage() {
   const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const emailInputRef = useRef<HTMLInputElement>(null)
+  const passwordInputRef = useRef<HTMLInputElement>(null)
   const [formError, setFormError] = useState<LoginFormError | null>(null)
   const loginMutation = useMutation({
     mutationFn: loginAccount,
@@ -46,7 +49,6 @@ export function LoginPage() {
     ? getAuthErrorMessage(loginMutation.error, locale, copy.genericError)
     : null
   const formErrorMessage = formError ? copy[formError] : null
-  const feedbackMessage = formErrorMessage ?? mutationError
   const isEmailInvalid =
     formError === 'emailRequired' || formError === 'emailInvalid'
   const isPasswordInvalid = formError === 'passwordRequired'
@@ -65,6 +67,26 @@ export function LoginPage() {
     setFormError(null)
   }
 
+  function clearLoginFeedback(...errors: LoginFormError[]) {
+    if (loginMutation.isError) {
+      loginMutation.reset()
+    }
+
+    setFormError((currentError) =>
+      currentError && errors.includes(currentError) ? null : currentError,
+    )
+  }
+
+  function focusInvalidField(error: LoginFormError) {
+    const inputRef = {
+      emailRequired: emailInputRef,
+      emailInvalid: emailInputRef,
+      passwordRequired: passwordInputRef,
+    }[error]
+
+    inputRef.current?.focus()
+  }
+
   const handleSubmit: FormSubmitHandler = (event) => {
     event.preventDefault()
 
@@ -75,6 +97,9 @@ export function LoginPage() {
 
     if (!validation.ok) {
       setFormError(validation.error)
+      requestAnimationFrame(() => {
+        focusInvalidField(validation.error)
+      })
       return
     }
 
@@ -112,48 +137,68 @@ export function LoginPage() {
             {/* 브라우저 기본 validation UI 대신 i18n 가능한 검증 결과만 노출 */}
             <form noValidate onSubmit={handleSubmit}>
               <VStack gap={4} hAlign="stretch">
-                {feedbackMessage ? (
+                {mutationError ? (
                   <Banner
                     status="error"
-                    title={feedbackMessage}
+                    title={mutationError}
                     container="card"
                   />
                 ) : null}
 
-                <TextInput
-                  label={copy.emailLabel}
-                  htmlName="email"
-                  type="email"
-                  value={email}
-                  onChange={setEmail}
-                  startIcon={Mail}
-                  required
-                  isDisabled={isSubmitting}
-                  {...(isEmailInvalid
-                    ? { status: { type: 'error' as const } }
-                    : {})}
-                  placeholder={copy.emailPlaceholder}
-                  size="lg"
-                  width="100%"
-                  autoComplete="email"
-                />
+                <FormLayout>
+                  <TextInput
+                    ref={emailInputRef}
+                    label={copy.emailLabel}
+                    htmlName="email"
+                    type="email"
+                    value={email}
+                    onChange={(nextEmail) => {
+                      setEmail(nextEmail)
+                      clearLoginFeedback('emailRequired', 'emailInvalid')
+                    }}
+                    startIcon={Mail}
+                    required
+                    isDisabled={isSubmitting}
+                    {...(isEmailInvalid && formErrorMessage
+                      ? {
+                          status: {
+                            type: 'error' as const,
+                            message: formErrorMessage,
+                          },
+                        }
+                      : {})}
+                    placeholder={copy.emailPlaceholder}
+                    size="lg"
+                    width="100%"
+                    autoComplete="email"
+                  />
 
-                <TextInput
-                  label={copy.passwordLabel}
-                  htmlName="password"
-                  type="password"
-                  value={password}
-                  onChange={setPassword}
-                  required
-                  isDisabled={isSubmitting}
-                  {...(isPasswordInvalid
-                    ? { status: { type: 'error' as const } }
-                    : {})}
-                  placeholder={copy.passwordPlaceholder}
-                  size="lg"
-                  width="100%"
-                  autoComplete="current-password"
-                />
+                  <TextInput
+                    ref={passwordInputRef}
+                    label={copy.passwordLabel}
+                    htmlName="password"
+                    type="password"
+                    value={password}
+                    onChange={(nextPassword) => {
+                      setPassword(nextPassword)
+                      clearLoginFeedback('passwordRequired')
+                    }}
+                    required
+                    isDisabled={isSubmitting}
+                    {...(isPasswordInvalid && formErrorMessage
+                      ? {
+                          status: {
+                            type: 'error' as const,
+                            message: formErrorMessage,
+                          },
+                        }
+                      : {})}
+                    placeholder={copy.passwordPlaceholder}
+                    size="lg"
+                    width="100%"
+                    autoComplete="current-password"
+                  />
+                </FormLayout>
 
                 {loginMutation.isSuccess ? (
                   <Banner status="success" title={copy.successMessage} />

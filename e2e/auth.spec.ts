@@ -25,6 +25,22 @@ test('shows the first registration error in view on a short viewport', async ({
   await expect(emailError).toBeInViewport()
 })
 
+test('shows the first login error in view on a short viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 667 })
+  await page.goto('/login')
+
+  await page.getByRole('button', { name: '로그인', exact: true }).click()
+
+  const emailInput = page.getByLabel('이메일')
+  const emailError = page.getByText('이메일을 입력해 주세요.')
+
+  await expect(emailInput).toBeFocused()
+  await expect(emailInput).toBeInViewport()
+  await expect(emailError).toBeInViewport()
+})
+
 test('refreshes expired current user requests before showing signed-in UI', async ({
   page,
 }) => {

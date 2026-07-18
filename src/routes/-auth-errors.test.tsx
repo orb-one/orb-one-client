@@ -34,12 +34,68 @@ it('shows the Korean server message for invalid login credentials', async () => 
   mockApiError('INVALID_CREDENTIALS', serverMessage, 401)
   renderRoute(<LoginPage />)
 
-  await userEvent.type(screen.getByLabelText('이메일'), 'user@example.com')
+  const emailInput = screen.getByLabelText('이메일')
+
+  await userEvent.type(emailInput, 'user@example.com')
   await userEvent.type(screen.getByLabelText('비밀번호'), 'wrong-password')
   await userEvent.click(screen.getByRole('button', { name: '로그인' }))
 
   expect(await screen.findByRole('alert')).toHaveTextContent(serverMessage)
+
+  await userEvent.clear(emailInput)
+  await userEvent.type(emailInput, 'another@example.com')
+
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 })
+
+it('keeps native login field semantics', () => {
+  renderRoute(<LoginPage />)
+
+  const emailInput = screen.getByLabelText('이메일')
+  const passwordInput = screen.getByLabelText('비밀번호')
+
+  expect(emailInput).toHaveAttribute('name', 'email')
+  expect(emailInput).toHaveAttribute('autocomplete', 'email')
+  expect(emailInput).toBeRequired()
+  expect(passwordInput).toHaveAttribute('name', 'password')
+  expect(passwordInput).toHaveAttribute('autocomplete', 'current-password')
+  expect(passwordInput).toBeRequired()
+})
+
+it.each([
+  ['required email', { email: '' }, '이메일', '이메일을 입력해 주세요.'],
+  [
+    'invalid email',
+    { email: 'user.example.com' },
+    '이메일',
+    '올바른 이메일 형식으로 입력해 주세요.',
+  ],
+  [
+    'required password',
+    { password: '' },
+    '비밀번호',
+    '비밀번호를 입력해 주세요.',
+  ],
+] as const)(
+  'connects and focuses the %s login error',
+  async (_caseName, overrides, targetLabel, message) => {
+    renderRoute(<LoginPage />)
+    await fillLoginForm({
+      email: 'user@example.com',
+      password: 'password123!',
+      ...overrides,
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: '로그인' }))
+
+    const targetInput = screen.getByLabelText(targetLabel, { exact: true })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(targetInput).toHaveAttribute('aria-invalid', 'true')
+    expect(targetInput).toHaveAccessibleDescription(message)
+    await waitFor(() => expect(targetInput).toHaveFocus())
+  },
+)
 
 it('shows the Korean server message for duplicate registration emails', async () => {
   const serverMessage = '이미 가입된 이메일입니다.'
@@ -204,6 +260,19 @@ async function fillRegistrationForm(values: {
     ['닉네임', values.nickname],
     ['비밀번호', values.password],
     ['비밀번호 확인', values.passwordConfirm],
+  ] as const
+
+  for (const [label, value] of inputs) {
+    if (value.length > 0) {
+      await userEvent.type(screen.getByLabelText(label, { exact: true }), value)
+    }
+  }
+}
+
+async function fillLoginForm(values: { email: string; password: string }) {
+  const inputs = [
+    ['이메일', values.email],
+    ['비밀번호', values.password],
   ] as const
 
   for (const [label, value] of inputs) {
