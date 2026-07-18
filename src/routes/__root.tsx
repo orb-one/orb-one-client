@@ -8,11 +8,12 @@ import { NavIcon } from '@astryxdesign/core/NavIcon'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
 import { TopNav, TopNavHeading } from '@astryxdesign/core/TopNav'
+import { useToast } from '@astryxdesign/core/Toast'
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { LogOut, Orbit } from 'lucide-react'
-import { toast } from 'sonner'
+import { useRef } from 'react'
 
 import { logoutAccount } from '@/lib/api/auth'
 import { AuthSessionExpiredError } from '@/lib/api/client'
@@ -66,6 +67,8 @@ function RootAuthNav() {
   const copy = t.navigation
   const navigate = Route.useNavigate()
   const queryClient = useQueryClient()
+  const showToast = useToast()
+  const dismissLogoutErrorToastRef = useRef<(() => void) | null>(null)
   const currentUserQuery = useQuery(currentUserQueryOptions())
   const logoutMutation = useMutation({
     mutationFn: logoutAccount,
@@ -77,7 +80,7 @@ function RootAuthNav() {
   async function handleLogoutSuccess() {
     // 실제 로그아웃 성공 후 /users/me mock도 비로그인 상태로 맞춘다.
     await signOutMockUser()
-    toast.dismiss(logoutErrorToastId)
+    dismissLogoutErrorToast()
     queryClient.setQueryData(currentUserQueryKey, null)
     void queryClient.invalidateQueries({ queryKey: currentUserQueryKey })
     void navigate({ to: '/' })
@@ -88,9 +91,20 @@ function RootAuthNav() {
       return
     }
 
-    toast.error(copy.logoutError, {
-      id: logoutErrorToastId,
+    dismissLogoutErrorToast()
+    dismissLogoutErrorToastRef.current = showToast({
+      body: copy.logoutError,
+      type: 'error',
+      isAutoHide: true,
+      autoHideDuration: 5000,
+      uniqueID: logoutErrorToastId,
+      collisionBehavior: 'overwrite',
     })
+  }
+
+  function dismissLogoutErrorToast() {
+    dismissLogoutErrorToastRef.current?.()
+    dismissLogoutErrorToastRef.current = null
   }
 
   if (currentUserQuery.isPending) {
@@ -129,7 +143,7 @@ function RootAuthNav() {
           isDisabled={logoutMutation.isPending}
           icon={<Icon icon={LogOut} color="inherit" />}
           onClick={() => {
-            toast.dismiss(logoutErrorToastId)
+            dismissLogoutErrorToast()
             logoutMutation.mutate()
           }}
         />

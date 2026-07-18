@@ -36,16 +36,16 @@ src/routes/-auth-errors.test.tsx
 - 제목 끝에 마침표를 붙이지 않습니다.
 - `Co-Authored-By` 시그니처를 사용하지 않습니다.
 
-| type       | 의미                                             |
-| ---------- | ------------------------------------------------ |
-| `feat`     | 새 기능, 사용자에게 보이는 UI/flow 추가          |
-| `fix`      | 버그 수정, 잘못된 UI/상태/API 동작 수정          |
-| `refactor` | 동작 변경 없는 구조 개선                         |
-| `docs`     | README, PR template, 주석 등 문서 변경           |
-| `chore`    | 의존성, shadcn/ui 추가, repo 설정, 기타 유지보수 |
-| `test`     | 테스트 추가/수정                                 |
-| `ci`       | GitHub Actions, hook, 자동화 변경                |
-| `style`    | 포맷팅, CSS class 정리, 시각적 스타일만 변경     |
+| type       | 의미                                            |
+| ---------- | ----------------------------------------------- |
+| `feat`     | 새 기능, 사용자에게 보이는 UI/flow 추가         |
+| `fix`      | 버그 수정, 잘못된 UI/상태/API 동작 수정         |
+| `refactor` | 동작 변경 없는 구조 개선                        |
+| `docs`     | README, PR template, 주석 등 문서 변경          |
+| `chore`    | 의존성, design system, repo 설정, 기타 유지보수 |
+| `test`     | 테스트 추가/수정                                |
+| `ci`       | GitHub Actions, hook, 자동화 변경               |
+| `style`    | 포맷팅, CSS class 정리, 시각적 스타일만 변경    |
 
 ### 본문
 

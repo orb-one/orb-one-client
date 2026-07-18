@@ -10,7 +10,7 @@ React, TypeScript, Vite 기반 frontend 프로젝트입니다.
 - TanStack Router
 - TanStack Query
 - Zustand
-- shadcn/ui, Radix UI
+- Astryx Design System
 - Tailwind CSS v4
 - ESLint, Prettier
 - Vitest, Testing Library
@@ -81,7 +81,6 @@ src/
 - `src/lib/api/client.ts`: 공통 API client
 - `src/routes/`: TanStack Router route 파일
 - `src/routeTree.gen.ts`: TanStack Router generated route tree
-- `src/components/ui/`: shadcn/ui component
 
 ## Environment Variables
 
@@ -157,8 +156,8 @@ route는 `src/routes/` 아래에 TanStack Router file route로 추가합니다.
 
 ## UI
 
-shared UI는 `src/components/`에 둡니다.
-shadcn/ui component는 필요한 것만 추가하고, Radix UI 기반 접근성 패턴을 유지합니다.
+shared UI는 `src/components/`에 두고 Astryx component와 token을 우선 사용합니다.
+Tailwind CSS는 layout과 Astryx token 기반 override에만 사용합니다.
 
 UI 변경 시 다음 상태를 함께 확인합니다.
 

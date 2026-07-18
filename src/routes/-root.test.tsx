@@ -1,12 +1,23 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
+import { logoutAccount } from '@/lib/api/auth'
 import { currentUserQueryKey } from '@/lib/auth/auth-queries'
+import { messages } from '@/lib/i18n/messages'
 import { useAppStore } from '@/stores/use-app-store'
 
 const navigate = vi.fn()
+const { dismissToast, showToast } = vi.hoisted(() => {
+  const dismissToast = vi.fn()
+
+  return {
+    dismissToast,
+    showToast: vi.fn(() => dismissToast),
+  }
+})
 
 vi.mock('@tanstack/react-router', () => ({
   createRootRoute: <TOptions extends object>(options: TOptions) => ({
@@ -16,11 +27,8 @@ vi.mock('@tanstack/react-router', () => ({
   Outlet: () => <span>Route content</span>,
 }))
 
-vi.mock('sonner', () => ({
-  toast: {
-    dismiss: vi.fn(),
-    error: vi.fn(),
-  },
+vi.mock('@astryxdesign/core/Toast', () => ({
+  useToast: () => showToast,
 }))
 
 vi.mock('@/lib/api/auth', () => ({
@@ -82,6 +90,31 @@ it('uses the active locale for the application navigation', () => {
   })
 
   expect(within(navigation).getByRole('link', { name: 'Login' })).toBeVisible()
+})
+
+it('shows and dismisses an Astryx toast when logout fails', async () => {
+  vi.mocked(logoutAccount).mockRejectedValue(new Error('Logout failed'))
+  renderRoot({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+
+  await userEvent.click(screen.getByRole('button', { name: '로그아웃' }))
+
+  expect(showToast).toHaveBeenCalledWith({
+    body: messages.ko.navigation.logoutError,
+    type: 'error',
+    isAutoHide: true,
+    autoHideDuration: 5000,
+    uniqueID: 'auth.logout.error',
+    collisionBehavior: 'overwrite',
+  })
+
+  await userEvent.click(screen.getByRole('button', { name: '로그아웃' }))
+
+  expect(showToast).toHaveBeenCalledTimes(2)
+  expect(dismissToast).toHaveBeenCalledOnce()
 })
 
 function renderRoot(currentUser: CurrentUser) {

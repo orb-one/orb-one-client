@@ -7,7 +7,7 @@
 - TanStack Query로 server state 관리
 - Zustand로 client/UI state 관리
 - Astryx Design System, Tailwind CSS 기반 UI 구성
-- 기존 shadcn/ui, Radix UI 화면은 route 단위로 점진적으로 Astryx로 전환
+- Astryx Design System을 단일 UI component 계층으로 사용
 
 ## Required Commands
 
@@ -60,7 +60,7 @@
 
 - 신규 UI와 전환이 완료된 화면은 Astryx 컴포넌트와 token을 우선 사용
 - Tailwind CSS는 layout과 token-backed override에만 사용
-- 기존 shadcn/ui, Radix UI 컴포넌트와 `legacy-*` utility는 마이그레이션 기간에만 유지
+- shadcn/ui, Radix UI와 `legacy-*` utility를 새로 도입하지 않음
 - desktop/mobile 상태 확인
 - loading/empty/error state 고려
 - 버튼, 입력, 메뉴, 토글 등 신규 interactive UI는 Astryx 패턴 우선 사용
