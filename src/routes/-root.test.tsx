@@ -1,0 +1,122 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { cleanup, render, screen, within } from '@testing-library/react'
+import type { ReactNode } from 'react'
+import { afterEach, expect, it, vi } from 'vitest'
+
+import { currentUserQueryKey } from '@/lib/auth/auth-queries'
+import { useAppStore } from '@/stores/use-app-store'
+
+const navigate = vi.fn()
+
+vi.mock('@tanstack/react-router', () => ({
+  createRootRoute: <TOptions extends object>(options: TOptions) => ({
+    ...options,
+    useNavigate: () => navigate,
+  }),
+  Outlet: () => <span>Route content</span>,
+}))
+
+vi.mock('sonner', () => ({
+  toast: {
+    dismiss: vi.fn(),
+    error: vi.fn(),
+  },
+}))
+
+vi.mock('@/lib/api/auth', () => ({
+  getCurrentUser: vi.fn(() => new Promise(() => undefined)),
+  logoutAccount: vi.fn(),
+}))
+
+import { RootLayout } from '@/routes/__root'
+
+afterEach(() => {
+  cleanup()
+  useAppStore.getState().setLocale('ko')
+  vi.clearAllMocks()
+})
+
+it('renders the signed-out application shell with accessible navigation', () => {
+  renderRoot(null)
+
+  const navigation = screen.getByRole('navigation', { name: '주요 탐색' })
+
+  expect(
+    within(navigation).getByRole('link', { name: 'Orb One' }),
+  ).toHaveAttribute('href', '/')
+  expect(
+    within(navigation).getByRole('link', { name: '로그인' }),
+  ).toHaveAttribute('href', '/login')
+  expect(screen.getByRole('main')).toContainElement(
+    screen.getByText('Route content'),
+  )
+})
+
+it('renders the signed-in user and logout action in the application shell', () => {
+  renderRoot({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+
+  expect(
+    screen.getByRole('img', { name: '현재 로그인한 사용자' }),
+  ).toBeVisible()
+  expect(screen.getByTestId('current-user')).toHaveTextContent('orb-user')
+  expect(screen.getByRole('button', { name: '로그아웃' })).toBeEnabled()
+})
+
+it('announces when the sign-in state is loading', () => {
+  renderPendingRoot()
+
+  expect(screen.getByRole('status')).toHaveTextContent('로그인 상태 확인 중')
+})
+
+it('uses the active locale for the application navigation', () => {
+  useAppStore.getState().setLocale('en')
+
+  renderRoot(null)
+
+  const navigation = screen.getByRole('navigation', {
+    name: 'Main navigation',
+  })
+
+  expect(within(navigation).getByRole('link', { name: 'Login' })).toBeVisible()
+})
+
+function renderRoot(currentUser: CurrentUser) {
+  const queryClient = createQueryClient()
+
+  queryClient.setQueryData(currentUserQueryKey, currentUser)
+
+  return renderWithClient(queryClient, <RootLayout />)
+}
+
+function renderPendingRoot() {
+  return renderWithClient(createQueryClient(), <RootLayout />)
+}
+
+function createQueryClient() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        staleTime: Number.POSITIVE_INFINITY,
+      },
+    },
+  })
+
+  return queryClient
+}
+
+function renderWithClient(queryClient: QueryClient, children: ReactNode) {
+  return render(
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
+  )
+}
+
+type CurrentUser = {
+  id: string
+  email: string
+  nickname: string
+} | null

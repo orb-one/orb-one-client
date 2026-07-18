@@ -32,7 +32,7 @@ function DashboardPage() {
   })
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10">
+    <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10">
       <section className="space-y-4">
         <div className="text-legacy-muted-foreground rounded-legacy-md inline-flex items-center gap-2 border px-2.5 py-1 text-sm">
           <Activity className="size-4" />
@@ -83,7 +83,7 @@ function DashboardPage() {
           </div>
         </div>
       </section>
-    </main>
+    </section>
   )
 }
 

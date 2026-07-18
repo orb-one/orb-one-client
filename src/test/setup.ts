@@ -13,3 +13,27 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: () => false,
   }),
 })
+
+class ResizeObserverMock implements ResizeObserver {
+  observe() {
+    return undefined
+  }
+
+  unobserve() {
+    return undefined
+  }
+
+  disconnect() {
+    return undefined
+  }
+}
+
+Object.defineProperty(globalThis, 'ResizeObserver', {
+  writable: true,
+  value: ResizeObserverMock,
+})
+
+Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+  writable: true,
+  value: () => null,
+})

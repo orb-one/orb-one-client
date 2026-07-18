@@ -107,8 +107,11 @@ export function LoginPage() {
   }
 
   return (
-    <VStack as="main" width="100%">
-      <Center width="100%" minHeight="calc(100svh - 3.5rem)">
+    <VStack width="100%">
+      <Center
+        width="100%"
+        minHeight="calc(100svh - var(--appshell-header-height, 3rem))"
+      >
         <VStack
           gap={5}
           width="100%"
