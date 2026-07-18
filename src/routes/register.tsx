@@ -1,9 +1,25 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Banner } from '@astryxdesign/core/Banner'
+import { Button } from '@astryxdesign/core/Button'
+import { Card } from '@astryxdesign/core/Card'
+import { Center } from '@astryxdesign/core/Center'
+import { FormLayout } from '@astryxdesign/core/FormLayout'
+import { Heading } from '@astryxdesign/core/Heading'
+import { Icon } from '@astryxdesign/core/Icon'
+import { Link } from '@astryxdesign/core/Link'
+import { Text } from '@astryxdesign/core/Text'
+import { TextInput } from '@astryxdesign/core/TextInput'
+import { VStack } from '@astryxdesign/core/VStack'
 import { useMutation } from '@tanstack/react-query'
-import { ArrowLeft, Mail, ShieldCheck, UserPlus } from 'lucide-react'
-import { useState, type ComponentProps } from 'react'
+import { createFileRoute } from '@tanstack/react-router'
+import {
+  LockKeyhole,
+  Mail,
+  ShieldCheck,
+  UserPlus,
+  UserRound,
+} from 'lucide-react'
+import { useRef, useState, type ComponentProps } from 'react'
 
-import { Button } from '@/components/ui/button'
 import { registerAccount, type RegisterRequest } from '@/lib/api/auth'
 import { getAuthErrorMessage } from '@/lib/auth/auth-errors'
 import { rememberMockRegisteredUser } from '@/lib/auth/mock-auth-session'
@@ -24,6 +40,14 @@ export function RegisterPage() {
   const { locale, t } = useI18n()
   const copy = t.auth.register
   const navigate = Route.useNavigate()
+  const [email, setEmail] = useState('')
+  const [nickname, setNickname] = useState('')
+  const [password, setPassword] = useState('')
+  const [passwordConfirm, setPasswordConfirm] = useState('')
+  const emailInputRef = useRef<HTMLInputElement>(null)
+  const nicknameInputRef = useRef<HTMLInputElement>(null)
+  const passwordInputRef = useRef<HTMLInputElement>(null)
+  const passwordConfirmInputRef = useRef<HTMLInputElement>(null)
   const [formError, setFormError] = useState<RegisterFormError | null>(null)
   const registerMutation = useMutation({
     mutationFn: registerAccount,
@@ -34,7 +58,6 @@ export function RegisterPage() {
     ? getAuthErrorMessage(registerMutation.error, locale, copy.genericError)
     : null
   const formErrorMessage = formError ? copy[formError] : null
-  const feedbackMessage = formErrorMessage ?? mutationError
   const isEmailInvalid =
     formError === 'emailRequired' || formError === 'emailInvalid'
   const isPasswordMismatch = formError === 'passwordMismatch'
@@ -58,6 +81,29 @@ export function RegisterPage() {
     setFormError(null)
   }
 
+  function clearRegisterFeedback(...errors: RegisterFormError[]) {
+    if (registerMutation.isError) {
+      registerMutation.reset()
+    }
+
+    setFormError((currentError) =>
+      currentError && errors.includes(currentError) ? null : currentError,
+    )
+  }
+
+  function focusInvalidField(error: RegisterFormError) {
+    const inputRef = {
+      emailRequired: emailInputRef,
+      emailInvalid: emailInputRef,
+      nicknameRequired: nicknameInputRef,
+      passwordRequired: passwordInputRef,
+      passwordTooShort: passwordInputRef,
+      passwordMismatch: passwordConfirmInputRef,
+    }[error]
+
+    inputRef.current?.focus()
+  }
+
   const handleSubmit: FormSubmitHandler = (event) => {
     event.preventDefault()
 
@@ -68,6 +114,9 @@ export function RegisterPage() {
 
     if (!validation.ok) {
       setFormError(validation.error)
+      requestAnimationFrame(() => {
+        focusInvalidField(validation.error)
+      })
       return
     }
 
@@ -75,159 +124,183 @@ export function RegisterPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-5xl items-center px-4 py-10">
-      <section className="grid w-full gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-center">
-        <div className="max-w-xl space-y-5">
-          <div className="text-legacy-muted-foreground rounded-legacy-md inline-flex items-center gap-2 border px-2.5 py-1 text-sm">
-            <ShieldCheck className="size-4" />
-            {copy.eyebrow}
-          </div>
-          <div className="space-y-3">
-            <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
+    <VStack as="main" width="100%">
+      <Center width="100%" minHeight="calc(100svh - 3.5rem)">
+        <VStack
+          gap={5}
+          width="100%"
+          maxWidth={432}
+          paddingInline={4}
+          paddingBlock={10}
+          hAlign="center"
+        >
+          <VStack gap={2} hAlign="center">
+            <Icon icon={ShieldCheck} size="lg" color="accent" />
+            <Text type="supporting" color="secondary">
+              {copy.eyebrow}
+            </Text>
+            <Heading level={1} justify="center">
               {copy.title}
-            </h1>
-            <p className="text-legacy-muted-foreground max-w-md text-base leading-7">
+            </Heading>
+            <Text type="body" color="secondary" justify="center">
               {copy.description}
-            </p>
-          </div>
-          <Button asChild type="button" variant="outline">
-            <Link to="/login">
-              <ArrowLeft className="size-4" />
+            </Text>
+            <Link href="/login" isStandalone>
               {copy.backToLogin}
             </Link>
-          </Button>
-        </div>
+          </VStack>
 
-        {/* 브라우저 기본 validation UI 대신 i18n 가능한 검증 결과만 노출 */}
-        <form
-          className="bg-legacy-card text-legacy-card-foreground rounded-legacy-md border p-6 shadow-sm"
-          noValidate
-          onSubmit={handleSubmit}
-        >
-          <div className="mb-6">
-            <p className="font-semibold">{copy.title}</p>
-          </div>
+          <Card padding={8} width="100%">
+            {/* 브라우저 기본 validation UI 대신 i18n 가능한 검증 결과만 노출 */}
+            <form noValidate onSubmit={handleSubmit}>
+              <VStack gap={4} hAlign="stretch">
+                {mutationError ? (
+                  <Banner
+                    status="error"
+                    title={mutationError}
+                    container="card"
+                  />
+                ) : null}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="register-email">
-                {copy.emailLabel}
-              </label>
-              <div className="relative">
-                <Mail className="text-legacy-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                <input
-                  id="register-email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  disabled={isSubmitting}
-                  aria-invalid={isEmailInvalid || undefined}
-                  placeholder={copy.emailPlaceholder}
-                  className="border-legacy-input bg-legacy-background placeholder:text-legacy-muted-foreground focus-visible:border-legacy-ring focus-visible:ring-legacy-ring/50 rounded-legacy-md h-10 w-full border px-9 text-sm transition-colors outline-none focus-visible:ring-3"
+                <FormLayout>
+                  <TextInput
+                    ref={emailInputRef}
+                    label={copy.emailLabel}
+                    htmlName="email"
+                    type="email"
+                    value={email}
+                    onChange={(nextEmail) => {
+                      setEmail(nextEmail)
+                      clearRegisterFeedback('emailRequired', 'emailInvalid')
+                    }}
+                    startIcon={Mail}
+                    required
+                    isDisabled={isSubmitting}
+                    {...(isEmailInvalid && formErrorMessage
+                      ? {
+                          status: {
+                            type: 'error' as const,
+                            message: formErrorMessage,
+                          },
+                        }
+                      : {})}
+                    placeholder={copy.emailPlaceholder}
+                    size="lg"
+                    width="100%"
+                    autoComplete="email"
+                  />
+
+                  <TextInput
+                    ref={nicknameInputRef}
+                    label={copy.nicknameLabel}
+                    htmlName="nickname"
+                    type="text"
+                    value={nickname}
+                    onChange={(nextNickname) => {
+                      setNickname(nextNickname)
+                      clearRegisterFeedback('nicknameRequired')
+                    }}
+                    startIcon={UserRound}
+                    required
+                    isDisabled={isSubmitting}
+                    {...(isNicknameInvalid && formErrorMessage
+                      ? {
+                          status: {
+                            type: 'error' as const,
+                            message: formErrorMessage,
+                          },
+                        }
+                      : {})}
+                    placeholder={copy.nicknamePlaceholder}
+                    size="lg"
+                    width="100%"
+                    autoComplete="username"
+                  />
+
+                  <TextInput
+                    ref={passwordInputRef}
+                    label={copy.passwordLabel}
+                    htmlName="password"
+                    type="password"
+                    value={password}
+                    onChange={(nextPassword) => {
+                      setPassword(nextPassword)
+                      clearRegisterFeedback(
+                        'passwordRequired',
+                        'passwordTooShort',
+                        'passwordMismatch',
+                      )
+                    }}
+                    startIcon={LockKeyhole}
+                    required
+                    minLength={REGISTER_PASSWORD_MIN_LENGTH}
+                    isDisabled={isSubmitting}
+                    {...(isPasswordInvalid && formErrorMessage
+                      ? {
+                          status: {
+                            type: 'error' as const,
+                            message: formErrorMessage,
+                          },
+                        }
+                      : {})}
+                    placeholder={copy.passwordPlaceholder}
+                    size="lg"
+                    width="100%"
+                    autoComplete="new-password"
+                  />
+
+                  <TextInput
+                    ref={passwordConfirmInputRef}
+                    label={copy.passwordConfirmLabel}
+                    htmlName="passwordConfirm"
+                    type="password"
+                    value={passwordConfirm}
+                    onChange={(nextPasswordConfirm) => {
+                      setPasswordConfirm(nextPasswordConfirm)
+                      clearRegisterFeedback('passwordMismatch')
+                    }}
+                    startIcon={LockKeyhole}
+                    required
+                    minLength={REGISTER_PASSWORD_MIN_LENGTH}
+                    isDisabled={isSubmitting}
+                    {...(isPasswordMismatch && formErrorMessage
+                      ? {
+                          status: {
+                            type: 'error' as const,
+                            message: formErrorMessage,
+                          },
+                        }
+                      : {})}
+                    placeholder={copy.passwordConfirmPlaceholder}
+                    size="lg"
+                    width="100%"
+                    autoComplete="new-password"
+                  />
+                </FormLayout>
+
+                {registerMutation.isSuccess ? (
+                  <Banner status="success" title={copy.successMessage} />
+                ) : null}
+
+                <Button
+                  label={isSubmitting ? copy.submitting : copy.submit}
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  isLoading={isSubmitting}
+                  isDisabled={isSubmitting}
+                  icon={<Icon icon={UserPlus} color="inherit" />}
+                  className="w-full"
                 />
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <label
-                className="text-sm font-medium"
-                htmlFor="register-nickname"
-              >
-                {copy.nicknameLabel}
-              </label>
-              <input
-                id="register-nickname"
-                name="nickname"
-                type="text"
-                autoComplete="username"
-                required
-                disabled={isSubmitting}
-                aria-invalid={isNicknameInvalid || undefined}
-                placeholder={copy.nicknamePlaceholder}
-                className="border-legacy-input bg-legacy-background placeholder:text-legacy-muted-foreground focus-visible:border-legacy-ring focus-visible:ring-legacy-ring/50 rounded-legacy-md h-10 w-full border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label
-                className="text-sm font-medium"
-                htmlFor="register-password"
-              >
-                {copy.passwordLabel}
-              </label>
-              <input
-                id="register-password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={REGISTER_PASSWORD_MIN_LENGTH}
-                disabled={isSubmitting}
-                aria-invalid={isPasswordInvalid || undefined}
-                placeholder={copy.passwordPlaceholder}
-                className="border-legacy-input bg-legacy-background placeholder:text-legacy-muted-foreground focus-visible:border-legacy-ring focus-visible:ring-legacy-ring/50 rounded-legacy-md h-10 w-full border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label
-                className="text-sm font-medium"
-                htmlFor="register-password-confirm"
-              >
-                {copy.passwordConfirmLabel}
-              </label>
-              <input
-                id="register-password-confirm"
-                name="passwordConfirm"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={REGISTER_PASSWORD_MIN_LENGTH}
-                disabled={isSubmitting}
-                aria-invalid={isPasswordMismatch || undefined}
-                placeholder={copy.passwordConfirmPlaceholder}
-                className="border-legacy-input bg-legacy-background placeholder:text-legacy-muted-foreground focus-visible:border-legacy-ring focus-visible:ring-legacy-ring/50 rounded-legacy-md h-10 w-full border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
-              />
-            </div>
-          </div>
-
-          {feedbackMessage ? (
-            <p className="text-legacy-destructive mt-4 text-sm" role="alert">
-              {feedbackMessage}
-            </p>
-          ) : null}
-
-          {registerMutation.isSuccess ? (
-            <p
-              className="mt-4 text-sm text-emerald-700 dark:text-emerald-400"
-              role="status"
-            >
-              {copy.successMessage}
-            </p>
-          ) : null}
-
-          <Button
-            className="mt-6 w-full"
-            type="submit"
-            size="lg"
-            disabled={isSubmitting}
-          >
-            <UserPlus className="size-4" />
-            {isSubmitting ? copy.submitting : copy.submit}
-          </Button>
-
-          <p className="text-legacy-muted-foreground mt-4 text-center text-sm">
-            {copy.loginPrompt}{' '}
-            <Link
-              to="/login"
-              className="text-legacy-foreground font-medium underline-offset-4 hover:underline"
-            >
-              {copy.loginLink}
-            </Link>
-          </p>
-        </form>
-      </section>
-    </main>
+                <Text type="supporting" color="secondary" justify="center">
+                  {copy.loginPrompt} <Link href="/login">{copy.loginLink}</Link>
+                </Text>
+              </VStack>
+            </form>
+          </Card>
+        </VStack>
+      </Center>
+    </VStack>
   )
 }

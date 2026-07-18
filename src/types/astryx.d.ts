@@ -7,6 +7,7 @@ declare module '@astryxdesign/core/TextInput' {
      * expose these standard input attributes in TextInputProps yet.
      */
     autoComplete?: string
+    minLength?: number
     required?: boolean
   }
 }
