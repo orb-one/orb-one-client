@@ -1,7 +1,9 @@
 import { QueryClient } from '@tanstack/react-query'
+import { cleanup, render } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { toast } from 'sonner'
 
+import { AppProviders } from '@/app/providers'
 import {
   handleAuthSessionExpiredError,
   sessionExpiredToastId,
@@ -19,6 +21,9 @@ vi.mock('sonner', () => ({
 }))
 
 afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+  document.documentElement.classList.remove('dark')
   useAppStore.getState().setLocale('ko')
   vi.clearAllMocks()
 })
@@ -87,3 +92,35 @@ it('ignores non-session API errors', () => {
   })
   expect(toast.error).not.toHaveBeenCalled()
 })
+
+it('keeps the legacy dark class aligned with the Astryx system mode', () => {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string): MediaQueryList => createMediaQuery(query, true)),
+  )
+
+  const { unmount } = render(
+    <AppProviders>
+      <span>App</span>
+    </AppProviders>,
+  )
+
+  expect(document.documentElement).toHaveClass('dark')
+
+  unmount()
+
+  expect(document.documentElement).not.toHaveClass('dark')
+})
+
+function createMediaQuery(query: string, matches: boolean): MediaQueryList {
+  return {
+    matches,
+    media: query,
+    onchange: null,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    dispatchEvent: () => false,
+  }
+}

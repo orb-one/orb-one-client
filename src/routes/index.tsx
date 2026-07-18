@@ -34,7 +34,7 @@ function DashboardPage() {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10">
       <section className="space-y-4">
-        <div className="text-muted-foreground inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-sm">
+        <div className="text-legacy-muted-foreground rounded-legacy-md inline-flex items-center gap-2 border px-2.5 py-1 text-sm">
           <Activity className="size-4" />
           Frontend starter
         </div>
@@ -42,7 +42,7 @@ function DashboardPage() {
           <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
             Orb One client
           </h1>
-          <p className="text-muted-foreground text-base leading-7">
+          <p className="text-legacy-muted-foreground text-base leading-7">
             React, TypeScript, Zustand, TanStack Router, TanStack Query, and
             shadcn/ui are wired together and ready to grow.
           </p>
@@ -64,11 +64,11 @@ function DashboardPage() {
         />
       </section>
 
-      <section className="bg-card text-card-foreground rounded-lg border p-5">
+      <section className="bg-legacy-card text-legacy-card-foreground rounded-legacy-lg border p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <h2 className="text-lg font-medium">Zustand store</h2>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-legacy-muted-foreground text-sm">
               Local UI state is isolated from server state.
             </p>
           </div>
@@ -89,11 +89,11 @@ function DashboardPage() {
 
 function InfoPanel({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-card text-card-foreground rounded-lg border p-4">
-      <div className="bg-muted mb-3 flex size-8 items-center justify-center rounded-md">
+    <div className="bg-legacy-card text-legacy-card-foreground rounded-legacy-lg border p-4">
+      <div className="bg-legacy-muted rounded-legacy-md mb-3 flex size-8 items-center justify-center">
         <Database className="size-4" />
       </div>
-      <p className="text-muted-foreground text-sm">{label}</p>
+      <p className="text-legacy-muted-foreground text-sm">{label}</p>
       <p className="mt-1 font-medium">{value}</p>
     </div>
   )

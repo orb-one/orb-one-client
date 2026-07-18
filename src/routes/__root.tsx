@@ -23,13 +23,13 @@ function RootLayout() {
   const t = useTranslations()
 
   return (
-    <div className="bg-background text-foreground min-h-svh">
+    <div className="bg-legacy-background text-legacy-foreground min-h-svh">
       <header className="border-b">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4">
           <Link to="/" className="text-sm font-semibold">
             {t.common.productName}
           </Link>
-          <nav className="text-muted-foreground flex items-center gap-3 text-sm">
+          <nav className="text-legacy-muted-foreground flex items-center gap-3 text-sm">
             <RootAuthNav />
           </nav>
         </div>
@@ -75,10 +75,10 @@ function RootAuthNav() {
     return (
       <div className="flex min-w-0 items-center gap-2">
         <div
-          className="text-foreground flex min-w-0 items-center gap-1.5"
+          className="text-legacy-foreground flex min-w-0 items-center gap-1.5"
           aria-label={copy.currentUser}
         >
-          <UserCircle className="text-muted-foreground size-4" />
+          <UserCircle className="text-legacy-muted-foreground size-4" />
           <span className="max-w-32 truncate sm:max-w-40">
             {currentUser.nickname}
           </span>
@@ -103,7 +103,7 @@ function RootAuthNav() {
   return (
     <Link
       to="/login"
-      className="hover:text-foreground [&.active]:text-foreground transition-colors"
+      className="hover:text-legacy-foreground [&.active]:text-legacy-foreground transition-colors"
     >
       {copy.login}
     </Link>

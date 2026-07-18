@@ -1,7 +1,15 @@
-@import 'tailwindcss';
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
+@import '@astryxdesign/theme-neutral/theme.css';
+@import '@astryxdesign/core/tailwind-theme.css';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
-@import '@fontsource-variable/geist';
+@import 'tailwindcss/utilities.css' layer(utilities);
+@import '@fontsource-variable/geist' layer(theme);
 
 @custom-variant dark (&:is(.dark *));
 
@@ -14,44 +22,44 @@ body {
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-legacy-sidebar-ring: var(--sidebar-ring);
+  --color-legacy-sidebar-border: var(--sidebar-border);
+  --color-legacy-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-legacy-sidebar-accent: var(--sidebar-accent);
+  --color-legacy-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-legacy-sidebar-primary: var(--sidebar-primary);
+  --color-legacy-sidebar-foreground: var(--sidebar-foreground);
+  --color-legacy-sidebar: var(--sidebar);
+  --color-legacy-chart-5: var(--chart-5);
+  --color-legacy-chart-4: var(--chart-4);
+  --color-legacy-chart-3: var(--chart-3);
+  --color-legacy-chart-2: var(--chart-2);
+  --color-legacy-chart-1: var(--chart-1);
+  --color-legacy-ring: var(--ring);
+  --color-legacy-input: var(--input);
+  --color-legacy-border: var(--border);
+  --color-legacy-destructive: var(--destructive);
+  --color-legacy-accent-foreground: var(--accent-foreground);
+  --color-legacy-accent: var(--accent);
+  --color-legacy-muted-foreground: var(--muted-foreground);
+  --color-legacy-muted: var(--muted);
+  --color-legacy-secondary-foreground: var(--secondary-foreground);
+  --color-legacy-secondary: var(--secondary);
+  --color-legacy-primary-foreground: var(--primary-foreground);
+  --color-legacy-primary: var(--primary);
+  --color-legacy-popover-foreground: var(--popover-foreground);
+  --color-legacy-popover: var(--popover);
+  --color-legacy-card-foreground: var(--card-foreground);
+  --color-legacy-card: var(--card);
+  --color-legacy-foreground: var(--foreground);
+  --color-legacy-background: var(--background);
+  --radius-legacy-sm: calc(var(--radius) * 0.6);
+  --radius-legacy-md: calc(var(--radius) * 0.8);
+  --radius-legacy-lg: var(--radius);
+  --radius-legacy-xl: calc(var(--radius) * 1.4);
+  --radius-legacy-2xl: calc(var(--radius) * 1.8);
+  --radius-legacy-3xl: calc(var(--radius) * 2.2);
+  --radius-legacy-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
@@ -125,10 +133,10 @@ body {
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-legacy-border outline-legacy-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-legacy-background text-legacy-foreground;
   }
   html {
     @apply font-sans;

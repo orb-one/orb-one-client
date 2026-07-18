@@ -78,7 +78,7 @@ export function RegisterPage() {
     <main className="mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-5xl items-center px-4 py-10">
       <section className="grid w-full gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-center">
         <div className="max-w-xl space-y-5">
-          <div className="text-muted-foreground inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-sm">
+          <div className="text-legacy-muted-foreground rounded-legacy-md inline-flex items-center gap-2 border px-2.5 py-1 text-sm">
             <ShieldCheck className="size-4" />
             {copy.eyebrow}
           </div>
@@ -86,7 +86,7 @@ export function RegisterPage() {
             <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
               {copy.title}
             </h1>
-            <p className="text-muted-foreground max-w-md text-base leading-7">
+            <p className="text-legacy-muted-foreground max-w-md text-base leading-7">
               {copy.description}
             </p>
           </div>
@@ -100,7 +100,7 @@ export function RegisterPage() {
 
         {/* 브라우저 기본 validation UI 대신 i18n 가능한 검증 결과만 노출 */}
         <form
-          className="bg-card text-card-foreground rounded-md border p-6 shadow-sm"
+          className="bg-legacy-card text-legacy-card-foreground rounded-legacy-md border p-6 shadow-sm"
           noValidate
           onSubmit={handleSubmit}
         >
@@ -114,7 +114,7 @@ export function RegisterPage() {
                 {copy.emailLabel}
               </label>
               <div className="relative">
-                <Mail className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <Mail className="text-legacy-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                 <input
                   id="register-email"
                   name="email"
@@ -124,7 +124,7 @@ export function RegisterPage() {
                   disabled={isSubmitting}
                   aria-invalid={isEmailInvalid || undefined}
                   placeholder={copy.emailPlaceholder}
-                  className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-9 text-sm transition-colors outline-none focus-visible:ring-3"
+                  className="border-legacy-input bg-legacy-background placeholder:text-legacy-muted-foreground focus-visible:border-legacy-ring focus-visible:ring-legacy-ring/50 rounded-legacy-md h-10 w-full border px-9 text-sm transition-colors outline-none focus-visible:ring-3"
                 />
               </div>
             </div>
@@ -145,7 +145,7 @@ export function RegisterPage() {
                 disabled={isSubmitting}
                 aria-invalid={isNicknameInvalid || undefined}
                 placeholder={copy.nicknamePlaceholder}
-                className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
+                className="border-legacy-input bg-legacy-background placeholder:text-legacy-muted-foreground focus-visible:border-legacy-ring focus-visible:ring-legacy-ring/50 rounded-legacy-md h-10 w-full border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
               />
             </div>
 
@@ -166,7 +166,7 @@ export function RegisterPage() {
                 disabled={isSubmitting}
                 aria-invalid={isPasswordInvalid || undefined}
                 placeholder={copy.passwordPlaceholder}
-                className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
+                className="border-legacy-input bg-legacy-background placeholder:text-legacy-muted-foreground focus-visible:border-legacy-ring focus-visible:ring-legacy-ring/50 rounded-legacy-md h-10 w-full border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
               />
             </div>
 
@@ -187,13 +187,13 @@ export function RegisterPage() {
                 disabled={isSubmitting}
                 aria-invalid={isPasswordMismatch || undefined}
                 placeholder={copy.passwordConfirmPlaceholder}
-                className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
+                className="border-legacy-input bg-legacy-background placeholder:text-legacy-muted-foreground focus-visible:border-legacy-ring focus-visible:ring-legacy-ring/50 rounded-legacy-md h-10 w-full border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
               />
             </div>
           </div>
 
           {feedbackMessage ? (
-            <p className="text-destructive mt-4 text-sm" role="alert">
+            <p className="text-legacy-destructive mt-4 text-sm" role="alert">
               {feedbackMessage}
             </p>
           ) : null}
@@ -217,11 +217,11 @@ export function RegisterPage() {
             {isSubmitting ? copy.submitting : copy.submit}
           </Button>
 
-          <p className="text-muted-foreground mt-4 text-center text-sm">
+          <p className="text-legacy-muted-foreground mt-4 text-center text-sm">
             {copy.loginPrompt}{' '}
             <Link
               to="/login"
-              className="text-foreground font-medium underline-offset-4 hover:underline"
+              className="text-legacy-foreground font-medium underline-offset-4 hover:underline"
             >
               {copy.loginLink}
             </Link>

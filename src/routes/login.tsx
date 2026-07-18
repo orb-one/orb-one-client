@@ -1,9 +1,18 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Banner } from '@astryxdesign/core/Banner'
+import { Button } from '@astryxdesign/core/Button'
+import { Card } from '@astryxdesign/core/Card'
+import { Center } from '@astryxdesign/core/Center'
+import { Heading } from '@astryxdesign/core/Heading'
+import { Icon } from '@astryxdesign/core/Icon'
+import { Link } from '@astryxdesign/core/Link'
+import { Text } from '@astryxdesign/core/Text'
+import { TextInput } from '@astryxdesign/core/TextInput'
+import { VStack } from '@astryxdesign/core/VStack'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, LogIn, Mail, ShieldCheck } from 'lucide-react'
+import { createFileRoute } from '@tanstack/react-router'
+import { LogIn, Mail, ShieldCheck } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 
-import { Button } from '@/components/ui/button'
 import { loginAccount, type LoginRequest } from '@/lib/api/auth'
 import { getAuthErrorMessage } from '@/lib/auth/auth-errors'
 import { signInMockUser } from '@/lib/auth/mock-auth-session'
@@ -25,6 +34,8 @@ export function LoginPage() {
   const copy = t.auth.login
   const navigate = Route.useNavigate()
   const queryClient = useQueryClient()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [formError, setFormError] = useState<LoginFormError | null>(null)
   const loginMutation = useMutation({
     mutationFn: loginAccount,
@@ -71,114 +82,103 @@ export function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100svh-3.5rem)] w-full max-w-5xl items-center px-4 py-10">
-      <section className="grid w-full gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-center">
-        <div className="max-w-xl space-y-5">
-          <div className="text-muted-foreground inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-sm">
-            <ShieldCheck className="size-4" />
-            {copy.eyebrow}
-          </div>
-          <div className="space-y-3">
-            <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
+    <VStack as="main" width="100%">
+      <Center width="100%" minHeight="calc(100svh - 3.5rem)">
+        <VStack
+          gap={5}
+          width="100%"
+          maxWidth={432}
+          paddingInline={4}
+          paddingBlock={10}
+          hAlign="center"
+        >
+          <VStack gap={2} hAlign="center">
+            <Icon icon={ShieldCheck} size="lg" color="accent" />
+            <Text type="supporting" color="secondary">
+              {copy.eyebrow}
+            </Text>
+            <Heading level={1} justify="center">
               {copy.title}
-            </h1>
-            <p className="text-muted-foreground max-w-md text-base leading-7">
+            </Heading>
+            <Text type="body" color="secondary" justify="center">
               {copy.description}
-            </p>
-          </div>
-          <Button asChild type="button" variant="outline">
-            <Link to="/">
-              <ArrowLeft className="size-4" />
+            </Text>
+            <Link href="/" isStandalone>
               {copy.backToHome}
             </Link>
-          </Button>
-        </div>
+          </VStack>
 
-        {/* 브라우저 기본 validation UI 대신 i18n 가능한 검증 결과만 노출 */}
-        <form
-          className="bg-card text-card-foreground rounded-md border p-6 shadow-sm"
-          noValidate
-          onSubmit={handleSubmit}
-        >
-          <div className="mb-6">
-            <p className="font-semibold">{copy.title}</p>
-          </div>
+          <Card padding={8} width="100%">
+            {/* 브라우저 기본 validation UI 대신 i18n 가능한 검증 결과만 노출 */}
+            <form noValidate onSubmit={handleSubmit}>
+              <VStack gap={4} hAlign="stretch">
+                {feedbackMessage ? (
+                  <Banner
+                    status="error"
+                    title={feedbackMessage}
+                    container="card"
+                  />
+                ) : null}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="login-email">
-                {copy.emailLabel}
-              </label>
-              <div className="relative">
-                <Mail className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                <input
-                  id="login-email"
-                  name="email"
+                <TextInput
+                  label={copy.emailLabel}
+                  htmlName="email"
                   type="email"
-                  autoComplete="email"
+                  value={email}
+                  onChange={setEmail}
+                  startIcon={Mail}
                   required
-                  disabled={isSubmitting}
-                  aria-invalid={isEmailInvalid || undefined}
+                  isDisabled={isSubmitting}
+                  {...(isEmailInvalid
+                    ? { status: { type: 'error' as const } }
+                    : {})}
                   placeholder={copy.emailPlaceholder}
-                  className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-9 text-sm transition-colors outline-none focus-visible:ring-3"
+                  size="lg"
+                  width="100%"
+                  autoComplete="email"
                 />
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="login-password">
-                {copy.passwordLabel}
-              </label>
-              <input
-                id="login-password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                disabled={isSubmitting}
-                aria-invalid={isPasswordInvalid || undefined}
-                placeholder={copy.passwordPlaceholder}
-                className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-3"
-              />
-            </div>
-          </div>
+                <TextInput
+                  label={copy.passwordLabel}
+                  htmlName="password"
+                  type="password"
+                  value={password}
+                  onChange={setPassword}
+                  required
+                  isDisabled={isSubmitting}
+                  {...(isPasswordInvalid
+                    ? { status: { type: 'error' as const } }
+                    : {})}
+                  placeholder={copy.passwordPlaceholder}
+                  size="lg"
+                  width="100%"
+                  autoComplete="current-password"
+                />
 
-          {feedbackMessage ? (
-            <p className="text-destructive mt-4 text-sm" role="alert">
-              {feedbackMessage}
-            </p>
-          ) : null}
+                {loginMutation.isSuccess ? (
+                  <Banner status="success" title={copy.successMessage} />
+                ) : null}
 
-          {loginMutation.isSuccess ? (
-            <p
-              className="mt-4 text-sm text-emerald-700 dark:text-emerald-400"
-              role="status"
-            >
-              {copy.successMessage}
-            </p>
-          ) : null}
+                <Button
+                  label={isSubmitting ? copy.submitting : copy.submit}
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  isLoading={isSubmitting}
+                  isDisabled={isSubmitting}
+                  icon={<Icon icon={LogIn} color="inherit" />}
+                  className="w-full"
+                />
 
-          <Button
-            className="mt-6 w-full"
-            type="submit"
-            size="lg"
-            disabled={isSubmitting}
-          >
-            <LogIn className="size-4" />
-            {isSubmitting ? copy.submitting : copy.submit}
-          </Button>
-
-          <p className="text-muted-foreground mt-4 text-center text-sm">
-            {copy.registerPrompt}{' '}
-            <Link
-              to="/register"
-              className="text-foreground font-medium underline-offset-4 hover:underline"
-            >
-              {copy.registerLink}
-            </Link>
-          </p>
-        </form>
-      </section>
-    </main>
+                <Text type="supporting" color="secondary" justify="center">
+                  {copy.registerPrompt}{' '}
+                  <Link href="/register">{copy.registerLink}</Link>
+                </Text>
+              </VStack>
+            </form>
+          </Card>
+        </VStack>
+      </Center>
+    </VStack>
   )
 }

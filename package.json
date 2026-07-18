@@ -10,6 +10,7 @@
     "typecheck": "tsc -b --pretty",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e:install": "playwright install chromium",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build",
@@ -31,7 +32,12 @@
       "public"
     ]
   },
+  "astryx": {
+    "theme": "@astryxdesign/theme-neutral"
+  },
   "dependencies": {
+    "@astryxdesign/core": "0.1.6",
+    "@astryxdesign/theme-neutral": "0.1.6",
     "@fontsource-variable/geist": "^5.2.9",
     "@radix-ui/react-slot": "^1.2.5",
     "@tanstack/react-query": "^5.101.0",
@@ -48,6 +54,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@astryxdesign/cli": "0.1.6",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "^4.3.0",
