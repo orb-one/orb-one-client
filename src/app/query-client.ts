@@ -1,5 +1,5 @@
+import type { ShowToastFn } from '@astryxdesign/core/Toast'
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import { currentUserQueryKey } from '@/lib/auth/auth-queries'
@@ -8,16 +8,16 @@ import { useAppStore } from '@/stores/use-app-store'
 
 export const sessionExpiredToastId = 'auth.session.expired'
 
-export function createAppQueryClient() {
+export function createAppQueryClient(showToast: ShowToastFn) {
   const queryClient = new QueryClient({
     queryCache: new QueryCache({
       onError: (error) => {
-        handleAuthSessionExpiredError(error, queryClient)
+        handleAuthSessionExpiredError(error, queryClient, showToast)
       },
     }),
     mutationCache: new MutationCache({
       onError: (error) => {
-        handleAuthSessionExpiredError(error, queryClient)
+        handleAuthSessionExpiredError(error, queryClient, showToast)
       },
     }),
     defaultOptions: {
@@ -40,6 +40,7 @@ export function createAppQueryClient() {
 export function handleAuthSessionExpiredError(
   error: unknown,
   queryClient: QueryClient,
+  showToast: ShowToastFn,
 ) {
   if (!(error instanceof AuthSessionExpiredError)) {
     return
@@ -55,7 +56,12 @@ export function handleAuthSessionExpiredError(
 
   const locale = useAppStore.getState().locale
 
-  toast.error(messages[locale].auth.sessionExpired, {
-    id: sessionExpiredToastId,
+  showToast({
+    body: messages[locale].auth.sessionExpired,
+    type: 'error',
+    isAutoHide: true,
+    autoHideDuration: 5000,
+    uniqueID: sessionExpiredToastId,
+    collisionBehavior: 'overwrite',
   })
 }

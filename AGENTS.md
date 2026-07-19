@@ -6,7 +6,8 @@
 - TanStack Router로 file-based routing 구성
 - TanStack Query로 server state 관리
 - Zustand로 client/UI state 관리
-- shadcn/ui, Radix UI, Tailwind CSS 기반 UI 구성
+- Astryx Design System, Tailwind CSS 기반 UI 구성
+- Astryx Design System을 단일 UI component 계층으로 사용
 
 ## Required Commands
 
@@ -57,11 +58,12 @@
 
 ## UI Rules
 
-- shadcn/ui 컴포넌트는 필요한 것만 추가
-- Radix UI 기반 접근성 패턴 유지
+- 신규 UI와 전환이 완료된 화면은 Astryx 컴포넌트와 token을 우선 사용
+- Tailwind CSS는 layout과 token-backed override에만 사용
+- shadcn/ui, Radix UI와 `legacy-*` utility를 새로 도입하지 않음
 - desktop/mobile 상태 확인
 - loading/empty/error state 고려
-- 버튼, 입력, 메뉴, 토글 등은 기존 shadcn/ui 패턴 우선 사용
+- 버튼, 입력, 메뉴, 토글 등 신규 interactive UI는 Astryx 패턴 우선 사용
 
 ## Security Rules
 
@@ -84,3 +86,37 @@
 - 커밋 메시지는 `CONTRIBUTING.md` 준수
 - `Co-Authored-By` 사용 금지
 - 사용자가 요청하지 않으면 커밋하지 않음
+
+<!-- ASTRYX:START -->
+
+Astryx v0.1.6 · 149 components
+CLI: run every command as `pnpm exec astryx <cmd>` (shown below as `astryx ...`).
+
+SETUP (once, in your app entry e.g. main.tsx) — without these, components render unstyled:
+import "@astryxdesign/core/reset.css";
+import "@astryxdesign/core/astryx.css";
+
+WORKFLOW — discover, don't guess. Before writing UI:
+
+1. `astryx build "<idea>"` — START HERE: returns a kit (closest [page] + [block]s + [component]s). No args = full playbook.
+2. `astryx template <name> [--skeleton]` — scaffold the [page]/[block]s it named, or study their layout. Templates are reference code.
+3. `astryx component <Name>` — props + examples for every component you use.
+
+RULES:
+
+- No <div> — components do all layout/spacing. Full page → AppShell; sidebar nav → SideNav.
+- Frame first: pick the shell (AppShell / Layout+LayoutPanel) and budget regions in px BEFORE writing content (`astryx docs layout`).
+- Dense data = rows (Table, List/Item) edge-to-edge — never Card-wrapped list items. Card = dashboard widgets, galleries, settings groups only.
+- Status → StatusDot/Token; Badge only for counts and enumerated states, never decoration.
+- Custom styling: component props first; else Tailwind utilities backed by tokens (bg-surface, text-primary, rounded-lg) via tailwind-theme.css. No raw hex/px.
+- Tokens for every value (`astryx docs tokens`). Brand/accent via `astryx theme` — never override --color-\* in :root.
+
+MORE CLI:
+search "<query>" find any component / hook / doc / template / block
+component --list 149 components by category
+template --list page + block recipes
+docs <topic> color, elevation, icons, illustrations, layout, migration, motion, principles, shape, spacing, styling, theme, tokens, typography
+swizzle <Name> eject component source for deep customization
+upgrade --apply run after any @astryxdesign/core bump
+
+<!-- ASTRYX:END -->

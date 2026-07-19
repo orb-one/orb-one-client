@@ -9,6 +9,119 @@ const refreshCookieName = process.env.E2E_REFRESH_COOKIE_NAME ?? 'refresh_token'
 const expectAuthCookies = process.env.E2E_EXPECT_AUTH_COOKIES === 'true'
 const isMswE2eEnabled = process.env.E2E_ENABLE_MSW === 'true'
 
+test('shows the first registration error in view on a short viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 667 })
+  await page.goto('/register')
+
+  await page.getByRole('button', { name: '회원가입', exact: true }).click()
+
+  const emailInput = page.getByLabel('이메일')
+  const emailError = page.getByText('이메일을 입력해 주세요.')
+
+  await expect(emailInput).toBeFocused()
+  await expect(emailInput).toBeInViewport()
+  await expect(emailError).toBeInViewport()
+})
+
+test('shows the first login error in view on a short viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 667 })
+  await page.goto('/login')
+
+  const mainBox = await page.getByRole('main').boundingBox()
+
+  expect(mainBox).not.toBeNull()
+
+  if (!mainBox) {
+    throw new Error('Application main content must have a layout box.')
+  }
+
+  expect(Math.round(mainBox.y + mainBox.height)).toBeGreaterThanOrEqual(667)
+
+  await page.getByRole('button', { name: '로그인', exact: true }).click()
+
+  const emailInput = page.getByLabel('이메일')
+  const emailError = page.getByText('이메일을 입력해 주세요.')
+
+  await expect(emailInput).toBeFocused()
+  await expect(emailInput).toBeInViewport()
+  await expect(emailError).toBeInViewport()
+})
+
+test('keeps the signed-in application navigation usable across viewports', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  await page.route(apiUrl('/users/me'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'responsive-user',
+        email: 'responsive@example.com',
+        nickname: 'responsive-navigation-user-with-a-long-name',
+      }),
+    })
+  })
+
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/')
+
+  const navigation = page.getByRole('navigation', { name: '주요 탐색' })
+  const brandLink = navigation.getByRole('link', {
+    name: 'Orb One',
+    exact: true,
+  })
+  const currentUser = page.getByTestId('current-user')
+  const logoutButton = page.getByRole('button', {
+    name: '로그아웃',
+    exact: true,
+  })
+
+  await expect(navigation).toBeVisible()
+  await expect(brandLink).toBeVisible()
+  await expect(
+    page.getByRole('img', { name: '현재 로그인한 사용자' }),
+  ).toBeVisible()
+  await expect(currentUser).toBeInViewport()
+  await expect(logoutButton).toBeInViewport()
+
+  await page.setViewportSize({ width: 320, height: 667 })
+
+  await expect(navigation).toBeVisible()
+  await expect(currentUser).toBeInViewport()
+  await expect(logoutButton).toBeInViewport()
+
+  const [brandBox, currentUserBox, logoutBox] = await Promise.all([
+    brandLink.boundingBox(),
+    currentUser.boundingBox(),
+    logoutButton.boundingBox(),
+  ])
+
+  expect(brandBox).not.toBeNull()
+  expect(currentUserBox).not.toBeNull()
+  expect(logoutBox).not.toBeNull()
+
+  if (!brandBox || !currentUserBox || !logoutBox) {
+    throw new Error('Application navigation elements must have layout boxes.')
+  }
+
+  expect(brandBox.x + brandBox.width).toBeLessThanOrEqual(currentUserBox.x)
+  expect(currentUserBox.x + currentUserBox.width).toBeLessThanOrEqual(
+    logoutBox.x,
+  )
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(320)
+})
+
 test('refreshes expired current user requests before showing signed-in UI', async ({
   page,
 }) => {
@@ -61,9 +174,7 @@ test('refreshes expired current user requests before showing signed-in UI', asyn
   const refreshResponse = await refreshResponsePromise
 
   expect(refreshResponse.status()).toBe(200)
-  await expect(page.getByLabel('현재 로그인한 사용자')).toContainText(
-    account.nickname,
-  )
+  await expect(page.getByTestId('current-user')).toContainText(account.nickname)
   expect(currentUserRequestCount).toBe(2)
 })
 
@@ -141,9 +252,7 @@ test('keeps the signed-in state and shows a toast when logout fails', async ({
   await expect(
     page.getByText('로그아웃에 실패했습니다. 다시 시도해 주세요.'),
   ).toBeVisible()
-  await expect(page.getByLabel('현재 로그인한 사용자')).toContainText(
-    account.nickname,
-  )
+  await expect(page.getByTestId('current-user')).toContainText(account.nickname)
   await expect(
     page.getByRole('button', { name: '로그아웃', exact: true }),
   ).toBeEnabled()
@@ -197,9 +306,7 @@ async function registerAndLogin(
 
   expect(loginResponse.status()).toBe(200)
   await page.waitForURL((url) => url.pathname === '/')
-  await expect(page.getByLabel('현재 로그인한 사용자')).toContainText(
-    account.nickname,
-  )
+  await expect(page.getByTestId('current-user')).toContainText(account.nickname)
 }
 
 function createRandomAccount() {

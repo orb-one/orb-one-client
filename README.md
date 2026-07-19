@@ -10,7 +10,7 @@ React, TypeScript, Vite 기반 frontend 프로젝트입니다.
 - TanStack Router
 - TanStack Query
 - Zustand
-- shadcn/ui, Radix UI
+- Astryx Design System
 - Tailwind CSS v4
 - ESLint, Prettier
 - Vitest, Testing Library
@@ -37,6 +37,7 @@ pnpm format        # Prettier write
 pnpm format:check  # Prettier check
 pnpm test          # Vitest run
 pnpm test:watch    # Vitest watch mode
+pnpm test:e2e:install # Playwright Chromium 설치
 pnpm test:e2e      # Playwright e2e run
 pnpm check         # typecheck, lint, format:check, test, build 전체 실행
 ```
@@ -80,7 +81,6 @@ src/
 - `src/lib/api/client.ts`: 공통 API client
 - `src/routes/`: TanStack Router route 파일
 - `src/routeTree.gen.ts`: TanStack Router generated route tree
-- `src/components/ui/`: shadcn/ui component
 
 ## Environment Variables
 
@@ -156,8 +156,8 @@ route는 `src/routes/` 아래에 TanStack Router file route로 추가합니다.
 
 ## UI
 
-shared UI는 `src/components/`에 둡니다.
-shadcn/ui component는 필요한 것만 추가하고, Radix UI 기반 접근성 패턴을 유지합니다.
+shared UI는 `src/components/`에 두고 Astryx component와 token을 우선 사용합니다.
+Tailwind CSS는 layout과 Astryx token 기반 override에만 사용합니다.
 
 UI 변경 시 다음 상태를 함께 확인합니다.
 
@@ -182,6 +182,12 @@ UI 변경 시 다음 상태를 함께 확인합니다.
 실제 API 서버를 대상으로 인증 화면 흐름을 확인할 때는 Playwright E2E를 사용합니다.
 테스트는 매 실행마다 랜덤 이메일을 만들어 회원가입 후 같은 계정으로 로그인하고 로그아웃합니다.
 현재 서버의 `/users/me`는 Contract only 상태이므로, E2E에서는 해당 endpoint만 계약 응답으로 대체해 로그인 상태 UI를 검증합니다.
+
+처음 실행하거나 Playwright 버전이 변경된 뒤에는 Chromium을 설치합니다.
+
+```bash
+pnpm test:e2e:install
+```
 
 ```bash
 pnpm test:e2e
