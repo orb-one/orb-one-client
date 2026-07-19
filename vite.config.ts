@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import path from 'node:path'
-import { loadEnv } from 'vite'
+import { loadEnv, type ProxyOptions } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -38,10 +38,16 @@ export default defineConfig(({ mode }) => {
   }
 })
 
-function createApiProxy(target: string) {
+function createApiProxy(target: string): ProxyOptions {
   return {
     target,
     changeOrigin: true,
     secure: true,
+    // client route와 API path가 같아도 HTML navigation은 SPA entry로 보낸다.
+    bypass(request) {
+      if (request.headers.accept?.includes('text/html')) {
+        return '/index.html'
+      }
+    },
   }
 }

@@ -4,7 +4,10 @@ import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest'
 import { ApiError, apiClient } from '@/lib/api/client'
 import { createSolution, getSolution, getSolutions } from '@/lib/api/solutions'
 import { resetMockSolutions } from '@/mocks/solution-data'
-import { solutionHandlers } from '@/mocks/solution-handlers'
+import {
+  isSolutionApiRequest,
+  solutionHandlers,
+} from '@/mocks/solution-handlers'
 
 const server = setupServer(...solutionHandlers)
 
@@ -48,6 +51,23 @@ it('returns solution fixtures without detail-only fields', async () => {
   expect(solutions[0]).not.toHaveProperty('description')
 })
 
+it('does not classify a frontend module under a solutions folder as an API request', () => {
+  expect(
+    isSolutionApiRequest(
+      new Request(
+        'http://localhost:8080/src/components/solutions/solution-code-block.tsx',
+      ),
+      '/solutions/solution-code-block.tsx',
+    ),
+  ).toBe(false)
+  expect(
+    isSolutionApiRequest(
+      new Request('http://localhost:8080/solutions/solution-1'),
+      '/solutions/solution-1',
+    ),
+  ).toBe(true)
+})
+
 it('filters the solution list by problemId', async () => {
   const problemId = '10000000-0000-4000-8000-000000000002'
 
@@ -62,7 +82,9 @@ it('returns the code and description from a solution detail', async () => {
 
   expect(solution.problem?.name).toBe('미로 탐색')
   expect(solution.code).toContain('from collections import deque')
-  expect(solution.description).toContain('BFS')
+  expect(solution.description).toContain('# 풀이 전략')
+  expect(solution.description).toContain('**BFS**')
+  expect(solution.description).toContain('```python')
 })
 
 it('returns a 404 response for an unknown solution', async () => {

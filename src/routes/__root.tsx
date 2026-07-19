@@ -4,6 +4,7 @@ import { Button } from '@astryxdesign/core/Button'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
 import { IconButton } from '@astryxdesign/core/IconButton'
+import { Link } from '@astryxdesign/core/Link'
 import { NavIcon } from '@astryxdesign/core/NavIcon'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
@@ -119,6 +120,9 @@ function RootAuthNav() {
   if (currentUser) {
     return (
       <HStack gap={2} vAlign="center">
+        <Link href="/solutions" isStandalone>
+          {copy.solutions}
+        </Link>
         <HStack gap={1.5} vAlign="center" data-testid="current-user">
           <Avatar
             name={currentUser.nickname}

@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse, passthrough } from 'msw'
 
 import type { CreateSolutionRequest } from '@/lib/api/solutions'
 import {
@@ -9,14 +9,29 @@ import {
 
 export const solutionHandlers = [
   http.get('*/solutions', ({ request }) => {
+    if (!isSolutionApiRequest(request, '/solutions')) {
+      return passthrough()
+    }
+
     const problemId = new URL(request.url).searchParams.get('problemId')
     const solutions = getMockSolutionSummaries(problemId ?? undefined)
 
     return HttpResponse.json({ solutions })
   }),
-  http.get('*/solutions/:solutionId', ({ params }) => {
+  http.get('*/solutions/:solutionId', ({ params, request }) => {
     const solutionId = getPathParameter(params.solutionId)
-    const solution = solutionId ? getMockSolution(solutionId) : undefined
+
+    if (
+      !solutionId ||
+      !isSolutionApiRequest(
+        request,
+        `/solutions/${encodeURIComponent(solutionId)}`,
+      )
+    ) {
+      return passthrough()
+    }
+
+    const solution = getMockSolution(solutionId)
 
     if (!solution) {
       return HttpResponse.json(
@@ -28,6 +43,10 @@ export const solutionHandlers = [
     return HttpResponse.json(solution)
   }),
   http.post('*/solutions', async ({ request }) => {
+    if (!isSolutionApiRequest(request, '/solutions')) {
+      return passthrough()
+    }
+
     const body = await parseJsonBody(request)
 
     if (!isCreateSolutionRequest(body)) {
@@ -52,6 +71,30 @@ export const solutionHandlers = [
     )
   }),
 ]
+
+// wildcard handler가 `/src/**/solutions/**` 같은 프론트 모듈까지 가로채지 않도록
+// 현재 API base URL에서 생성되는 정확한 origin과 pathname을 함께 검증한다.
+export function isSolutionApiRequest(request: Request, path: string) {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL
+  if (!baseUrl) {
+    return new URL(request.url).pathname === path
+  }
+
+  const expectedUrl = new URL(
+    path.replace(/^\/+/, ''),
+    ensureTrailingSlash(baseUrl),
+  )
+  const requestUrl = new URL(request.url)
+
+  return (
+    requestUrl.origin === expectedUrl.origin &&
+    requestUrl.pathname === expectedUrl.pathname
+  )
+}
+
+function ensureTrailingSlash(value: string) {
+  return value.endsWith('/') ? value : `${value}/`
+}
 
 async function parseJsonBody(request: Request) {
   try {
