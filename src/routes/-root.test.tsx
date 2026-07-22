@@ -55,6 +55,9 @@ it('renders the signed-out application shell with accessible navigation', () => 
   expect(
     within(navigation).getByRole('link', { name: '로그인' }),
   ).toHaveAttribute('href', '/login')
+  expect(
+    within(navigation).queryByRole('link', { name: '풀이' }),
+  ).not.toBeInTheDocument()
   expect(screen.getByRole('main')).toContainElement(
     screen.getByText('Route content'),
   )
@@ -71,6 +74,10 @@ it('renders the signed-in user and logout action in the application shell', () =
     screen.getByRole('img', { name: '현재 로그인한 사용자' }),
   ).toBeVisible()
   expect(screen.getByTestId('current-user')).toHaveTextContent('orb-user')
+  expect(screen.getByRole('link', { name: '풀이' })).toHaveAttribute(
+    'href',
+    '/solutions',
+  )
   expect(screen.getByRole('button', { name: '로그아웃' })).toBeEnabled()
 })
 
@@ -78,6 +85,7 @@ it('announces when the sign-in state is loading', () => {
   renderPendingRoot()
 
   expect(screen.getByRole('status')).toHaveTextContent('로그인 상태 확인 중')
+  expect(screen.queryByRole('link', { name: '풀이' })).not.toBeInTheDocument()
 })
 
 it('uses the active locale for the application navigation', () => {
@@ -90,6 +98,9 @@ it('uses the active locale for the application navigation', () => {
   })
 
   expect(within(navigation).getByRole('link', { name: 'Login' })).toBeVisible()
+  expect(
+    within(navigation).queryByRole('link', { name: 'Solutions' }),
+  ).not.toBeInTheDocument()
 })
 
 it('shows and dismisses an Astryx toast when logout fails', async () => {

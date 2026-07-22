@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import path from 'node:path'
-import { loadEnv } from 'vite'
+import { loadEnv, type ProxyOptions } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
             // 서버 SameSite 정책을 낮추지 않고 HttpOnly 인증 cookie를 same-origin 흐름으로 검증한다.
             proxy: {
               '/auth': createApiProxy(apiProxyTarget),
+              '/solutions': createApiProxy(apiProxyTarget),
               '/users': createApiProxy(apiProxyTarget),
             },
           },
@@ -37,10 +38,16 @@ export default defineConfig(({ mode }) => {
   }
 })
 
-function createApiProxy(target: string) {
+function createApiProxy(target: string): ProxyOptions {
   return {
     target,
     changeOrigin: true,
     secure: true,
+    // client route와 API path가 같아도 HTML navigation은 SPA entry로 보낸다.
+    bypass(request) {
+      if (request.headers.accept?.includes('text/html')) {
+        return '/index.html'
+      }
+    },
   }
 }
