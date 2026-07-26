@@ -245,14 +245,23 @@ export function SolutionCodeMirror({
   }, [value])
 
   useEffect(() => {
+    const editorView = editorViewRef.current
+    if (!editorView) {
+      return
+    }
+
     let isActive = true
+
+    editorView.dispatch({
+      effects: languageCompartment.reconfigure([]),
+    })
 
     void loadSolutionCodeLanguage(language)
       .then((languageSupport) => {
-        const editorView = editorViewRef.current
+        const currentEditorView = editorViewRef.current
 
-        if (isActive && editorView) {
-          editorView.dispatch({
+        if (isActive && currentEditorView) {
+          currentEditorView.dispatch({
             effects: languageCompartment.reconfigure(
               languageSupport ? [languageSupport] : [],
             ),
