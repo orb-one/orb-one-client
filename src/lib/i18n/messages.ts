@@ -66,7 +66,6 @@ export const messages = {
       },
     },
     solutions: {
-      eyebrow: '코드 아카이브',
       authRequired: '저장된 풀이를 확인하려면 로그인해 주세요.',
       login: '로그인',
       status: {
@@ -211,7 +210,6 @@ export const messages = {
       },
     },
     solutions: {
-      eyebrow: 'Code archive',
       authRequired: 'Sign in to view your saved solutions.',
       login: 'Log in',
       status: {

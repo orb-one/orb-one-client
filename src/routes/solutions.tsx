@@ -78,9 +78,6 @@ export function SolutionsPage() {
         paddingBlock={10}
       >
         <VStack gap={2} maxWidth={672}>
-          <Text type="supporting" color="secondary">
-            {t.solutions.eyebrow}
-          </Text>
           <Heading level={1}>{copy.title}</Heading>
           <Text type="body" color="secondary">
             {copy.description}
