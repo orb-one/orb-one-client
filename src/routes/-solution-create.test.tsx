@@ -52,6 +52,29 @@ it('connects required-field feedback to the problem ID input', async () => {
   expect(createSolution).not.toHaveBeenCalled()
 })
 
+it('connects required-field feedback and focus to the code editor', async () => {
+  renderRoute(<SolutionCreatePage />)
+
+  await userEvent.type(screen.getByLabelText('문제 ID'), 'problem-1')
+  await userEvent.click(
+    screen.getByRole('combobox', { name: /프로그래밍 언어/ }),
+  )
+  await userEvent.click(screen.getByRole('option', { name: 'Java' }))
+  await userEvent.click(screen.getByRole('button', { name: '풀이 저장' }))
+
+  const codeEditor = await screen.findByRole('textbox', { name: /소스 코드/ })
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    '소스 코드를 입력해 주세요.',
+  )
+  expect(codeEditor).toHaveAttribute('aria-invalid', 'true')
+  expect(codeEditor).toHaveAccessibleDescription(
+    '제출할 소스 코드를 그대로 입력해 주세요. 소스 코드를 입력해 주세요.',
+  )
+  await waitFor(() => expect(codeEditor).toHaveFocus())
+  expect(createSolution).not.toHaveBeenCalled()
+})
+
 it('submits the documented fields and navigates to the created solution', async () => {
   vi.mocked(createSolution).mockResolvedValue({ id: 'solution-1' })
   renderRoute(<SolutionCreatePage />)
@@ -60,12 +83,12 @@ it('submits the documented fields and navigates to the created solution', async 
 
   await waitFor(() => {
     expect(
-      document.querySelector('[data-syntax-token="function"]'),
-    ).toHaveTextContent('println')
+      document.querySelector('.solution-code-syntax-function'),
+    ).toBeInTheDocument()
   })
-  expect(
-    document.querySelector('.solution-code-editor__highlight')?.textContent,
-  ).toBe('System.out.println(1);')
+  expect(document.querySelector('.cm-content')?.textContent).toBe(
+    'System.out.println(1);',
+  )
 
   await userEvent.click(screen.getByRole('button', { name: '풀이 저장' }))
 
@@ -80,6 +103,20 @@ it('submits the documented fields and navigates to the created solution', async 
     to: '/solutions/$solutionId',
     params: { solutionId: 'solution-1' },
   })
+})
+
+it('indents code with spaces when Tab is pressed in the editor', async () => {
+  renderRoute(<SolutionCreatePage />)
+
+  const codeEditor = await screen.findByRole('textbox', { name: /소스 코드/ })
+
+  await userEvent.click(codeEditor)
+  await userEvent.keyboard('{Tab}')
+
+  expect(
+    document.querySelector<HTMLInputElement>('input[name="code"]'),
+  ).toHaveValue('  ')
+  expect(codeEditor).toHaveFocus()
 })
 
 it('prevents another submission while a solution is being saved', async () => {
@@ -155,8 +192,8 @@ async function fillCreateForm() {
     screen.getByRole('combobox', { name: /프로그래밍 언어/ }),
   )
   await userEvent.click(screen.getByRole('option', { name: 'Java' }))
-  await userEvent.type(
-    screen.getByRole('textbox', { name: /소스 코드/ }),
-    'System.out.println(1);',
+  await userEvent.click(
+    await screen.findByRole('textbox', { name: /소스 코드/ }),
   )
+  await userEvent.paste('System.out.println(1);')
 }

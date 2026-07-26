@@ -6,21 +6,30 @@ import { Heading } from '@astryxdesign/core/Heading'
 import { Icon } from '@astryxdesign/core/Icon'
 import { Link } from '@astryxdesign/core/Link'
 import { Selector } from '@astryxdesign/core/Selector'
+import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { VStack } from '@astryxdesign/core/VStack'
 import { createFileRoute } from '@tanstack/react-router'
 import { FilePlus2, Hash } from 'lucide-react'
-import { useRef, useState, type ComponentProps } from 'react'
+import { lazy, Suspense, useRef, useState, type ComponentProps } from 'react'
 
 import { AuthSessionExpiredError } from '@/lib/api/client'
-import { SolutionCodeEditor } from '@/components/solutions/solution-code-editor'
+import type { SolutionCodeEditorHandle } from '@/components/solutions/solution-code-editor'
 import {
   validateSolutionCreateForm,
   type SolutionCreateFormError,
 } from '@/lib/solutions/solution-create-validation'
 import { useCreateSolution } from '@/lib/solutions/solution-mutations'
 import { useI18n } from '@/lib/i18n/use-translations'
+
+const SolutionCodeEditor = lazy(() =>
+  import('@/components/solutions/solution-code-editor').then(
+    ({ SolutionCodeEditor }) => ({
+      default: SolutionCodeEditor,
+    }),
+  ),
+)
 
 export const Route = createFileRoute('/solutions_/new')({
   component: SolutionCreatePage,
@@ -57,7 +66,7 @@ export function SolutionCreatePage() {
     null,
   )
   const problemIdInputRef = useRef<HTMLInputElement>(null)
-  const codeInputRef = useRef<HTMLTextAreaElement>(null)
+  const codeInputRef = useRef<SolutionCodeEditorHandle>(null)
   const createMutation = useCreateSolution()
   const isSubmitting = createMutation.isPending
   const formErrorMessage = formError ? copy[formError] : null
@@ -212,29 +221,32 @@ export function SolutionCreatePage() {
                   : {})}
               />
 
-              <SolutionCodeEditor
-                ref={codeInputRef}
-                label={`${copy.codeLabel} (${copy.requiredLabel})`}
-                htmlName="code"
-                value={code}
-                language={language}
-                onChange={(nextCode) => {
-                  setCode(nextCode)
-                  clearFeedback('codeRequired')
-                }}
-                placeholder={copy.codePlaceholder}
-                description={copy.codeDescription}
-                rows={18}
-                isDisabled={isSubmitting}
-                {...(formError === 'codeRequired' && formErrorMessage
-                  ? {
-                      status: {
-                        type: 'error' as const,
-                        message: formErrorMessage,
-                      },
-                    }
-                  : {})}
-              />
+              <Suspense
+                fallback={<Skeleton width="100%" height={384} radius={3} />}
+              >
+                <SolutionCodeEditor
+                  ref={codeInputRef}
+                  label={`${copy.codeLabel} (${copy.requiredLabel})`}
+                  htmlName="code"
+                  value={code}
+                  language={language}
+                  onChange={(nextCode) => {
+                    setCode(nextCode)
+                    clearFeedback('codeRequired')
+                  }}
+                  placeholder={copy.codePlaceholder}
+                  description={copy.codeDescription}
+                  isDisabled={isSubmitting}
+                  {...(formError === 'codeRequired' && formErrorMessage
+                    ? {
+                        status: {
+                          type: 'error' as const,
+                          message: formErrorMessage,
+                        },
+                      }
+                    : {})}
+                />
+              </Suspense>
             </FormLayout>
 
             <Button

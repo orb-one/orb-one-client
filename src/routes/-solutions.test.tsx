@@ -136,8 +136,14 @@ it('renders solution metadata, code, Markdown notes, and the external problem li
     'class Main {}',
   )
   expect(
+    await screen.findByRole('textbox', { name: '소스 코드' }),
+  ).toHaveAttribute('aria-readonly', 'true')
+  expect(
     await screen.findByRole('heading', { name: '접근 방법', level: 3 }),
   ).toBeVisible()
+  expect(
+    await screen.findAllByRole('button', { name: '코드 복사' }),
+  ).toHaveLength(1)
   expect(screen.getByRole('listitem')).toHaveTextContent('두 수를 더한다.')
   expect(screen.getByText('O(1)')).toHaveStyle({ fontFamily: 'monospace' })
   expect(screen.getByText('14,128 KB')).toBeVisible()
@@ -146,6 +152,28 @@ it('renders solution metadata, code, Markdown notes, and the external problem li
   expect(
     screen.getByRole('link', { name: /문제 페이지 열기/ }),
   ).toHaveAttribute('href', 'https://www.acmicpc.net/problem/1000')
+})
+
+it('allows long Markdown code blocks to be collapsed', async () => {
+  const markdownCode = Array.from(
+    { length: 10 },
+    (_, index) => `line ${String(index + 1)}`,
+  ).join('\n')
+
+  vi.mocked(getSolution).mockResolvedValue({
+    ...solutionDetail,
+    description: `\`\`\`java\n${markdownCode}\n\`\`\``,
+  })
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  const collapseButton = await screen.findByRole('button', { name: 'java' })
+
+  expect(collapseButton).toHaveAttribute('aria-expanded', 'true')
+
+  await userEvent.click(collapseButton)
+
+  expect(collapseButton).toHaveAttribute('aria-expanded', 'false')
 })
 
 it('renders an empty solution description as supporting text', async () => {

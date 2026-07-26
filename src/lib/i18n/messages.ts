@@ -75,6 +75,10 @@ export const messages = {
         unsolved: '미해결',
         unknown: '상태 미확인',
       },
+      code: {
+        copy: '코드 복사',
+        copied: '코드 복사됨',
+      },
       list: {
         title: '풀이 목록',
         description: '문제별 코드와 풀이 기록을 확인할 수 있습니다.',
@@ -214,6 +218,10 @@ export const messages = {
         solved: 'Solved',
         unsolved: 'Unsolved',
         unknown: 'Unknown status',
+      },
+      code: {
+        copy: 'Copy code',
+        copied: 'Code copied',
       },
       list: {
         title: 'Solutions',
