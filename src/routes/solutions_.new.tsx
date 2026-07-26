@@ -155,9 +155,7 @@ export function SolutionCreatePage() {
             {createMutation.isError ? (
               <Banner
                 status={isAuthRequired ? 'info' : 'error'}
-                title={
-                  isAuthRequired ? t.solutions.authRequired : copy.genericError
-                }
+                title={isAuthRequired ? copy.authRequired : copy.genericError}
                 endContent={
                   isAuthRequired ? (
                     <Button

@@ -46,7 +46,7 @@ it('connects required-field feedback to the problem ID input', async () => {
   )
   expect(problemIdInput).toHaveAttribute('aria-invalid', 'true')
   expect(problemIdInput).toHaveAccessibleDescription(
-    '저장할 풀이가 연결되는 문제의 ID입니다. 문제 ID를 입력해 주세요.',
+    '풀이를 연결할 문제의 ID를 입력해 주세요. 문제 ID를 입력해 주세요.',
   )
   await waitFor(() => expect(problemIdInput).toHaveFocus())
   expect(createSolution).not.toHaveBeenCalled()
@@ -140,7 +140,7 @@ it('shows a login action when the authentication session expires', async () => {
   await userEvent.click(screen.getByRole('button', { name: '풀이 저장' }))
 
   expect(
-    await screen.findByText('저장된 풀이를 확인하려면 로그인해 주세요.'),
+    await screen.findByText('풀이를 저장하려면 로그인해 주세요.'),
   ).toBeVisible()
   expect(screen.getByRole('link', { name: '로그인' })).toHaveAttribute(
     'href',

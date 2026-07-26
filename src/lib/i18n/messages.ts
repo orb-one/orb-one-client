@@ -77,7 +77,7 @@ export const messages = {
       },
       code: {
         copy: '코드 복사',
-        copied: '코드 복사됨',
+        copied: '코드를 복사했습니다.',
       },
       list: {
         title: '풀이 목록',
@@ -98,7 +98,7 @@ export const messages = {
         unknownProblem: '알 수 없는 문제',
         unknownLanguage: '언어 미확인',
         tier: '티어',
-        updatedAt: '수정',
+        updatedAt: '최근 수정',
       },
       create: {
         title: '새 풀이 작성',
@@ -106,7 +106,7 @@ export const messages = {
         backToList: '풀이 목록으로 돌아가기',
         problemIdLabel: '문제 ID',
         problemIdPlaceholder: '문제 ID를 입력하세요',
-        problemIdDescription: '저장할 풀이가 연결되는 문제의 ID입니다.',
+        problemIdDescription: '풀이를 연결할 문제의 ID를 입력해 주세요.',
         languageLabel: '프로그래밍 언어',
         languagePlaceholder: '언어를 선택하세요',
         codeLabel: '소스 코드',
@@ -115,6 +115,7 @@ export const messages = {
         codeDescription: '제출할 소스 코드를 그대로 입력해 주세요.',
         submit: '풀이 저장',
         submitting: '저장 중',
+        authRequired: '풀이를 저장하려면 로그인해 주세요.',
         genericError: '풀이를 저장하지 못했습니다. 다시 시도해 주세요.',
         problemIdRequired: '문제 ID를 입력해 주세요.',
         languageRequired: '프로그래밍 언어를 선택해 주세요.',
@@ -250,7 +251,8 @@ export const messages = {
         backToList: 'Back to solutions',
         problemIdLabel: 'Problem ID',
         problemIdPlaceholder: 'Enter a problem ID',
-        problemIdDescription: 'The problem this saved solution belongs to.',
+        problemIdDescription:
+          'Enter the ID of the problem this solution belongs to.',
         languageLabel: 'Programming language',
         languagePlaceholder: 'Choose a language',
         codeLabel: 'Source code',
@@ -260,6 +262,7 @@ export const messages = {
           'Enter the source code exactly as you want to save it.',
         submit: 'Save solution',
         submitting: 'Saving',
+        authRequired: 'Sign in to save a solution.',
         genericError: 'Could not save the solution. Please try again.',
         problemIdRequired: 'Enter a problem ID.',
         languageRequired: 'Choose a programming language.',

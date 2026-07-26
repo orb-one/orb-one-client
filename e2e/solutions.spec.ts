@@ -37,7 +37,9 @@ test('browses, copies, and collapses a saved solution across viewports', async (
 
   await expect(copyButtons).toHaveCount(2)
   await copyButtons.first().click()
-  await expect(page.getByRole('button', { name: '코드 복사됨' })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: '코드를 복사했습니다.' }),
+  ).toBeVisible()
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe(seededSolution.code)
