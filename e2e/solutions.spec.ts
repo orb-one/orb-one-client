@@ -1,0 +1,330 @@
+import { expect, test, type Page, type Route } from '@playwright/test'
+
+const apiBaseUrl = getRequiredEnv('VITE_API_BASE_URL')
+const seededSolution = createSeededSolution()
+
+test('browses, copies, and collapses a saved solution across viewports', async ({
+  context,
+  page,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await mockCurrentUser(page)
+  await mockSolutionApi(page)
+
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/solutions')
+
+  await expect(
+    page.getByRole('heading', { name: '풀이 목록', level: 1 }),
+  ).toBeVisible()
+
+  await page.getByRole('link', { name: seededSolution.problem.name }).click()
+
+  await expect(
+    page.getByRole('heading', {
+      name: seededSolution.problem.name,
+      level: 1,
+    }),
+  ).toBeVisible()
+  await expect(page.getByTestId('solution-code')).toContainText(
+    'public class Main',
+  )
+  await expect(
+    page.getByTestId('solution-code').locator('.solution-code-syntax-keyword'),
+  ).not.toHaveCount(0)
+
+  const copyButtons = page.getByRole('button', { name: '코드 복사' })
+
+  await expect(copyButtons).toHaveCount(2)
+  await copyButtons.first().click()
+  await expect(page.getByRole('button', { name: '코드 복사됨' })).toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(seededSolution.code)
+
+  const collapseButton = page.getByRole('button', {
+    name: 'java',
+    exact: true,
+  })
+  const collapsibleContentId =
+    await collapseButton.getAttribute('aria-controls')
+
+  expect(collapsibleContentId).not.toBeNull()
+  const collapsibleContent = page.locator(
+    `[id="${String(collapsibleContentId)}"]`,
+  )
+  await expect(collapseButton).toHaveAttribute('aria-expanded', 'true')
+  await expect(collapsibleContent).toBeVisible()
+  await collapseButton.click()
+  await expect(collapseButton).toHaveAttribute('aria-expanded', 'false')
+  await expect(collapsibleContent).toBeHidden()
+
+  await page.setViewportSize({ width: 320, height: 667 })
+  await copyButtons.first().scrollIntoViewIfNeeded()
+
+  await expect(copyButtons.first()).toBeInViewport()
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      })),
+    )
+    .toEqual({ clientWidth: 320, scrollWidth: 320 })
+})
+
+test('creates a solution with CodeMirror keyboard and language behavior', async ({
+  page,
+}) => {
+  await mockCurrentUser(page)
+  const solutionApi = await mockSolutionApi(page)
+
+  await page.goto('/solutions/new')
+
+  await page.getByLabel('문제 ID').fill(seededSolution.problem.problemId)
+
+  const languageSelector = page.getByRole('combobox', {
+    name: /프로그래밍 언어/,
+  })
+
+  await languageSelector.click()
+  await page.getByRole('option', { name: 'Java', exact: true }).click()
+
+  const codeEditor = page.getByRole('textbox', { name: /소스 코드/ })
+  const codeInput = page.locator('input[name="code"]')
+
+  await codeEditor.click()
+  await page.keyboard.press('Tab')
+
+  await expect(codeEditor).toBeFocused()
+  await expect(codeInput).toHaveValue('  ')
+
+  await page.keyboard.insertText('boolean value = true;')
+
+  const javaConstant = page.locator('.solution-code-syntax-constant')
+
+  await expect(javaConstant).not.toHaveCount(0)
+
+  await languageSelector.click()
+  await page.getByRole('option', { name: 'Python', exact: true }).click()
+  await expect(javaConstant).toHaveCount(0)
+
+  await languageSelector.click()
+  await page.getByRole('option', { name: 'Java', exact: true }).click()
+  await expect(javaConstant).not.toHaveCount(0)
+
+  await page.getByRole('button', { name: '풀이 저장' }).click()
+  await page.waitForURL(
+    (url) => url.pathname === `/solutions/${solutionApi.createdSolutionId}`,
+  )
+
+  expect(solutionApi.lastCreateRequest()).toEqual({
+    problemId: seededSolution.problem.problemId,
+    language: 'Java',
+    code: '  boolean value = true;',
+  })
+  await expect(
+    page.getByRole('heading', {
+      name: seededSolution.problem.name,
+      level: 1,
+    }),
+  ).toBeVisible()
+  await expect(page.getByTestId('solution-code')).toContainText(
+    'boolean value = true;',
+  )
+})
+
+async function mockCurrentUser(page: Page) {
+  await page.route(apiUrl('/users/me'), async (route) => {
+    await fulfillJson(route, {
+      id: 'solution-e2e-user',
+      email: 'solution-e2e@example.com',
+      nickname: 'solution-e2e-user',
+    })
+  })
+}
+
+async function mockSolutionApi(page: Page) {
+  const createdSolutionId = 'solution-e2e-created'
+  let createdSolution: SolutionDetailResponse | null = null
+  let createRequest: CreateSolutionRequest | null = null
+
+  await page.route(apiUrl('/solutions'), async (route) => {
+    const request = route.request()
+
+    if (request.method() === 'GET') {
+      await fulfillJson(route, {
+        solutions: [
+          seededSolution,
+          ...(createdSolution ? [createdSolution] : []),
+        ]
+          .map(toSolutionSummary)
+          .reverse(),
+      })
+      return
+    }
+
+    if (request.method() === 'POST') {
+      createRequest = request.postDataJSON() as CreateSolutionRequest
+      createdSolution = {
+        solutionId: createdSolutionId,
+        problem: seededSolution.problem,
+        isSolved: false,
+        isDraft: false,
+        language: createRequest.language,
+        memoryUsage: null,
+        timeElapsed: null,
+        code: createRequest.code,
+        description: '',
+        createdAt: '2026-07-26T06:00:00.000Z',
+        updatedAt: '2026-07-26T06:00:00.000Z',
+      }
+
+      await fulfillJson(route, { solutionId: createdSolutionId }, 201)
+      return
+    }
+
+    await route.fallback()
+  })
+
+  await page.route(`${apiUrl('/solutions')}/*`, async (route) => {
+    const solutionId = decodeURIComponent(
+      new URL(route.request().url()).pathname.split('/').at(-1) ?? '',
+    )
+    const solution =
+      solutionId === seededSolution.solutionId
+        ? seededSolution
+        : solutionId === createdSolutionId
+          ? createdSolution
+          : null
+
+    if (!solution) {
+      await fulfillJson(route, { message: 'Solution not found' }, 404)
+      return
+    }
+
+    await fulfillJson(route, solution)
+  })
+
+  return {
+    createdSolutionId,
+    lastCreateRequest() {
+      return createRequest
+    },
+  }
+}
+
+function createSeededSolution(): SolutionDetailResponse {
+  const code = [
+    'import java.util.Scanner;',
+    '',
+    'public class Main {',
+    '  public static void main(String[] args) {',
+    '    Scanner scanner = new Scanner(System.in);',
+    '    System.out.println(scanner.nextInt() + scanner.nextInt());',
+    '  }',
+    '}',
+  ].join('\n')
+
+  return {
+    solutionId: 'solution-e2e-seeded',
+    problem: {
+      problemId: 'problem-e2e-addition',
+      name: 'A+B E2E',
+      tier: 1,
+      url: 'https://www.acmicpc.net/problem/1000',
+      tags: [{ tagId: 'tag-e2e-math', name: '수학' }],
+    },
+    isSolved: true,
+    isDraft: false,
+    language: 'Java',
+    memoryUsage: 14_128,
+    timeElapsed: 104,
+    code,
+    description: [
+      '# 접근 방법',
+      '',
+      '긴 코드 블록의 접기 동작을 확인한다.',
+      '',
+      '```java',
+      ...code.split('\n'),
+      '  private static int add(int a, int b) {',
+      '    return a + b;',
+      '  }',
+      '```',
+    ].join('\n'),
+    createdAt: '2026-07-15T01:00:00.000Z',
+    updatedAt: '2026-07-15T01:05:00.000Z',
+  }
+}
+
+function toSolutionSummary(solution: SolutionDetailResponse) {
+  return {
+    solutionId: solution.solutionId,
+    problem: solution.problem,
+    isSolved: solution.isSolved,
+    isDraft: solution.isDraft,
+    language: solution.language,
+    memoryUsage: solution.memoryUsage,
+    timeElapsed: solution.timeElapsed,
+    createdAt: solution.createdAt,
+    updatedAt: solution.updatedAt,
+  }
+}
+
+async function fulfillJson(route: Route, body: unknown, status = 200) {
+  await route.fulfill({
+    status,
+    contentType: 'application/json',
+    body: JSON.stringify(body),
+  })
+}
+
+function apiUrl(path: string) {
+  return new URL(stripLeadingSlashes(path), ensureTrailingSlash(apiBaseUrl))
+    .href
+}
+
+function ensureTrailingSlash(value: string) {
+  return value.endsWith('/') ? value : `${value}/`
+}
+
+function stripLeadingSlashes(value: string) {
+  return value.replace(/^\/+/, '')
+}
+
+function getRequiredEnv(name: string) {
+  const value = process.env[name]
+
+  if (!value) {
+    throw new Error(`${name} is required to run e2e tests`)
+  }
+
+  return value
+}
+
+interface CreateSolutionRequest {
+  problemId: string
+  language: string
+  code: string
+}
+
+interface SolutionDetailResponse {
+  solutionId: string
+  problem: {
+    problemId: string
+    name: string
+    tier: number | null
+    url: string | null
+    tags: { tagId: string; name: string }[]
+  }
+  isSolved: boolean
+  isDraft: boolean
+  language: string
+  memoryUsage: number | null
+  timeElapsed: number | null
+  code: string
+  description: string
+  createdAt: string
+  updatedAt: string
+}
