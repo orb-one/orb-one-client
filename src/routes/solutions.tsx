@@ -172,11 +172,7 @@ export function SolutionsPage() {
               />
             ) : (
               <Section width="100%" padding={0} dividers={['top', 'bottom']}>
-                <List
-                  header={<Heading level={2}>{copy.resultsTitle}</Heading>}
-                  density="balanced"
-                  hasDividers
-                >
+                <List density="balanced" hasDividers>
                   {filteredSolutions.map((solution) => (
                     <ListItem
                       key={solution.id}

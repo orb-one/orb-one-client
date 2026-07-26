@@ -44,9 +44,9 @@ it('renders solution rows that link to their detail pages', async () => {
   renderRoute(<SolutionsPage />)
 
   expect(
-    await screen.findByRole('heading', { name: '저장된 풀이' }),
+    await screen.findByRole('heading', { name: '풀이 목록', level: 1 }),
   ).toBeVisible()
-  expect(screen.getByRole('link', { name: /A\+B/ })).toHaveAttribute(
+  expect(await screen.findByRole('link', { name: /A\+B/ })).toHaveAttribute(
     'href',
     '/solutions/solution-1',
   )
