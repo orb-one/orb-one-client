@@ -37,7 +37,12 @@ it('creates Astryx-compatible syntax tokens for Java code', async () => {
   expect(tokens.every((token) => token.end > token.start)).toBe(true)
 })
 
-it('leaves Astryx-supported and unknown languages on the built-in tokenizer', async () => {
-  await expect(loadSolutionCodeTokenizer('python')).resolves.toBeUndefined()
+it('creates tokens for languages supported by the solution editor', async () => {
+  await expect(loadSolutionCodeTokenizer('python')).resolves.toBeDefined()
+  await expect(loadSolutionCodeTokenizer('javascript')).resolves.toBeDefined()
+  await expect(loadSolutionCodeTokenizer('typescript')).resolves.toBeDefined()
+})
+
+it('leaves unknown languages without a tokenizer', async () => {
   await expect(loadSolutionCodeTokenizer('brainfuck')).resolves.toBeUndefined()
 })

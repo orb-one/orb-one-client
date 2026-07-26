@@ -40,7 +40,7 @@ const languageAliases: Record<string, string> = {
   ts: 'typescript',
 }
 
-// Astryx가 기본 지원하지 않는 알고리즘 풀이 언어만 필요할 때 grammar를 내려받는다.
+// 풀이 조회와 편집 화면이 같은 문법 색상을 사용하도록 언어 grammar를 필요할 때 내려받는다.
 const languageLoaders: Record<string, LanguageLoader> = {
   c: async () => (await import('@shikijs/langs/c')).default,
   cpp: async () => (await import('@shikijs/langs/cpp')).default,
@@ -48,12 +48,15 @@ const languageLoaders: Record<string, LanguageLoader> = {
   dart: async () => (await import('@shikijs/langs/dart')).default,
   go: async () => (await import('@shikijs/langs/go')).default,
   java: async () => (await import('@shikijs/langs/java')).default,
+  javascript: async () => (await import('@shikijs/langs/javascript')).default,
   kotlin: async () => (await import('@shikijs/langs/kotlin')).default,
+  python: async () => (await import('@shikijs/langs/python')).default,
   r: async () => (await import('@shikijs/langs/r')).default,
   ruby: async () => (await import('@shikijs/langs/ruby')).default,
   rust: async () => (await import('@shikijs/langs/rust')).default,
   scala: async () => (await import('@shikijs/langs/scala')).default,
   swift: async () => (await import('@shikijs/langs/swift')).default,
+  typescript: async () => (await import('@shikijs/langs/typescript')).default,
 }
 
 const semanticColors = {
