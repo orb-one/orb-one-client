@@ -37,3 +37,13 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
   writable: true,
   value: () => null,
 })
+
+Object.defineProperty(Range.prototype, 'getClientRects', {
+  writable: true,
+  value: () => [],
+})
+
+Object.defineProperty(Range.prototype, 'getBoundingClientRect', {
+  writable: true,
+  value: () => new DOMRect(),
+})

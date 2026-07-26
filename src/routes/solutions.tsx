@@ -31,7 +31,8 @@ import {
 } from '@/lib/solutions/solution-state'
 
 export const Route = createFileRoute('/solutions')({
-  component: SolutionsPage,
+  validateSearch: normalizeSolutionsSearch,
+  component: SolutionsRoute,
 })
 
 const solutionStates: SolutionState[] = [
@@ -41,12 +42,31 @@ const solutionStates: SolutionState[] = [
   'unknown',
 ]
 
-export function SolutionsPage() {
+export function normalizeSolutionsSearch(search: Record<string, unknown>) {
+  const problemId =
+    typeof search.problemId === 'string' ? search.problemId.trim() : ''
+
+  return problemId ? { problemId } : {}
+}
+
+function SolutionsRoute() {
+  const { problemId } = Route.useSearch()
+
+  return problemId ? (
+    <SolutionsPage key={problemId} problemId={problemId} />
+  ) : (
+    <SolutionsPage key="all" />
+  )
+}
+
+export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
   const { locale, t } = useI18n()
   const copy = t.solutions.list
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
   const [selectedStates, setSelectedStates] = useState<SolutionState[]>([])
-  const solutionsQuery = useQuery(solutionsQueryOptions())
+  const solutionsQuery = useQuery(
+    solutionsQueryOptions(problemId ? { problemId } : {}),
+  )
   const isAuthRequired = solutionsQuery.error instanceof AuthSessionExpiredError
   const solutions = solutionsQuery.data ?? []
   const languages = Array.from(
@@ -78,14 +98,29 @@ export function SolutionsPage() {
         paddingBlock={10}
       >
         <VStack gap={2} maxWidth={672}>
-          <Text type="supporting" color="secondary">
-            {t.solutions.eyebrow}
-          </Text>
           <Heading level={1}>{copy.title}</Heading>
           <Text type="body" color="secondary">
             {copy.description}
           </Text>
         </VStack>
+
+        {problemId &&
+        (solutionsQuery.isPending ||
+          solutionsQuery.isError ||
+          solutions.length > 0) ? (
+          <Banner
+            status="info"
+            title={copy.problemFilterTitle}
+            endContent={
+              <Button
+                label={copy.viewAll}
+                href="/solutions"
+                size="sm"
+                variant="secondary"
+              />
+            }
+          />
+        ) : null}
 
         {solutionsQuery.isPending ? (
           <SolutionListSkeleton label={copy.loading} />
@@ -113,9 +148,21 @@ export function SolutionsPage() {
           />
         ) : solutions.length === 0 ? (
           <EmptyState
-            title={copy.emptyTitle}
-            description={copy.emptyDescription}
+            title={problemId ? copy.problemEmptyTitle : copy.emptyTitle}
+            description={
+              problemId ? copy.problemEmptyDescription : copy.emptyDescription
+            }
             icon={<Icon icon={Code2} size="lg" color="secondary" />}
+            actions={
+              problemId ? (
+                <Button
+                  label={copy.viewAll}
+                  href="/solutions"
+                  size="sm"
+                  variant="secondary"
+                />
+              ) : undefined
+            }
             headingLevel={2}
           />
         ) : (
@@ -175,11 +222,7 @@ export function SolutionsPage() {
               />
             ) : (
               <Section width="100%" padding={0} dividers={['top', 'bottom']}>
-                <List
-                  header={<Heading level={2}>{copy.resultsTitle}</Heading>}
-                  density="balanced"
-                  hasDividers
-                >
+                <List density="balanced" hasDividers>
                   {filteredSolutions.map((solution) => (
                     <ListItem
                       key={solution.id}
@@ -259,4 +302,8 @@ function isSolutionState(value: string): value is SolutionState {
 interface SolutionListMetadataProps {
   solution: SolutionSummary
   locale: Locale
+}
+
+interface SolutionsPageProps {
+  problemId?: string
 }

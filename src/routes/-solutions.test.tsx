@@ -30,7 +30,7 @@ vi.mock('@/lib/api/solutions', () => ({
 }))
 
 import { SolutionDetailPage } from '@/routes/solutions_.$solutionId'
-import { SolutionsPage } from '@/routes/solutions'
+import { normalizeSolutionsSearch, SolutionsPage } from '@/routes/solutions'
 
 afterEach(() => {
   cleanup()
@@ -44,9 +44,9 @@ it('renders solution rows that link to their detail pages', async () => {
   renderRoute(<SolutionsPage />)
 
   expect(
-    await screen.findByRole('heading', { name: '저장된 풀이' }),
+    await screen.findByRole('heading', { name: '풀이 목록', level: 1 }),
   ).toBeVisible()
-  expect(screen.getByRole('link', { name: /A\+B/ })).toHaveAttribute(
+  expect(await screen.findByRole('link', { name: /A\+B/ })).toHaveAttribute(
     'href',
     '/solutions/solution-1',
   )
@@ -80,6 +80,50 @@ it('shows an empty state when no solutions have been saved', async () => {
   expect(
     await screen.findByRole('heading', { name: '저장된 풀이가 없습니다' }),
   ).toBeVisible()
+})
+
+it('requests and identifies solutions scoped to a problem', async () => {
+  vi.mocked(getSolutions).mockResolvedValue([solvedSolution])
+
+  renderRoute(<SolutionsPage problemId="problem-1" />)
+
+  expect(
+    await screen.findByText('이 문제의 풀이만 표시하고 있습니다.'),
+  ).toBeVisible()
+  expect(getSolutions).toHaveBeenCalledWith({ problemId: 'problem-1' })
+  expect(screen.getByRole('link', { name: '전체 풀이 보기' })).toHaveAttribute(
+    'href',
+    '/solutions',
+  )
+})
+
+it('shows a problem-specific empty state for an empty scoped list', async () => {
+  vi.mocked(getSolutions).mockResolvedValue([])
+
+  renderRoute(<SolutionsPage problemId="problem-1" />)
+
+  expect(
+    await screen.findByRole('heading', {
+      name: '이 문제에 저장된 풀이가 없습니다',
+    }),
+  ).toBeVisible()
+  expect(
+    screen.getByText(
+      '전체 풀이 목록으로 돌아가 다른 문제의 풀이를 확인해 주세요.',
+    ),
+  ).toBeVisible()
+  expect(screen.getByRole('link', { name: '전체 풀이 보기' })).toHaveAttribute(
+    'href',
+    '/solutions',
+  )
+})
+
+it('normalizes the problem ID search parameter', () => {
+  expect(normalizeSolutionsSearch({ problemId: ' problem-1 ' })).toEqual({
+    problemId: 'problem-1',
+  })
+  expect(normalizeSolutionsSearch({ problemId: '' })).toEqual({})
+  expect(normalizeSolutionsSearch({ problemId: ['problem-1'] })).toEqual({})
 })
 
 it('announces the solution list loading state', () => {
@@ -136,8 +180,14 @@ it('renders solution metadata, code, Markdown notes, and the external problem li
     'class Main {}',
   )
   expect(
+    await screen.findByRole('textbox', { name: '소스 코드' }),
+  ).toHaveAttribute('aria-readonly', 'true')
+  expect(
     await screen.findByRole('heading', { name: '접근 방법', level: 3 }),
   ).toBeVisible()
+  expect(
+    await screen.findAllByRole('button', { name: '코드 복사' }),
+  ).toHaveLength(1)
   expect(screen.getByRole('listitem')).toHaveTextContent('두 수를 더한다.')
   expect(screen.getByText('O(1)')).toHaveStyle({ fontFamily: 'monospace' })
   expect(screen.getByText('14,128 KB')).toBeVisible()
@@ -146,6 +196,28 @@ it('renders solution metadata, code, Markdown notes, and the external problem li
   expect(
     screen.getByRole('link', { name: /문제 페이지 열기/ }),
   ).toHaveAttribute('href', 'https://www.acmicpc.net/problem/1000')
+})
+
+it('allows long Markdown code blocks to be collapsed', async () => {
+  const markdownCode = Array.from(
+    { length: 10 },
+    (_, index) => `line ${String(index + 1)}`,
+  ).join('\n')
+
+  vi.mocked(getSolution).mockResolvedValue({
+    ...solutionDetail,
+    description: `\`\`\`java\n${markdownCode}\n\`\`\``,
+  })
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  const collapseButton = await screen.findByRole('button', { name: 'java' })
+
+  expect(collapseButton).toHaveAttribute('aria-expanded', 'true')
+
+  await userEvent.click(collapseButton)
+
+  expect(collapseButton).toHaveAttribute('aria-expanded', 'false')
 })
 
 it('renders an empty solution description as supporting text', async () => {

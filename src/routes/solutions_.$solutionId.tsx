@@ -202,9 +202,9 @@ function SolutionDetailContent({ solution }: { solution: SolutionDetail }) {
             data-testid="solution-code"
             code={solution.code}
             language={solution.language}
+            ariaLabel={copy.codeTitle}
             hasLineNumbers
-            width="100%"
-            maxHeight={640}
+            size="viewer-lg"
           />
         </Suspense>
       </VStack>
