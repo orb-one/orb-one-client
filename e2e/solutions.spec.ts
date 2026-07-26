@@ -75,6 +75,32 @@ test('browses, copies, and collapses a saved solution across viewports', async (
     .toEqual({ clientWidth: 320, scrollWidth: 320 })
 })
 
+test('scopes the solution list from the problem query string', async ({
+  page,
+}) => {
+  await mockCurrentUser(page)
+  const solutionApi = await mockSolutionApi(page)
+  const problemId = seededSolution.problem.problemId
+
+  await page.goto(`/solutions?problemId=${encodeURIComponent(problemId)}`)
+
+  await expect(
+    page.getByText('이 문제의 풀이만 표시하고 있습니다.'),
+  ).toBeVisible()
+  await expect.poll(() => solutionApi.lastListProblemId()).toBe(problemId)
+
+  await page.getByRole('link', { name: '전체 풀이 보기' }).click()
+
+  await page.waitForURL(
+    (url) =>
+      url.pathname === '/solutions' && !url.searchParams.has('problemId'),
+  )
+  await expect.poll(() => solutionApi.lastListProblemId()).toBeNull()
+  await expect(
+    page.getByText('이 문제의 풀이만 표시하고 있습니다.'),
+  ).not.toBeVisible()
+})
+
 test('creates a solution with CodeMirror keyboard and language behavior', async ({
   page,
 }) => {
@@ -150,16 +176,23 @@ async function mockSolutionApi(page: Page) {
   const createdSolutionId = 'solution-e2e-created'
   let createdSolution: SolutionDetailResponse | null = null
   let createRequest: CreateSolutionRequest | null = null
+  let listProblemId: string | null = null
 
-  await page.route(apiUrl('/solutions'), async (route) => {
+  await page.route(matchEndpoint(apiUrl('/solutions')), async (route) => {
     const request = route.request()
 
     if (request.method() === 'GET') {
+      listProblemId = new URL(request.url()).searchParams.get('problemId')
       await fulfillJson(route, {
         solutions: [
           seededSolution,
           ...(createdSolution ? [createdSolution] : []),
         ]
+          .filter(
+            (solution) =>
+              listProblemId === null ||
+              solution.problem.problemId === listProblemId,
+          )
           .map(toSolutionSummary)
           .reverse(),
       })
@@ -212,6 +245,9 @@ async function mockSolutionApi(page: Page) {
     createdSolutionId,
     lastCreateRequest() {
       return createRequest
+    },
+    lastListProblemId() {
+      return listProblemId
     },
   }
 }
@@ -285,6 +321,13 @@ async function fulfillJson(route: Route, body: unknown, status = 200) {
 function apiUrl(path: string) {
   return new URL(stripLeadingSlashes(path), ensureTrailingSlash(apiBaseUrl))
     .href
+}
+
+function matchEndpoint(expectedUrl: string) {
+  const expected = new URL(expectedUrl)
+
+  return (actual: URL) =>
+    actual.origin === expected.origin && actual.pathname === expected.pathname
 }
 
 function ensureTrailingSlash(value: string) {

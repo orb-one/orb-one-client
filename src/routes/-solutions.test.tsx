@@ -30,7 +30,7 @@ vi.mock('@/lib/api/solutions', () => ({
 }))
 
 import { SolutionDetailPage } from '@/routes/solutions_.$solutionId'
-import { SolutionsPage } from '@/routes/solutions'
+import { normalizeSolutionsSearch, SolutionsPage } from '@/routes/solutions'
 
 afterEach(() => {
   cleanup()
@@ -80,6 +80,50 @@ it('shows an empty state when no solutions have been saved', async () => {
   expect(
     await screen.findByRole('heading', { name: '저장된 풀이가 없습니다' }),
   ).toBeVisible()
+})
+
+it('requests and identifies solutions scoped to a problem', async () => {
+  vi.mocked(getSolutions).mockResolvedValue([solvedSolution])
+
+  renderRoute(<SolutionsPage problemId="problem-1" />)
+
+  expect(
+    await screen.findByText('이 문제의 풀이만 표시하고 있습니다.'),
+  ).toBeVisible()
+  expect(getSolutions).toHaveBeenCalledWith({ problemId: 'problem-1' })
+  expect(screen.getByRole('link', { name: '전체 풀이 보기' })).toHaveAttribute(
+    'href',
+    '/solutions',
+  )
+})
+
+it('shows a problem-specific empty state for an empty scoped list', async () => {
+  vi.mocked(getSolutions).mockResolvedValue([])
+
+  renderRoute(<SolutionsPage problemId="problem-1" />)
+
+  expect(
+    await screen.findByRole('heading', {
+      name: '이 문제에 저장된 풀이가 없습니다',
+    }),
+  ).toBeVisible()
+  expect(
+    screen.getByText(
+      '전체 풀이 목록으로 돌아가 다른 문제의 풀이를 확인해 주세요.',
+    ),
+  ).toBeVisible()
+  expect(screen.getByRole('link', { name: '전체 풀이 보기' })).toHaveAttribute(
+    'href',
+    '/solutions',
+  )
+})
+
+it('normalizes the problem ID search parameter', () => {
+  expect(normalizeSolutionsSearch({ problemId: ' problem-1 ' })).toEqual({
+    problemId: 'problem-1',
+  })
+  expect(normalizeSolutionsSearch({ problemId: '' })).toEqual({})
+  expect(normalizeSolutionsSearch({ problemId: ['problem-1'] })).toEqual({})
 })
 
 it('announces the solution list loading state', () => {

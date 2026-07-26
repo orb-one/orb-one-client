@@ -91,6 +91,11 @@ export const messages = {
         retry: '다시 시도',
         emptyTitle: '저장된 풀이가 없습니다',
         emptyDescription: '새로운 풀이를 등록하면 여기에 표시됩니다.',
+        problemFilterTitle: '이 문제의 풀이만 표시하고 있습니다.',
+        viewAll: '전체 풀이 보기',
+        problemEmptyTitle: '이 문제에 저장된 풀이가 없습니다',
+        problemEmptyDescription:
+          '전체 풀이 목록으로 돌아가 다른 문제의 풀이를 확인해 주세요.',
         noResultsTitle: '조건에 맞는 풀이가 없습니다',
         noResultsDescription: '필터를 초기화하거나 다른 조건을 선택해 주세요.',
         unknownProblem: '알 수 없는 문제',
@@ -234,6 +239,11 @@ export const messages = {
         retry: 'Retry',
         emptyTitle: 'No saved solutions',
         emptyDescription: 'New solutions will appear here after registration.',
+        problemFilterTitle: 'Showing solutions for this problem.',
+        viewAll: 'View all solutions',
+        problemEmptyTitle: 'No solutions saved for this problem',
+        problemEmptyDescription:
+          'Return to all solutions to view another problem.',
         noResultsTitle: 'No solutions match these filters',
         noResultsDescription: 'Clear the filters or choose different values.',
         unknownProblem: 'Unknown problem',
