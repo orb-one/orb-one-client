@@ -43,6 +43,7 @@ export function RootLayout() {
       topNav={
         <TopNav
           label={t.navigation.mainLabel}
+          className="bg-surface supports-[backdrop-filter]:bg-surface/80 backdrop-blur-md"
           heading={
             <TopNavHeading
               heading={t.common.productName}

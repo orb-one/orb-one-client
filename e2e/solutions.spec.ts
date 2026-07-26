@@ -17,6 +17,16 @@ test('browses, copies, and collapses a saved solution across viewports', async (
   await expect(
     page.getByRole('heading', { name: '풀이 목록', level: 1 }),
   ).toBeVisible()
+  const navigation = page.getByRole('navigation', { name: '주요 탐색' })
+
+  await expect(navigation).toHaveCSS('backdrop-filter', 'blur(12px)')
+  await expect
+    .poll(() =>
+      navigation.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      ),
+    )
+    .not.toBe('rgba(0, 0, 0, 0)')
 
   await page.getByRole('link', { name: seededSolution.problem.name }).click()
 

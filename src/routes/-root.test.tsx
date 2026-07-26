@@ -49,6 +49,11 @@ it('renders the signed-out application shell with accessible navigation', () => 
 
   const navigation = screen.getByRole('navigation', { name: '주요 탐색' })
 
+  expect(navigation).toHaveClass(
+    'bg-surface',
+    'backdrop-blur-md',
+    'supports-[backdrop-filter]:bg-surface/80',
+  )
   expect(
     within(navigation).getByRole('link', { name: 'Orb One' }),
   ).toHaveAttribute('href', '/')
