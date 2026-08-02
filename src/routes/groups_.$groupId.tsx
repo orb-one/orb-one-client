@@ -51,7 +51,7 @@ export function GroupDetailPage() {
           <Button
             label="목록으로 돌아가기"
             size="sm"
-            variant="tertiary"
+            variant="secondary"
             icon={<Icon icon={ArrowLeft} size="sm" />}
             onClick={() => void navigate({ to: '/groups' })}
           />
@@ -70,7 +70,12 @@ export function GroupDetailPage() {
             }
             endContent={
               isAuthRequired ? (
-                <Button label="로그인" href="/login" size="sm" variant="secondary" />
+                <Button
+                  label="로그인"
+                  href="/login"
+                  size="sm"
+                  variant="secondary"
+                />
               ) : (
                 <Button
                   label="다시 시도"
@@ -87,7 +92,7 @@ export function GroupDetailPage() {
             {/* 그룹 타이틀 및 ID */}
             <VStack gap={2}>
               <Text type="supporting" color="secondary">
-                GROUP ID: {group.id}
+                GROUP ID: {group.groupId}
               </Text>
               <Heading level={1}>{group.name}</Heading>
             </VStack>
@@ -107,7 +112,7 @@ export function GroupDetailPage() {
                     <HStack vAlign="center" gap={2}>
                       <Heading level={2}>참여 멤버 목록</Heading>
                       <Badge
-                        label={`${group.members.length}명`}
+                        label={`${String(group.members.length)}명`}
                         variant="neutral"
                       />
                     </HStack>

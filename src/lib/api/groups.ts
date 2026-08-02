@@ -6,7 +6,7 @@ import { apiClient } from '@/lib/api/client'
 export interface GroupSummaryResponse {
   groupId: string
   name: string
-  nickname : string
+  nickname: string
   createdAt?: string
 }
 
@@ -18,7 +18,7 @@ export interface GetGroupsResponse {
 export interface GroupMemberResponse {
   userId: string
   nickname: string
-  role: 'OWNER' | 'MEMBER' | string
+  role: string
 }
 
 export interface GetGroupDetailResponse {
@@ -47,7 +47,6 @@ export interface CreateGroupResponse {
   createdAt: string
 }
 
-
 // 2. UI/프론트엔드 도메인 모델
 
 // 1) 전체 목록용 요약 도메인
@@ -71,7 +70,6 @@ export interface GroupDetail {
   name: string
   members: GroupMember[]
 }
-
 
 // 3. Mapper 함수 (DTO ➔ Domain)
 
@@ -100,32 +98,27 @@ function mapGroupDetail(response: GetGroupDetailResponse): GroupDetail {
 
 // 1) 전체 그룹 목록을 조회한다. (GET /groups)
 export async function getGroups(): Promise<GroupSummary[]> {
-
   const response = await apiClient<GetGroupsResponse>('/groups')
-  const groupList = response?.groups ?? []
-  return groupList.map(mapGroupSummary)
+  return response.groups.map(mapGroupSummary)
 }
 
 // 2) 특정 그룹 상세 정보를 조회한다. (GET /groups/{groupId})
 export async function getGroup(groupId: string): Promise<GroupDetail> {
-
   const encodedGroupId = encodeURIComponent(groupId)
   const response = await apiClient<GetGroupDetailResponse>(
     `/groups/${encodedGroupId}`,
   )
 
   return mapGroupDetail(response)
-
 }
-
 
 // 3) 선택한 그룹에 멤버 가입을 요청한다. (POST /groups/{groupId}/members)
 export async function joinGroup(groupId: string): Promise<GroupJoinResponse> {
-
   const encodedGroupId = encodeURIComponent(groupId)
 
   const response = await apiClient<GroupJoinResponse>(
-    `/groups/${encodedGroupId}/members`, {
+    `/groups/${encodedGroupId}/members`,
+    {
       method: 'POST',
     },
   )
@@ -135,9 +128,8 @@ export async function joinGroup(groupId: string): Promise<GroupJoinResponse> {
 
 // 그룹 생성 API (POST /groups)
 export async function createGroup(
-  data: CreateGroupRequest
+  data: CreateGroupRequest,
 ): Promise<CreateGroupResponse> {
-
   const response = await apiClient<CreateGroupResponse>('/groups', {
     method: 'POST',
     headers: {

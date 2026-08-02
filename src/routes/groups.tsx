@@ -23,7 +23,6 @@ import { AuthSessionExpiredError } from '@/lib/api/client'
 import { createGroup, getGroups, joinGroup } from '@/lib/api/groups'
 import type { GroupSummary } from '@/lib/api/groups'
 import { useI18n } from '@/lib/i18n/use-translations'
-import { DEFAULT_GROUPS_COPY } from '@/lib/i18n/groups'
 
 export const Route = createFileRoute('/groups')({
   component: GroupListPage,
@@ -40,8 +39,7 @@ export function GroupListPage() {
   const [newGroupName, setNewGroupName] = useState('')
 
   // i18n 다국어 및 폴백 문구
-  // i18n 번역 데이터가 있으면 사용하고, 없으면 DEFAULT_GROUPS_COPY 사용
-  const copy = t?.groups?.list ?? DEFAULT_GROUPS_COPY
+  const copy = t.groups
 
   // 2. 그룹 목록 조회 Query
   const groupsQuery = useQuery({
@@ -53,7 +51,7 @@ export function GroupListPage() {
   const joinGroupMutation = useMutation({
     mutationFn: (groupId: string) => joinGroup(groupId),
     onSuccess: (data) => {
-      alert(data.message ?? '그룹 가입이 완료되었습니다.')
+      alert(data.message)
       setSelectedGroupId(null)
       void queryClient.invalidateQueries({ queryKey: ['groups'] })
     },
@@ -132,7 +130,7 @@ export function GroupListPage() {
         paddingBlock={10}
       >
         {/* 1. 헤더 & 액션 버튼 영역 */}
-        <HStack width="100%" hAlign="space-between" vAlign="end" wrap="wrap" gap={4}>
+        <HStack width="100%" hAlign="between" vAlign="end" wrap="wrap" gap={4}>
           <VStack gap={2} maxWidth={672}>
             <Text type="supporting" color="secondary">
               GROUPS
@@ -146,13 +144,11 @@ export function GroupListPage() {
           <HStack gap={3}>
             <Button
               label={
-                joinGroupMutation.isPending
-                  ? copy.joining
-                  : copy.joinGroup
+                joinGroupMutation.isPending ? copy.joining : copy.joinGroup
               }
               size="sm"
               variant="primary"
-              disabled={!selectedGroupId || joinGroupMutation.isPending}
+              isDisabled={!selectedGroupId || joinGroupMutation.isPending}
               icon={<Icon icon={UserCheck} size="sm" />}
               onClick={handleJoinGroup}
             />
@@ -176,7 +172,7 @@ export function GroupListPage() {
             endContent={
               isAuthRequired ? (
                 <Button
-                  label={t?.groups?.login ?? '로그인'}
+                  label={copy.login}
                   href="/login"
                   size="sm"
                   variant="secondary"
@@ -209,8 +205,12 @@ export function GroupListPage() {
                 return (
                   <div
                     key={group.groupId}
-                    onClick={() => handleSelectRow(group.groupId)}
-                    onDoubleClick={() => handleDoubleClickRow(group.groupId)}
+                    onClick={() => {
+                      handleSelectRow(group.groupId)
+                    }}
+                    onDoubleClick={() => {
+                      handleDoubleClickRow(group.groupId)
+                    }}
                     style={{
                       cursor: 'pointer',
                       backgroundColor: isSelected
@@ -230,15 +230,15 @@ export function GroupListPage() {
                           color={isSelected ? 'accent' : 'secondary'}
                         />
                       }
-                      description={<GroupListMetadata group={group} copy={copy} />}
+                      description={<GroupListMetadata group={group} />}
                       endContent={
                         <Badge
                           label={
                             isSelected
                               ? '선택됨'
                               : group.nickname
-                              ? '소유자 지정됨'
-                              : '공용'
+                                ? '소유자 지정됨'
+                                : '공용'
                           }
                           variant={isSelected ? 'blue' : 'neutral'}
                         />
@@ -254,13 +254,16 @@ export function GroupListPage() {
         {/* 4. 그룹 생성 모달 / 팝업 */}
         <Dialog
           isOpen={isCreateModalOpen}
-          onClose={handleCloseCreateModal}
-          title="새 그룹 생성"
+          onOpenChange={(open) => {
+            if (!open) handleCloseCreateModal()
+          }}
         >
           <VStack gap={4} padding={4}>
+            <h2>그룹 생성</h2>
             <Text type="body">생성할 그룹의 이름을 입력해 주세요.</Text>
 
             <TextInput
+              label="그룹 이름"
               placeholder="예: 알고리즘 스터디 2반"
               value={newGroupName}
               // 값 또는 이벤트 객체 모두에 대응 가능한 안전한 onChange
@@ -272,12 +275,14 @@ export function GroupListPage() {
                   typeof valOrEvent === 'object' &&
                   'target' in valOrEvent
                 ) {
-                  const target = (valOrEvent as React.ChangeEvent<HTMLInputElement>).target
-                  setNewGroupName(target?.value ?? '')
+                  const target = (
+                    valOrEvent as React.ChangeEvent<HTMLInputElement>
+                  ).target
+                  setNewGroupName(target.value)
                 }
               }}
               onKeyDown={(e) => {
-                if (e?.key === 'Enter') handleSubmitCreateGroup()
+                if (e.key === 'Enter') handleSubmitCreateGroup()
               }}
             />
 
@@ -289,12 +294,12 @@ export function GroupListPage() {
               />
               <Button
                 label={
-                  createGroupMutation.isPending
-                    ? copy.creating
-                    : '생성하기'
+                  createGroupMutation.isPending ? copy.creating : '생성하기'
                 }
                 variant="primary"
-                disabled={!newGroupName.trim() || createGroupMutation.isPending}
+                isDisabled={
+                  !newGroupName.trim() || createGroupMutation.isPending
+                }
                 onClick={handleSubmitCreateGroup}
               />
             </HStack>
@@ -307,30 +312,27 @@ export function GroupListPage() {
 
 interface GroupListMetadataProps {
   group: GroupSummary
-  copy: Record<string, string>
 }
 
-function GroupListMetadata({ group, copy }: GroupListMetadataProps) {
+function GroupListMetadata({ group }: GroupListMetadataProps) {
   const createdAtFormatted = group.createdAt
     ? new Date(group.createdAt).toLocaleDateString()
     : null
 
   return (
-    <VStack gap={1.5}>
-      <HStack gap={3} wrap="wrap" vAlign="center">
-        <HStack gap={1} vAlign="center">
-          <Icon icon={Users} size="xs" color="secondary" />
-          <Text type="supporting" color="secondary">
-            소유자: {group.nickname ?? copy.unknownOwner}
-          </Text>
-        </HStack>
-        {createdAtFormatted ? (
-          <Text type="supporting" color="secondary">
-            생성일: {createdAtFormatted}
-          </Text>
-        ) : null}
+    <HStack gap={3} wrap="wrap" vAlign="center">
+      <HStack gap={1} vAlign="center">
+        <Icon icon={Users} size="xsm" color="secondary" />
+        <Text type="supporting" color="secondary">
+          소유자: {group.nickname}
+        </Text>
       </HStack>
-    </VStack>
+      {createdAtFormatted ? (
+        <Text type="supporting" color="secondary">
+          생성일: {createdAtFormatted}
+        </Text>
+      ) : null}
+    </HStack>
   )
 }
 
