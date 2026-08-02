@@ -10,9 +10,7 @@ export interface GroupSummaryResponse {
   createdAt?: string
 }
 
-export interface GetGroupsResponse {
-  groups: GroupSummaryResponse[]
-}
+export type GetGroupsResponse = GroupSummaryResponse[]
 
 // 2) [특정 그룹 상세 조회]
 export interface GroupMemberResponse {
@@ -98,8 +96,8 @@ function mapGroupDetail(response: GetGroupDetailResponse): GroupDetail {
 
 // 1) 전체 그룹 목록을 조회한다. (GET /groups)
 export async function getGroups(): Promise<GroupSummary[]> {
-  const response = await apiClient<GetGroupsResponse>('/groups')
-  return response.groups.map(mapGroupSummary)
+  const response = await apiClient<GroupSummaryResponse[]>('/groups')
+  return response.map(mapGroupSummary)
 }
 
 // 2) 특정 그룹 상세 정보를 조회한다. (GET /groups/{groupId})
@@ -135,7 +133,7 @@ export async function createGroup(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data),
+    body: data,
   })
 
   return response
