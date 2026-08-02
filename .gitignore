@@ -13,7 +13,6 @@ dist
 dist-ssr
 .vite
 .vitest
-.tanstack/
 coverage
 playwright-report
 test-results
