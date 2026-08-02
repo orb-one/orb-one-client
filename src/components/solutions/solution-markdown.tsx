@@ -37,9 +37,9 @@ function SolutionMarkdownCodeBlock({
       <SolutionCodeBlock
         code={code}
         language={language ?? null}
-        width="100%"
-        maxHeight={480}
+        ariaLabel={language ? `${language} code` : 'Code'}
         isCollapsible
+        size="viewer-md"
       />
     </VStack>
   )
