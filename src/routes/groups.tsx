@@ -2,10 +2,12 @@ import { Badge } from '@astryxdesign/core/Badge'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
+import { Dialog } from '@astryxdesign/core/Dialog'
 import { EmptyState } from '@astryxdesign/core/EmptyState'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
+import { TextInput } from '@astryxdesign/core/TextInput'
 import { List, ListItem } from '@astryxdesign/core/List'
 import { Section } from '@astryxdesign/core/Section'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
@@ -18,9 +20,10 @@ import { Layers, Plus, UserCheck, Users } from 'lucide-react'
 import { useState } from 'react'
 
 import { AuthSessionExpiredError } from '@/lib/api/client'
-import { getGroups, joinGroup } from '@/lib/api/groups'
+import { createGroup, getGroups, joinGroup } from '@/lib/api/groups'
 import type { GroupSummary } from '@/lib/api/groups'
 import { useI18n } from '@/lib/i18n/use-translations'
+import { DEFAULT_GROUPS_COPY } from '@/lib/i18n/groups'
 
 export const Route = createFileRoute('/groups')({
   component: GroupListPage,
@@ -31,25 +34,14 @@ export function GroupListPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
-  // 1. 클릭하여 선택된 그룹 ID 관리 상태
+  // 1. 상태 관리 (선택된 그룹 ID / 모달 열림 여부 / 신규 그룹명)
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [newGroupName, setNewGroupName] = useState('')
 
   // i18n 다국어 및 폴백 문구
-  const copy = t?.groups?.list ?? {
-    title: '그룹 목록',
-    description: '가입하려는 그룹을 클릭하여 선택한 후 [그룹 가입] 버튼을 눌러주세요.',
-    loading: '그룹 목록을 불러오는 중입니다.',
-    loadError: '그룹 목록을 가져오는 데 실패했습니다.',
-    authRequired: '로그인이 필요한 서비스입니다.',
-    emptyTitle: '개설된 그룹이 없습니다.',
-    emptyDescription: '새로운 그룹을 생성하거나 다른 그룹에 참여해보세요.',
-    retry: '다시 시도',
-    joinGroup: '그룹 가입',
-    joining: '가입 진행 중...',
-    createGroup: '그룹 만들기',
-    unknownOwner: '소유자 정보 없음',
-    selectGroupAlert: '가입할 그룹을 먼저 목록에서 선택해주세요.',
-  }
+  // i18n 번역 데이터가 있으면 사용하고, 없으면 DEFAULT_GROUPS_COPY 사용
+  const copy = t?.groups?.list ?? DEFAULT_GROUPS_COPY
 
   // 2. 그룹 목록 조회 Query
   const groupsQuery = useQuery({
@@ -70,10 +62,23 @@ export function GroupListPage() {
     },
   })
 
+  // 4. 그룹 생성 POST /groups
+  const createGroupMutation = useMutation({
+    mutationFn: (name: string) => createGroup({ name }),
+    onSuccess: () => {
+      alert('새로운 그룹이 성공적으로 생성되었습니다.')
+      handleCloseCreateModal()
+      void queryClient.invalidateQueries({ queryKey: ['groups'] })
+    },
+    onError: (error) => {
+      alert(`그룹 생성 실패: ${error.message}`)
+    },
+  })
+
   const isAuthRequired = groupsQuery.error instanceof AuthSessionExpiredError
   const groups = groupsQuery.data ?? []
 
-  // 그룹 가입 버튼
+  // 그룹 가입 버튼 핸들러
   function handleJoinGroup() {
     if (!selectedGroupId) {
       alert(copy.selectGroupAlert)
@@ -82,12 +87,34 @@ export function GroupListPage() {
     joinGroupMutation.mutate(selectedGroupId)
   }
 
+  // 그룹 생성 팝업 열기/닫기
+  function handleOpenCreateModal() {
+    setNewGroupName('')
+    setIsCreateModalOpen(true)
+  }
+
+  function handleCloseCreateModal() {
+    setNewGroupName('')
+    setIsCreateModalOpen(false)
+  }
+
+  // 그룹 생성 제출
+  function handleSubmitCreateGroup() {
+    const trimmedName = newGroupName.trim()
+    if (!trimmedName) {
+      alert('그룹명을 입력해 주세요.')
+      return
+    }
+    createGroupMutation.mutate(trimmedName)
+  }
+
   // 행(Row) 클릭 (단일 선택)
   function handleSelectRow(groupId: string) {
+    if (!groupId) return
     setSelectedGroupId((prev) => (prev === groupId ? null : groupId))
   }
 
-  // 행 더블클릭 (상세 페이지 이동 - 독립 경로 /groups_/$groupId 연동)
+  // 행 더블클릭 (상세 페이지 이동)
   function handleDoubleClickRow(groupId: string) {
     void navigate({
       to: '/groups/$groupId',
@@ -134,6 +161,7 @@ export function GroupListPage() {
               size="sm"
               variant="secondary"
               icon={<Icon icon={Plus} size="sm" />}
+              onClick={handleOpenCreateModal}
             />
           </HStack>
         </HStack>
@@ -148,7 +176,7 @@ export function GroupListPage() {
             endContent={
               isAuthRequired ? (
                 <Button
-                  label="로그인"
+                  label={t?.groups?.login ?? '로그인'}
                   href="/login"
                   size="sm"
                   variant="secondary"
@@ -171,17 +199,18 @@ export function GroupListPage() {
             headingLevel={2}
           />
         ) : (
-          /*  3. 데이터 목록 영역 */
+          /* 3. 데이터 목록 영역 */
           <Section width="100%" padding={0} dividers={['bottom']}>
             <List density="balanced" hasDividers>
               {groups.map((group) => {
-                const isSelected = selectedGroupId === group.id
+                const isSelected =
+                  Boolean(selectedGroupId) && selectedGroupId === group.groupId
 
                 return (
                   <div
-                    key={group.id}
-                    onClick={() => handleSelectRow(group.id)}
-                    onDoubleClick={() => handleDoubleClickRow(group.id)}
+                    key={group.groupId}
+                    onClick={() => handleSelectRow(group.groupId)}
+                    onDoubleClick={() => handleDoubleClickRow(group.groupId)}
                     style={{
                       cursor: 'pointer',
                       backgroundColor: isSelected
@@ -204,7 +233,13 @@ export function GroupListPage() {
                       description={<GroupListMetadata group={group} copy={copy} />}
                       endContent={
                         <Badge
-                          label={isSelected ? '선택됨' : group.ownerId ? '소유자 지정됨' : '공용'}
+                          label={
+                            isSelected
+                              ? '선택됨'
+                              : group.nickname
+                              ? '소유자 지정됨'
+                              : '공용'
+                          }
                           variant={isSelected ? 'blue' : 'neutral'}
                         />
                       }
@@ -215,6 +250,56 @@ export function GroupListPage() {
             </List>
           </Section>
         )}
+
+        {/* 4. 그룹 생성 모달 / 팝업 */}
+        <Dialog
+          isOpen={isCreateModalOpen}
+          onClose={handleCloseCreateModal}
+          title="새 그룹 생성"
+        >
+          <VStack gap={4} padding={4}>
+            <Text type="body">생성할 그룹의 이름을 입력해 주세요.</Text>
+
+            <TextInput
+              placeholder="예: 알고리즘 스터디 2반"
+              value={newGroupName}
+              // 값 또는 이벤트 객체 모두에 대응 가능한 안전한 onChange
+              onChange={(valOrEvent: unknown) => {
+                if (typeof valOrEvent === 'string') {
+                  setNewGroupName(valOrEvent)
+                } else if (
+                  valOrEvent &&
+                  typeof valOrEvent === 'object' &&
+                  'target' in valOrEvent
+                ) {
+                  const target = (valOrEvent as React.ChangeEvent<HTMLInputElement>).target
+                  setNewGroupName(target?.value ?? '')
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e?.key === 'Enter') handleSubmitCreateGroup()
+              }}
+            />
+
+            <HStack gap={2} hAlign="end" width="100%">
+              <Button
+                label="취소"
+                variant="secondary"
+                onClick={handleCloseCreateModal}
+              />
+              <Button
+                label={
+                  createGroupMutation.isPending
+                    ? copy.creating
+                    : '생성하기'
+                }
+                variant="primary"
+                disabled={!newGroupName.trim() || createGroupMutation.isPending}
+                onClick={handleSubmitCreateGroup}
+              />
+            </HStack>
+          </VStack>
+        </Dialog>
       </VStack>
     </Center>
   )
@@ -236,7 +321,7 @@ function GroupListMetadata({ group, copy }: GroupListMetadataProps) {
         <HStack gap={1} vAlign="center">
           <Icon icon={Users} size="xs" color="secondary" />
           <Text type="supporting" color="secondary">
-            소유자 ID: {group.ownerId ?? copy.unknownOwner}
+            소유자: {group.nickname ?? copy.unknownOwner}
           </Text>
         </HStack>
         {createdAtFormatted ? (
