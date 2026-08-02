@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
               '/auth': createApiProxy(apiProxyTarget),
               '/solutions': createApiProxy(apiProxyTarget),
               '/users': createApiProxy(apiProxyTarget),
+              '/groups': createApiProxy(apiProxyTarget),
             },
           },
         }
