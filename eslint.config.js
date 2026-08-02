@@ -7,7 +7,11 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'src/routeTree.gen.ts']),
+  globalIgnores([
+    'dist',
+    'public/mockServiceWorker.js',
+    'src/routeTree.gen.ts',
+  ]),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -27,7 +31,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/routes/**/*.tsx', 'src/components/ui/**/*.tsx'],
+    files: ['src/routes/**/*.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
     },
