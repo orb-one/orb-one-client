@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SolutionsRouteImport } from './routes/solutions'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SolutionsNewRouteImport } from './routes/solutions_.new'
 import { Route as SolutionsSolutionIdRouteImport } from './routes/solutions_.$solutionId'
+import { Route as GroupsGroupIdRouteImport } from './routes/groups_.$groupId'
 
 const SolutionsRoute = SolutionsRouteImport.update({
   id: '/solutions',
@@ -29,6 +31,11 @@ const RegisterRoute = RegisterRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsRoute = GroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -46,29 +53,40 @@ const SolutionsSolutionIdRoute = SolutionsSolutionIdRouteImport.update({
   path: '/solutions/$solutionId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GroupsGroupIdRoute = GroupsGroupIdRouteImport.update({
+  id: '/groups_/$groupId',
+  path: '/groups/$groupId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/groups': typeof GroupsRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
+  '/groups/$groupId': typeof GroupsGroupIdRoute
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/groups': typeof GroupsRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
+  '/groups/$groupId': typeof GroupsGroupIdRoute
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/groups': typeof GroupsRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
+  '/groups_/$groupId': typeof GroupsGroupIdRoute
   '/solutions_/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions_/new': typeof SolutionsNewRoute
 }
@@ -76,34 +94,42 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/groups'
     | '/login'
     | '/register'
     | '/solutions'
+    | '/groups/$groupId'
     | '/solutions/$solutionId'
     | '/solutions/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/groups'
     | '/login'
     | '/register'
     | '/solutions'
+    | '/groups/$groupId'
     | '/solutions/$solutionId'
     | '/solutions/new'
   id:
     | '__root__'
     | '/'
+    | '/groups'
     | '/login'
     | '/register'
     | '/solutions'
+    | '/groups_/$groupId'
     | '/solutions_/$solutionId'
     | '/solutions_/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GroupsRoute: typeof GroupsRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   SolutionsRoute: typeof SolutionsRoute
+  GroupsGroupIdRoute: typeof GroupsGroupIdRoute
   SolutionsSolutionIdRoute: typeof SolutionsSolutionIdRoute
   SolutionsNewRoute: typeof SolutionsNewRoute
 }
@@ -131,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups': {
+      id: '/groups'
+      path: '/groups'
+      fullPath: '/groups'
+      preLoaderRoute: typeof GroupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -152,14 +185,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SolutionsSolutionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups_/$groupId': {
+      id: '/groups_/$groupId'
+      path: '/groups/$groupId'
+      fullPath: '/groups/$groupId'
+      preLoaderRoute: typeof GroupsGroupIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GroupsRoute: GroupsRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   SolutionsRoute: SolutionsRoute,
+  GroupsGroupIdRoute: GroupsGroupIdRoute,
   SolutionsSolutionIdRoute: SolutionsSolutionIdRoute,
   SolutionsNewRoute: SolutionsNewRoute,
 }
