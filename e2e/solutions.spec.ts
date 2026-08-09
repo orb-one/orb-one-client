@@ -129,7 +129,94 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   await createSolutionLink.click()
   await page.waitForURL((url) => url.pathname === '/solutions/new')
 
-  await page.getByLabel('문제 ID').fill(seededSolution.problemId)
+  await page.getByRole('button', { name: '문제 선택' }).click()
+  await expect(
+    page.getByRole('heading', { name: '문제 선택', level: 2 }),
+  ).toBeVisible()
+  const problemPickerHeading = page.getByRole('heading', {
+    name: '문제 선택',
+    level: 2,
+  })
+  const problemPickerDialog = page.getByRole('dialog')
+  const problemPickerDescription = page.getByText(
+    '풀이를 등록할 문제를 선택해 주세요.',
+    { exact: true },
+  )
+  const problemPickerPagination = page.getByText('Page 1 of 2', {
+    exact: true,
+  })
+  const problemScrollArea = page.getByTestId('problem-picker-list-scroll-area')
+
+  await expect
+    .poll(() =>
+      problemScrollArea.evaluate(
+        (element) => element.scrollHeight > element.clientHeight,
+      ),
+    )
+    .toBe(true)
+  await problemPickerDialog.evaluate(async (element) => {
+    await Promise.all(
+      element.getAnimations().map((animation) => animation.finished),
+    )
+  })
+  const headingTopBeforeScroll = await problemPickerHeading.evaluate(
+    (element) => element.getBoundingClientRect().top,
+  )
+  const descriptionTopBeforeScroll = await problemPickerDescription.evaluate(
+    (element) => element.getBoundingClientRect().top,
+  )
+  const paginationTopBeforeScroll = await problemPickerPagination.evaluate(
+    (element) => element.getBoundingClientRect().top,
+  )
+  const [descriptionBox, listBox, paginationBox] = await Promise.all([
+    problemPickerDescription.boundingBox(),
+    problemScrollArea.boundingBox(),
+    problemPickerPagination.boundingBox(),
+  ])
+
+  if (!descriptionBox || !listBox || !paginationBox) {
+    throw new Error('Problem picker layout elements must have visible bounds')
+  }
+
+  expect(listBox.y).toBeGreaterThanOrEqual(
+    descriptionBox.y + descriptionBox.height,
+  )
+  expect(listBox.y + listBox.height).toBeLessThanOrEqual(paginationBox.y)
+  await problemScrollArea.evaluate((element) => {
+    element.scrollTo({ top: element.scrollHeight })
+  })
+  await expect
+    .poll(() => problemScrollArea.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(0)
+  await expect
+    .poll(() =>
+      problemPickerHeading.evaluate(
+        (element) => element.getBoundingClientRect().top,
+      ),
+    )
+    .toBe(headingTopBeforeScroll)
+  await expect
+    .poll(() =>
+      problemPickerDescription.evaluate(
+        (element) => element.getBoundingClientRect().top,
+      ),
+    )
+    .toBe(descriptionTopBeforeScroll)
+  await expect
+    .poll(() =>
+      problemPickerPagination.evaluate(
+        (element) => element.getBoundingClientRect().top,
+      ),
+    )
+    .toBe(paginationTopBeforeScroll)
+  await expect
+    .poll(() => problemPickerDialog.evaluate((element) => element.scrollTop))
+    .toBe(0)
+  await problemScrollArea.evaluate((element) => {
+    element.scrollTo({ top: 0 })
+  })
+  await page.getByRole('button', { name: /A\+B/ }).click()
+  await expect(page.locator('form').getByText(/BOJ 1000/)).toBeVisible()
 
   const languageSelector = page.getByRole('combobox', {
     name: /프로그래밍 언어/,
@@ -161,6 +248,14 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   await page.getByRole('option', { name: 'Java', exact: true }).click()
   await expect(javaConstant).not.toHaveCount(0)
 
+  await page
+    .getByRole('textbox', { name: /풀이 설명/ })
+    .fill('E2E 신규 풀이 설명')
+  await page.getByRole('checkbox', { name: /풀이 완료/ }).check()
+  await page.getByRole('spinbutton', { name: /메모리 사용량/ }).fill('12345')
+  await page.getByRole('spinbutton', { name: /실행 시간/ }).fill('67')
+  await expect(page.getByRole('checkbox', { name: /임시 저장/ })).toHaveCount(0)
+
   await page.getByRole('button', { name: '풀이 저장' }).click()
   await page.waitForURL(
     (url) => url.pathname === `/solutions/${solutionApi.createdSolutionId}`,
@@ -170,6 +265,11 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
     problemId: seededSolution.problemId,
     language: 'Java',
     code: '  boolean value = true;',
+    description: 'E2E 신규 풀이 설명',
+    isSolved: true,
+    isDraft: false,
+    memoryUsage: 12_345,
+    timeElapsed: 67,
   })
   await expect(
     page.getByRole('heading', {
@@ -180,6 +280,9 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   await expect(page.getByTestId('solution-code')).toContainText(
     'boolean value = true;',
   )
+  await expect(page.getByText('E2E 신규 풀이 설명')).toBeVisible()
+  await expect(page.getByText('12,345 KB')).toBeVisible()
+  await expect(page.getByText('67 ms')).toBeVisible()
 })
 
 test('edits fields and preserves an author solution language alias', async ({
@@ -265,6 +368,39 @@ async function mockSolutionApi(
     })
   })
 
+  await page.route(matchEndpoint(apiUrl('/problems')), async (route) => {
+    if (route.request().isNavigationRequest()) {
+      await route.fallback()
+      return
+    }
+
+    await fulfillJson(route, {
+      problems: Array.from({ length: 10 }, (_, index) =>
+        index === 0
+          ? {
+              problemId: initialSeededSolution.problemId,
+              provider: 'BOJ',
+              externalProblemId: '1000',
+              name: 'A+B',
+              url: 'https://www.acmicpc.net/problem/1000',
+              difficulty: 'BRONZE_5',
+            }
+          : {
+              problemId: `problem-e2e-${String(index)}`,
+              provider: 'BOJ',
+              externalProblemId: String(1000 + index),
+              name: `E2E 문제 ${String(index)}`,
+              url: `https://www.acmicpc.net/problem/${String(1000 + index)}`,
+              difficulty: 'BRONZE_5',
+            },
+      ),
+      page: 0,
+      size: 10,
+      totalElements: 12,
+      totalPages: 2,
+    })
+  })
+
   await page.route(matchEndpoint(apiUrl('/solutions')), async (route) => {
     const request = route.request()
 
@@ -296,13 +432,13 @@ async function mockSolutionApi(
         solutionId: createdSolutionId,
         problemId: initialSeededSolution.problemId,
         userId: 'solution-e2e-user',
-        isSolved: null,
-        isDraft: null,
+        isSolved: createRequest.isSolved,
+        isDraft: createRequest.isDraft,
         language: createRequest.language,
-        memoryUsage: null,
-        timeElapsed: null,
+        memoryUsage: createRequest.memoryUsage,
+        timeElapsed: createRequest.timeElapsed,
         code: createRequest.code,
-        description: null,
+        description: createRequest.description,
         createdAt: '2026-07-26T06:00:00.000Z',
         updatedAt: '2026-07-26T06:00:00.000Z',
       }
@@ -465,6 +601,11 @@ interface CreateSolutionRequest {
   problemId: string
   language: string
   code: string
+  isSolved: boolean
+  isDraft: false
+  memoryUsage: number | null
+  timeElapsed: number | null
+  description: string | null
 }
 
 interface UpdateSolutionRequest {

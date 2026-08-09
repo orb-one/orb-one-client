@@ -12,6 +12,11 @@ export interface CreateSolutionRequest {
   problemId: string
   language: string
   code: string
+  isSolved: boolean
+  isDraft: false
+  memoryUsage: number | null
+  timeElapsed: number | null
+  description: string | null
 }
 
 export interface CreateSolutionResult {

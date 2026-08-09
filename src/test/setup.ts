@@ -14,6 +14,11 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 })
 
+Object.defineProperty(window, 'scrollTo', {
+  writable: true,
+  value: () => undefined,
+})
+
 class ResizeObserverMock implements ResizeObserver {
   observe() {
     return undefined
@@ -46,4 +51,18 @@ Object.defineProperty(Range.prototype, 'getClientRects', {
 Object.defineProperty(Range.prototype, 'getBoundingClientRect', {
   writable: true,
   value: () => new DOMRect(),
+})
+
+Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+  writable: true,
+  value(this: HTMLDialogElement) {
+    this.setAttribute('open', '')
+  },
+})
+
+Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+  writable: true,
+  value(this: HTMLDialogElement) {
+    this.removeAttribute('open')
+  },
 })

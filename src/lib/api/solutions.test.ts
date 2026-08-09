@@ -117,11 +117,16 @@ it('gets a solution detail and normalizes nullable text fields', async () => {
   )
 })
 
-it('creates a solution with only the documented request fields', async () => {
+it('creates a solution with every documented request field', async () => {
   const request = {
     problemId: 'problem-1',
     language: 'Java',
     code: 'class Main {}',
+    isSolved: true,
+    isDraft: false as const,
+    memoryUsage: 12_345,
+    timeElapsed: 67,
+    description: '풀이 설명',
   }
   const fetchMock = mockJsonResponse({ solutionId: 'solution-3' })
 

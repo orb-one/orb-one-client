@@ -8,3 +8,11 @@ export interface Problem {
   url: string
   difficulty: string | null
 }
+
+export interface ProblemPage {
+  problems: Problem[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}

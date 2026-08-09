@@ -97,6 +97,11 @@ it('creates a solution and invalidates every solution list', async () => {
     problemId: 'problem-1',
     language: 'Java',
     code: 'class Main {}',
+    isSolved: false,
+    isDraft: false as const,
+    memoryUsage: null,
+    timeElapsed: null,
+    description: null,
   }
 
   await act(async () => {

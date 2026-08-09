@@ -85,6 +85,9 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
     (solutionsQuery.isError || solutions.length > 0)
   const hasActiveFilters =
     selectedLanguages.length > 0 || selectedStates.length > 0
+  const createHref = problemId
+    ? `/solutions/new?problemId=${encodeURIComponent(problemId)}`
+    : '/solutions/new'
 
   function clearFilters() {
     setSelectedLanguages([])
@@ -110,7 +113,7 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
           {showHeaderCreateAction ? (
             <Button
               label={copy.create}
-              href="/solutions/new"
+              href={createHref}
               variant="primary"
               icon={<Icon icon={FilePlus2} color="inherit" />}
             />
@@ -170,7 +173,7 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
               <HStack gap={2} wrap="wrap" hAlign="center">
                 <Button
                   label={copy.create}
-                  href="/solutions/new"
+                  href={createHref}
                   variant="primary"
                   icon={<Icon icon={FilePlus2} color="inherit" />}
                 />

@@ -177,7 +177,12 @@ function isCreateSolutionRequest(
     isRecord(value) &&
     isNonEmptyString(value.problemId) &&
     isNonEmptyString(value.language) &&
-    isNonEmptyString(value.code)
+    isNonEmptyString(value.code) &&
+    typeof value.isSolved === 'boolean' &&
+    value.isDraft === false &&
+    isNullableNumber(value.memoryUsage) &&
+    isNullableNumber(value.timeElapsed) &&
+    (typeof value.description === 'string' || value.description === null)
   )
 }
 

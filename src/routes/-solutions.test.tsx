@@ -124,6 +124,11 @@ it('requests and identifies solutions scoped to a problem', async () => {
     'href',
     '/solutions',
   )
+  await screen.findByRole('link', { name: /problem-1/ })
+  expect(screen.getByRole('link', { name: '새 풀이 작성' })).toHaveAttribute(
+    'href',
+    '/solutions/new?problemId=problem-1',
+  )
 })
 
 it('shows a problem-specific empty state for an empty scoped list', async () => {
@@ -144,6 +149,10 @@ it('shows a problem-specific empty state for an empty scoped list', async () => 
   expect(screen.getByRole('link', { name: '전체 풀이 보기' })).toHaveAttribute(
     'href',
     '/solutions',
+  )
+  expect(screen.getByRole('link', { name: '새 풀이 작성' })).toHaveAttribute(
+    'href',
+    '/solutions/new?problemId=problem-1',
   )
 })
 

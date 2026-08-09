@@ -1,6 +1,6 @@
 import { http, HttpResponse, passthrough } from 'msw'
 
-import type { ProblemResponse } from '@/lib/api/problems'
+import type { ProblemListResponse, ProblemResponse } from '@/lib/api/problems'
 import {
   isDocumentNavigation,
   isSolutionApiRequest,
@@ -34,6 +34,28 @@ const mockProblems: ProblemResponse[] = [
 ]
 
 export const problemHandlers = [
+  http.get('*/problems', ({ request }) => {
+    if (
+      isDocumentNavigation(request) ||
+      !isSolutionApiRequest(request, '/problems')
+    ) {
+      return passthrough()
+    }
+
+    const requestUrl = new URL(request.url)
+    const page = Number(requestUrl.searchParams.get('page') ?? 0)
+    const size = Number(requestUrl.searchParams.get('size') ?? 20)
+    const start = page * size
+    const response: ProblemListResponse = {
+      problems: mockProblems.slice(start, start + size),
+      page,
+      size,
+      totalElements: mockProblems.length,
+      totalPages: Math.ceil(mockProblems.length / size),
+    }
+
+    return HttpResponse.json(response)
+  }),
   http.get('*/problems/:problemId', ({ params, request }) => {
     const problemId =
       typeof params.problemId === 'string' ? params.problemId : undefined

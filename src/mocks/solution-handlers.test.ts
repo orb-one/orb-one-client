@@ -120,6 +120,11 @@ it('creates a solution that subsequent list and detail requests can read', async
     problemId: '10000000-0000-4000-8000-000000000001',
     language: 'TypeScript',
     code: 'console.log(input)',
+    isSolved: true,
+    isDraft: false as const,
+    memoryUsage: 9_876,
+    timeElapsed: 54,
+    description: 'created solution',
   }
 
   const result = await createSolution(request)
@@ -131,13 +136,15 @@ it('creates a solution that subsequent list and detail requests can read', async
     id: result.id,
     userId: currentUser?.id,
     language: 'TypeScript',
-    isSolved: null,
-    isDraft: null,
+    isSolved: true,
+    isDraft: false,
   })
   expect(detail).toMatchObject({
     id: result.id,
     code: 'console.log(input)',
-    description: '',
+    description: 'created solution',
+    memoryUsage: 9_876,
+    timeElapsed: 54,
   })
 })
 
@@ -193,6 +200,11 @@ it('rejects malformed requests and unknown problems', async () => {
       problemId: 'unknown-problem',
       language: 'Java',
       code: 'class Main {}',
+      isSolved: false,
+      isDraft: false,
+      memoryUsage: null,
+      timeElapsed: null,
+      description: null,
     }),
   ).rejects.toMatchObject({
     status: 404,
