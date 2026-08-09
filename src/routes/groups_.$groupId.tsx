@@ -1,52 +1,49 @@
-import { Badge } from '@astryxdesign/core/Badge'
-import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
 import { EmptyState } from '@astryxdesign/core/EmptyState'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
-import { List, ListItem } from '@astryxdesign/core/List'
 import { Section } from '@astryxdesign/core/Section'
-import { Skeleton } from '@astryxdesign/core/Skeleton'
-import { Text } from '@astryxdesign/core/Text'
-import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { VStack } from '@astryxdesign/core/VStack'
-import { useQuery } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Crown, User, Users } from 'lucide-react'
+import { ArrowLeft, BookOpen, Dumbbell, Users } from 'lucide-react'
+import { useState } from 'react'
 
-import { AuthSessionExpiredError } from '@/lib/api/client'
-import { getGroup } from '@/lib/api/groups'
+import type { GroupSummary } from '@/lib/api/groups'
+
+import { MemberTab } from './-components/MemberTab'
+import { ProblemSetTab } from './-components/ProblemSetTab'
 
 export const Route = createFileRoute('/groups_/$groupId')({
   component: GroupDetailPage,
 })
 
+type TabType = 'problem-sets' | 'practice' | 'members'
+
 export function GroupDetailPage() {
   const { groupId } = Route.useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
-  // GET /groups/{groupId} 상세 및 멤버 조회 API
-  const groupQuery = useQuery({
-    queryKey: ['group', groupId],
-    queryFn: () => getGroup(groupId),
-    enabled: Boolean(groupId), // groupId가 있을 때만 쿼리 실행
-  })
+  const [activeTab, setActiveTab] = useState<TabType>('problem-sets')
 
-  const isAuthRequired = groupQuery.error instanceof AuthSessionExpiredError
-  const group = groupQuery.data
+  // 이전 목록 캐시에서 그룹명 빠른 추출
+  const cachedGroups = queryClient.getQueryData<GroupSummary[]>(['groups'])
+  const cachedGroup = cachedGroups?.find((g) => g.groupId === groupId)
+  const groupName = cachedGroup?.name ?? '그룹 상세'
 
   return (
     <Center width="100%">
       <VStack
         width="100%"
-        maxWidth={800}
+        maxWidth={1024}
         gap={6}
         paddingInline={4}
         paddingBlock={10}
       >
-        {/* 1. 목록으로 돌아가기 버튼 */}
+        {/* 목록 돌아가기 */}
         <HStack width="100%">
           <Button
             label="목록으로 돌아가기"
@@ -57,118 +54,86 @@ export function GroupDetailPage() {
           />
         </HStack>
 
-        {/* 2. 조건부 상태 렌더링 */}
-        {groupQuery.isPending ? (
-          <GroupDetailSkeleton />
-        ) : groupQuery.isError || !group ? (
-          <Banner
-            status={isAuthRequired ? 'info' : 'error'}
-            title={
-              isAuthRequired
-                ? '로그인이 필요한 서비스입니다.'
-                : '그룹 멤버 정보를 불러오는 데 실패했습니다.'
-            }
-            endContent={
-              isAuthRequired ? (
-                <Button
-                  label="로그인"
-                  href="/login"
-                  size="sm"
-                  variant="secondary"
-                />
-              ) : (
-                <Button
-                  label="다시 시도"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => void groupQuery.refetch()}
-                />
-              )
-            }
-          />
-        ) : (
-          /*  3. 특정 그룹 정보 및 멤버 조회 영역 */
-          <VStack width="100%" gap={6}>
-            {/* 그룹 타이틀 및 ID */}
-            <VStack gap={2}>
-              <Text type="supporting" color="secondary">
-                GROUP ID: {group.groupId}
-              </Text>
-              <Heading level={1}>{group.name}</Heading>
-            </VStack>
-
-            {/* 멤버 목록 섹션 */}
-            <Section width="100%" padding={0} dividers={['bottom']}>
-              {group.members.length === 0 ? (
-                <EmptyState
-                  title="등록된 멤버가 없습니다."
-                  description="아직 이 그룹에 참여한 멤버가 없습니다."
-                  icon={<Icon icon={Users} size="lg" color="secondary" />}
-                  headingLevel={2}
-                />
-              ) : (
-                <List
-                  header={
-                    <HStack vAlign="center" gap={2}>
-                      <Heading level={2}>참여 멤버 목록</Heading>
-                      <Badge
-                        label={`${String(group.members.length)}명`}
-                        variant="neutral"
-                      />
-                    </HStack>
-                  }
-                  density="balanced"
-                  hasDividers
-                >
-                  {group.members.map((member) => {
-                    const isOwner = member.role === 'OWNER'
-
-                    return (
-                      <ListItem
-                        key={member.userId}
-                        label={member.nickname}
-                        description={`User ID: ${member.userId}`}
-                        startContent={
-                          <Icon
-                            icon={isOwner ? Crown : User}
-                            size="sm"
-                            color={isOwner ? 'accent' : 'secondary'}
-                          />
-                        }
-                        endContent={
-                          <Badge
-                            label={isOwner ? '소유자 (OWNER)' : '멤버 (MEMBER)'}
-                            variant={isOwner ? 'blue' : 'neutral'}
-                          />
-                        }
-                      />
-                    )
-                  })}
-                </List>
-              )}
-            </Section>
+        {/* 메인 헤더 */}
+        <VStack width="100%" gap={8}>
+          <VStack width="100%" hAlign="center" gap={1}>
+            <Heading level={1}>{groupName}</Heading>
           </VStack>
-        )}
+
+          {/* 탭 버튼 */}
+          <HStack hAlign="center" gap={2}>
+            <Button
+              label="문제집"
+              size="sm"
+              variant={activeTab === 'problem-sets' ? 'primary' : 'secondary'}
+              icon={<Icon icon={BookOpen} size="sm" />}
+              onClick={() => {
+                setActiveTab('problem-sets')
+              }}
+            />
+            <Button
+              label="연습"
+              size="sm"
+              variant={activeTab === 'practice' ? 'primary' : 'secondary'}
+              icon={<Icon icon={Dumbbell} size="sm" />}
+              onClick={() => {
+                setActiveTab('practice')
+              }}
+            />
+            <Button
+              label="멤버"
+              size="sm"
+              variant={activeTab === 'members' ? 'primary' : 'secondary'}
+              icon={<Icon icon={Users} size="sm" />}
+              onClick={() => {
+                setActiveTab('members')
+              }}
+            />
+          </HStack>
+
+          {/* 탭 메인 컨테이너 */}
+          <Section
+            width="100%"
+            padding={6}
+            style={{
+              border:
+                '1px solid var(--astryxdesign-color-border-subtle, #e2e8f0)',
+              borderRadius: '12px',
+            }}
+          >
+            <VStack width="100%" gap={6}>
+              {/* [탭 1] 문제집 탭 */}
+              {activeTab === 'problem-sets' && (
+                <ProblemSetTab groupId={groupId} />
+              )}
+
+              {/* [탭 2] 연습 탭 */}
+              {activeTab === 'practice' && (
+                <VStack width="100%" gap={6}>
+                  <HStack width="100%" hAlign="end" gap={2}>
+                    <Button
+                      label="새 연습 시작"
+                      size="sm"
+                      variant="primary"
+                      icon={<Icon icon={Dumbbell} size="sm" />}
+                    />
+                  </HStack>
+
+                  <EmptyState
+                    title="진행 중인 연습이 없습니다."
+                    description="그룹 멤버들과 함께 풀 연습 세션을 시작해 보세요."
+                    icon={<Icon icon={Dumbbell} size="lg" color="secondary" />}
+                    headingLevel={2}
+                  />
+                </VStack>
+              )}
+
+              {/* [탭 3] 멤버 탭 (독립 컴포넌트 호출) */}
+              {activeTab === 'members' && <MemberTab groupId={groupId} />}
+            </VStack>
+          </Section>
+        </VStack>
       </VStack>
     </Center>
-  )
-}
-
-function GroupDetailSkeleton() {
-  return (
-    <VStack role="status" aria-live="polite" gap={6} width="100%">
-      <VisuallyHidden>그룹 정보를 불러오는 중입니다.</VisuallyHidden>
-      <VStack gap={2}>
-        <Skeleton width="30%" height={16} radius={2} />
-        <Skeleton width="60%" height={32} radius={2} />
-      </VStack>
-      <Section width="100%" padding={4} dividers={['bottom']}>
-        <VStack gap={3}>
-          <Skeleton width="20%" height={24} radius={2} />
-          <Skeleton width="100%" height={40} radius={2} />
-          <Skeleton width="100%" height={40} radius={2} />
-        </VStack>
-      </Section>
-    </VStack>
   )
 }
