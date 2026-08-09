@@ -28,11 +28,11 @@ test('browses, copies, and collapses a saved solution across viewports', async (
     )
     .not.toBe('rgba(0, 0, 0, 0)')
 
-  await page.getByRole('link', { name: seededSolution.problem.name }).click()
+  await page.getByRole('link', { name: seededSolution.problemId }).click()
 
   await expect(
     page.getByRole('heading', {
-      name: seededSolution.problem.name,
+      name: seededSolution.problemId,
       level: 1,
     }),
   ).toBeVisible()
@@ -90,7 +90,7 @@ test('scopes the solution list from the problem query string', async ({
 }) => {
   await mockCurrentUser(page)
   const solutionApi = await mockSolutionApi(page)
-  const problemId = seededSolution.problem.problemId
+  const problemId = seededSolution.problemId
 
   await page.goto(`/solutions?problemId=${encodeURIComponent(problemId)}`)
 
@@ -119,7 +119,7 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
 
   await page.goto('/solutions/new')
 
-  await page.getByLabel('문제 ID').fill(seededSolution.problem.problemId)
+  await page.getByLabel('문제 ID').fill(seededSolution.problemId)
 
   const languageSelector = page.getByRole('combobox', {
     name: /프로그래밍 언어/,
@@ -157,13 +157,13 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   )
 
   expect(solutionApi.lastCreateRequest()).toEqual({
-    problemId: seededSolution.problem.problemId,
+    problemId: seededSolution.problemId,
     language: 'Java',
     code: '  boolean value = true;',
   })
   await expect(
     page.getByRole('heading', {
-      name: seededSolution.problem.name,
+      name: seededSolution.problemId,
       level: 1,
     }),
   ).toBeVisible()
@@ -191,6 +191,11 @@ async function mockSolutionApi(page: Page) {
   await page.route(matchEndpoint(apiUrl('/solutions')), async (route) => {
     const request = route.request()
 
+    if (request.isNavigationRequest()) {
+      await route.fallback()
+      return
+    }
+
     if (request.method() === 'GET') {
       listProblemId = new URL(request.url()).searchParams.get('problemId')
       await fulfillJson(route, {
@@ -200,8 +205,7 @@ async function mockSolutionApi(page: Page) {
         ]
           .filter(
             (solution) =>
-              listProblemId === null ||
-              solution.problem.problemId === listProblemId,
+              listProblemId === null || solution.problemId === listProblemId,
           )
           .map(toSolutionSummary)
           .reverse(),
@@ -213,14 +217,15 @@ async function mockSolutionApi(page: Page) {
       createRequest = request.postDataJSON() as CreateSolutionRequest
       createdSolution = {
         solutionId: createdSolutionId,
-        problem: seededSolution.problem,
-        isSolved: false,
-        isDraft: false,
+        problemId: seededSolution.problemId,
+        userId: 'solution-e2e-user',
+        isSolved: null,
+        isDraft: null,
         language: createRequest.language,
         memoryUsage: null,
         timeElapsed: null,
         code: createRequest.code,
-        description: '',
+        description: null,
         createdAt: '2026-07-26T06:00:00.000Z',
         updatedAt: '2026-07-26T06:00:00.000Z',
       }
@@ -233,6 +238,11 @@ async function mockSolutionApi(page: Page) {
   })
 
   await page.route(`${apiUrl('/solutions')}/*`, async (route) => {
+    if (route.request().isNavigationRequest()) {
+      await route.fallback()
+      return
+    }
+
     const solutionId = decodeURIComponent(
       new URL(route.request().url()).pathname.split('/').at(-1) ?? '',
     )
@@ -276,13 +286,8 @@ function createSeededSolution(): SolutionDetailResponse {
 
   return {
     solutionId: 'solution-e2e-seeded',
-    problem: {
-      problemId: 'problem-e2e-addition',
-      name: 'A+B E2E',
-      tier: 1,
-      url: 'https://www.acmicpc.net/problem/1000',
-      tags: [{ tagId: 'tag-e2e-math', name: '수학' }],
-    },
+    problemId: 'problem-e2e-addition',
+    userId: 'solution-e2e-user',
     isSolved: true,
     isDraft: false,
     language: 'Java',
@@ -309,14 +314,12 @@ function createSeededSolution(): SolutionDetailResponse {
 function toSolutionSummary(solution: SolutionDetailResponse) {
   return {
     solutionId: solution.solutionId,
-    problem: solution.problem,
+    problemId: solution.problemId,
+    userId: solution.userId,
     isSolved: solution.isSolved,
     isDraft: solution.isDraft,
     language: solution.language,
-    memoryUsage: solution.memoryUsage,
-    timeElapsed: solution.timeElapsed,
     createdAt: solution.createdAt,
-    updatedAt: solution.updatedAt,
   }
 }
 
@@ -366,20 +369,15 @@ interface CreateSolutionRequest {
 
 interface SolutionDetailResponse {
   solutionId: string
-  problem: {
-    problemId: string
-    name: string
-    tier: number | null
-    url: string | null
-    tags: { tagId: string; name: string }[]
-  }
-  isSolved: boolean
-  isDraft: boolean
+  problemId: string
+  userId: string
+  isSolved: boolean | null
+  isDraft: boolean | null
   language: string
   memoryUsage: number | null
   timeElapsed: number | null
   code: string
-  description: string
+  description: string | null
   createdAt: string
   updatedAt: string
 }

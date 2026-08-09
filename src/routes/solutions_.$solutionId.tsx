@@ -1,9 +1,7 @@
-import { Badge } from '@astryxdesign/core/Badge'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
 import { Heading } from '@astryxdesign/core/Heading'
-import { HStack } from '@astryxdesign/core/HStack'
 import { Link } from '@astryxdesign/core/Link'
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList'
 import { Section } from '@astryxdesign/core/Section'
@@ -22,7 +20,6 @@ import {
   formatSolutionDate,
   formatSolutionElapsedTime,
   formatSolutionMemoryUsage,
-  getSafeProblemUrl,
 } from '@/lib/solutions/solution-format'
 import type { SolutionDetail } from '@/lib/solutions/solution-model'
 import { solutionQueryOptions } from '@/lib/solutions/solution-queries'
@@ -122,8 +119,6 @@ export function SolutionDetailPage({ solutionId }: SolutionDetailPageProps) {
 function SolutionDetailContent({ solution }: { solution: SolutionDetail }) {
   const { locale, t } = useI18n()
   const copy = t.solutions.detail
-  const problem = solution.problem
-  const problemUrl = getSafeProblemUrl(problem?.url ?? null)
   const createdAt = formatSolutionDate(solution.createdAt, locale)
   const updatedAt = formatSolutionDate(solution.updatedAt, locale)
 
@@ -133,7 +128,7 @@ function SolutionDetailContent({ solution }: { solution: SolutionDetail }) {
         <Text type="supporting" color="secondary">
           {copy.eyebrow}
         </Text>
-        <Heading level={1}>{problem?.name ?? copy.unknownProblem}</Heading>
+        <Heading level={1}>{solution.problemId}</Heading>
         <SolutionStatus solution={solution} />
       </VStack>
 
@@ -143,35 +138,10 @@ function SolutionDetailContent({ solution }: { solution: SolutionDetail }) {
           orientation="horizontal"
         >
           <MetadataListItem label={copy.problem}>
-            <VStack gap={1}>
-              <Text>{problem?.name ?? copy.unavailable}</Text>
-              {problemUrl ? (
-                <Link
-                  href={problemUrl}
-                  isExternalLink
-                  isStandalone
-                  newTabLabel={copy.opensInNewTab}
-                >
-                  {copy.openProblem}
-                </Link>
-              ) : null}
-            </VStack>
+            {solution.problemId}
           </MetadataListItem>
-          <MetadataListItem label={copy.tier}>
-            {problem?.tier === null || problem?.tier === undefined
-              ? copy.unavailable
-              : String(problem.tier)}
-          </MetadataListItem>
-          <MetadataListItem label={copy.tags}>
-            {problem && problem.tags.length > 0 ? (
-              <HStack gap={1.5} wrap="wrap">
-                {problem.tags.map((tag) => (
-                  <Badge key={tag.id} label={tag.name} variant="blue" />
-                ))}
-              </HStack>
-            ) : (
-              copy.unavailable
-            )}
+          <MetadataListItem label={copy.author}>
+            {solution.userId}
           </MetadataListItem>
           <MetadataListItem label={copy.language}>
             {solution.language ?? copy.unavailable}

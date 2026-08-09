@@ -3,8 +3,15 @@ import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest'
 
 import { ApiError, apiClient } from '@/lib/api/client'
 import { createSolution, getSolution, getSolutions } from '@/lib/api/solutions'
+import {
+  getCurrentMockUser,
+  rememberRegisteredUser,
+  signInMockUser,
+  signOutMockUser,
+} from '@/mocks/auth-session'
 import { resetMockSolutions } from '@/mocks/solution-data'
 import {
+  isDocumentNavigation,
   isSolutionApiRequest,
   solutionHandlers,
 } from '@/mocks/solution-handlers'
@@ -19,6 +26,7 @@ beforeAll(() => {
 afterEach(() => {
   server.resetHandlers()
   resetMockSolutions()
+  signOutMockUser()
 })
 
 afterAll(() => {
@@ -32,20 +40,14 @@ it('returns solution fixtures without detail-only fields', async () => {
   expect(solutions).toHaveLength(3)
   expect(solutions[0]).toMatchObject({
     id: '30000000-0000-4000-8000-000000000001',
-    problem: {
-      id: '10000000-0000-4000-8000-000000000001',
-      name: 'A+B',
-      tier: 1,
-      tags: [{ name: '수학' }],
-    },
+    problemId: '10000000-0000-4000-8000-000000000001',
+    userId: '00000000-0000-4000-8000-000000000001',
     isSolved: true,
     isDraft: false,
     language: 'Java',
   })
   expect(solutions[2]).toMatchObject({
-    problem: { tier: null, url: null, tags: [] },
-    memoryUsage: null,
-    timeElapsed: null,
+    problemId: '10000000-0000-4000-8000-000000000003',
   })
   expect(solutions[0]).not.toHaveProperty('code')
   expect(solutions[0]).not.toHaveProperty('description')
@@ -68,19 +70,27 @@ it('does not classify a frontend module under a solutions folder as an API reque
   ).toBe(true)
 })
 
+it('classifies HTML document requests as navigation', () => {
+  const request = new Request('http://localhost:8080/solutions', {
+    headers: { accept: 'text/html,application/xhtml+xml' },
+  })
+
+  expect(isDocumentNavigation(request)).toBe(true)
+})
+
 it('filters the solution list by problemId', async () => {
   const problemId = '10000000-0000-4000-8000-000000000002'
 
   const solutions = await getSolutions({ problemId })
 
   expect(solutions).toHaveLength(1)
-  expect(solutions[0]?.problem?.id).toBe(problemId)
+  expect(solutions[0]?.problemId).toBe(problemId)
 })
 
 it('returns the code and description from a solution detail', async () => {
   const solution = await getSolution('30000000-0000-4000-8000-000000000002')
 
-  expect(solution.problem?.name).toBe('미로 탐색')
+  expect(solution.problemId).toBe('10000000-0000-4000-8000-000000000002')
   expect(solution.code).toContain('from collections import deque')
   expect(solution.description).toContain('# 풀이 전략')
   expect(solution.description).toContain('**BFS**')
@@ -95,6 +105,12 @@ it('returns a 404 response for an unknown solution', async () => {
 })
 
 it('creates a solution that subsequent list and detail requests can read', async () => {
+  const email = 'solution-author@example.com'
+
+  rememberRegisteredUser({ email, nickname: 'solution-author' })
+  signInMockUser({ email })
+
+  const currentUser = getCurrentMockUser()
   const request = {
     problemId: '10000000-0000-4000-8000-000000000001',
     language: 'TypeScript',
@@ -108,9 +124,10 @@ it('creates a solution that subsequent list and detail requests can read', async
   expect(solutions).toHaveLength(2)
   expect(solutions[0]).toMatchObject({
     id: result.id,
+    userId: currentUser?.id,
     language: 'TypeScript',
-    isSolved: false,
-    isDraft: false,
+    isSolved: null,
+    isDraft: null,
   })
   expect(detail).toMatchObject({
     id: result.id,
@@ -130,6 +147,8 @@ it('rejects malformed requests and unknown problems', async () => {
     message: 'Invalid solution request',
   })
   await expect(invalidRequest).rejects.toBeInstanceOf(ApiError)
+
+  signInMockUser({ email: 'solution-author@example.com' })
 
   await expect(
     createSolution({

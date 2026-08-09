@@ -1,6 +1,7 @@
 import { http, HttpResponse, passthrough } from 'msw'
 
 import type { CreateSolutionRequest } from '@/lib/api/solutions'
+import { getCurrentMockUser } from '@/mocks/auth-session'
 import {
   createMockSolution,
   getMockSolution,
@@ -9,7 +10,10 @@ import {
 
 export const solutionHandlers = [
   http.get('*/solutions', ({ request }) => {
-    if (!isSolutionApiRequest(request, '/solutions')) {
+    if (
+      isDocumentNavigation(request) ||
+      !isSolutionApiRequest(request, '/solutions')
+    ) {
       return passthrough()
     }
 
@@ -23,6 +27,7 @@ export const solutionHandlers = [
 
     if (
       !solutionId ||
+      isDocumentNavigation(request) ||
       !isSolutionApiRequest(
         request,
         `/solutions/${encodeURIComponent(solutionId)}`,
@@ -56,7 +61,13 @@ export const solutionHandlers = [
       )
     }
 
-    const solution = createMockSolution(body)
+    const currentUser = getCurrentMockUser()
+
+    if (!currentUser) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const solution = createMockSolution(body, currentUser.id)
 
     if (!solution) {
       return HttpResponse.json(
@@ -89,6 +100,14 @@ export function isSolutionApiRequest(request: Request, path: string) {
   return (
     requestUrl.origin === expectedUrl.origin &&
     requestUrl.pathname === expectedUrl.pathname
+  )
+}
+
+export function isDocumentNavigation(request: Request) {
+  return (
+    request.mode === 'navigate' ||
+    request.destination === 'document' ||
+    request.headers.get('accept')?.includes('text/html') === true
   )
 }
 

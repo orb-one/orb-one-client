@@ -1,4 +1,3 @@
-import { Badge } from '@astryxdesign/core/Badge'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
@@ -226,7 +225,7 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
                   {filteredSolutions.map((solution) => (
                     <ListItem
                       key={solution.id}
-                      label={solution.problem?.name ?? copy.unknownProblem}
+                      label={solution.problemId}
                       href={`/solutions/${solution.id}`}
                       startContent={
                         <Icon icon={Code2} size="sm" color="accent" />
@@ -252,7 +251,7 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
 
 function SolutionListMetadata({ solution, locale }: SolutionListMetadataProps) {
   const copy = useI18n().t.solutions.list
-  const updatedAt = formatSolutionDate(solution.updatedAt, locale)
+  const createdAt = formatSolutionDate(solution.createdAt, locale)
 
   return (
     <VStack gap={1.5}>
@@ -260,19 +259,13 @@ function SolutionListMetadata({ solution, locale }: SolutionListMetadataProps) {
         <Text type="supporting" color="secondary">
           {solution.language ?? copy.unknownLanguage}
         </Text>
-        {solution.problem?.tier !== null &&
-        solution.problem?.tier !== undefined ? (
-          <Text type="supporting" color="secondary">
-            {copy.tier} {String(solution.problem.tier)}
-          </Text>
-        ) : null}
-        {solution.problem?.tags.map((tag) => (
-          <Badge key={tag.id} label={tag.name} variant="blue" />
-        ))}
-      </HStack>
-      {updatedAt ? (
         <Text type="supporting" color="secondary">
-          {copy.updatedAt} {updatedAt}
+          {copy.author} {solution.userId}
+        </Text>
+      </HStack>
+      {createdAt ? (
+        <Text type="supporting" color="secondary">
+          {copy.createdAt} {createdAt}
         </Text>
       ) : null}
     </VStack>

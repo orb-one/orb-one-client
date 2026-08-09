@@ -12,20 +12,12 @@ it('gets and maps the solution list without a filter', async () => {
     solutions: [
       {
         solutionId: 'solution-1',
-        problem: {
-          problemId: 'problem-1',
-          name: '두 수의 합',
-          tier: 3,
-          url: 'https://example.com/problems/1',
-          tags: [{ tagId: 'tag-1', name: '구현' }],
-        },
+        problemId: 'problem-1',
+        userId: 'user-1',
         isSolved: true,
         isDraft: false,
         language: 'Java',
-        memoryUsage: 128,
-        timeElapsed: 24,
         createdAt: '2026-07-18T09:00:00Z',
-        updatedAt: '2026-07-18T09:30:00Z',
       },
     ],
   })
@@ -33,20 +25,12 @@ it('gets and maps the solution list without a filter', async () => {
   await expect(getSolutions()).resolves.toEqual([
     {
       id: 'solution-1',
-      problem: {
-        id: 'problem-1',
-        name: '두 수의 합',
-        tier: 3,
-        url: 'https://example.com/problems/1',
-        tags: [{ id: 'tag-1', name: '구현' }],
-      },
+      problemId: 'problem-1',
+      userId: 'user-1',
       isSolved: true,
       isDraft: false,
       language: 'Java',
-      memoryUsage: 128,
-      timeElapsed: 24,
       createdAt: '2026-07-18T09:00:00Z',
-      updatedAt: '2026-07-18T09:30:00Z',
     },
   ])
 
@@ -56,22 +40,30 @@ it('gets and maps the solution list without a filter', async () => {
   )
 })
 
-it('encodes the optional problem filter and tolerates minimal list items', async () => {
+it('encodes the optional problem filter', async () => {
   const fetchMock = mockJsonResponse({
-    solutions: [{ solutionId: 'solution-2' }],
+    solutions: [
+      {
+        solutionId: 'solution-2',
+        problemId: 'problem-2',
+        userId: 'user-2',
+        language: null,
+        isSolved: null,
+        isDraft: null,
+        createdAt: null,
+      },
+    ],
   })
 
   await expect(getSolutions({ problemId: 'problem id/2' })).resolves.toEqual([
     {
       id: 'solution-2',
-      problem: null,
+      problemId: 'problem-2',
+      userId: 'user-2',
       isSolved: null,
       isDraft: null,
       language: null,
-      memoryUsage: null,
-      timeElapsed: null,
       createdAt: null,
-      updatedAt: null,
     },
   ])
 
@@ -81,16 +73,26 @@ it('encodes the optional problem filter and tolerates minimal list items', async
   )
 })
 
-it('gets a solution detail and maps absent extension fields to null', async () => {
+it('gets a solution detail and normalizes nullable text fields', async () => {
   const fetchMock = mockJsonResponse({
     solutionId: 'solution/id',
-    code: 'class Main {}',
-    description: '풀이 설명',
+    problemId: 'problem-1',
+    userId: 'user-1',
+    language: null,
+    code: null,
+    description: null,
+    isSolved: null,
+    isDraft: null,
+    memoryUsage: null,
+    timeElapsed: null,
+    createdAt: null,
+    updatedAt: null,
   })
 
   await expect(getSolution('solution/id')).resolves.toEqual({
     id: 'solution/id',
-    problem: null,
+    problemId: 'problem-1',
+    userId: 'user-1',
     isSolved: null,
     isDraft: null,
     language: null,
@@ -98,8 +100,8 @@ it('gets a solution detail and maps absent extension fields to null', async () =
     timeElapsed: null,
     createdAt: null,
     updatedAt: null,
-    code: 'class Main {}',
-    description: '풀이 설명',
+    code: '',
+    description: '',
   })
 
   expect(fetchMock).toHaveBeenCalledWith(
