@@ -3,6 +3,7 @@ import type {
   SolutionDetail,
   SolutionSummary,
 } from '@/lib/solutions/solution-model'
+import type { ProblemProvider } from '@/lib/problems/problem-model'
 
 export interface GetSolutionsParams {
   problemId?: string
@@ -33,8 +34,8 @@ export interface UpdateSolutionRequest {
   description: string | null
 }
 
-// 서버 DTO의 nullable 컬럼은 API 경계에서 명시적으로 수용한다.
-export interface SolutionSummaryResponse {
+// 목록과 상세 응답이 공통으로 제공하는 풀이 메타데이터다.
+interface SolutionBaseResponse {
   solutionId: string
   problemId: string
   userId: string
@@ -45,7 +46,15 @@ export interface SolutionSummaryResponse {
   createdAt: string | null
 }
 
-export interface SolutionDetailResponse extends SolutionSummaryResponse {
+// 문제 레코드를 찾지 못한 기존 데이터는 서버가 문제 정보를 null로 응답한다.
+export interface SolutionSummaryResponse extends SolutionBaseResponse {
+  problemName: string | null
+  problemProvider: ProblemProvider | null
+  problemNumber: string | null
+  problemDifficulty: string | null
+}
+
+export interface SolutionDetailResponse extends SolutionBaseResponse {
   code: string | null
   description: string | null
   memoryUsage: number | null
@@ -116,6 +125,28 @@ function mapSolutionSummary(
   response: SolutionSummaryResponse,
 ): SolutionSummary {
   return {
+    ...mapSolutionBase(response),
+    problemName: response.problemName,
+    problemProvider: response.problemProvider,
+    problemNumber: response.problemNumber,
+    problemDifficulty: response.problemDifficulty,
+  }
+}
+
+function mapSolutionDetail(response: SolutionDetailResponse): SolutionDetail {
+  return {
+    ...mapSolutionBase(response),
+    // 기존 nullable 데이터도 상세 화면에서 안전하게 렌더링할 수 있게 한다.
+    code: response.code ?? '',
+    description: response.description ?? '',
+    memoryUsage: response.memoryUsage,
+    timeElapsed: response.timeElapsed,
+    updatedAt: response.updatedAt,
+  }
+}
+
+function mapSolutionBase(response: SolutionBaseResponse) {
+  return {
     id: response.solutionId,
     problemId: response.problemId,
     userId: response.userId,
@@ -126,17 +157,5 @@ function mapSolutionSummary(
     isSolved: response.isSolved,
     isDraft: response.isDraft,
     createdAt: response.createdAt,
-  }
-}
-
-function mapSolutionDetail(response: SolutionDetailResponse): SolutionDetail {
-  return {
-    ...mapSolutionSummary(response),
-    // 기존 nullable 데이터도 상세 화면에서 안전하게 렌더링할 수 있게 한다.
-    code: response.code ?? '',
-    description: response.description ?? '',
-    memoryUsage: response.memoryUsage,
-    timeElapsed: response.timeElapsed,
-    updatedAt: response.updatedAt,
   }
 }

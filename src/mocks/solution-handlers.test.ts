@@ -89,7 +89,13 @@ it('filters the solution list by problemId', async () => {
   const solutions = await getSolutions({ problemId })
 
   expect(solutions).toHaveLength(1)
-  expect(solutions[0]?.problemId).toBe(problemId)
+  expect(solutions[0]).toMatchObject({
+    problemId,
+    problemName: 'Hello World',
+    problemProvider: 'BOJ',
+    problemNumber: '2557',
+    problemDifficulty: 'BRONZE_5',
+  })
 })
 
 it('returns the code and description from a solution detail', async () => {

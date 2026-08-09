@@ -29,7 +29,8 @@ test('browses, copies, and collapses a saved solution across viewports', async (
     )
     .not.toBe('rgba(0, 0, 0, 0)')
 
-  await page.getByRole('link', { name: seededSolution.problemId }).click()
+  await expect(page.getByText('BOJ 1000 · BRONZE_5')).toBeVisible()
+  await page.getByRole('link', { name: /A\+B/ }).click()
 
   await expect(
     page.getByRole('heading', {
@@ -552,6 +553,10 @@ function toSolutionSummary(solution: SolutionDetailResponse) {
     problemId: solution.problemId,
     userId: solution.userId,
     authorNickname: solution.authorNickname,
+    problemName: 'A+B',
+    problemProvider: 'BOJ',
+    problemNumber: '1000',
+    problemDifficulty: 'BRONZE_5',
     isSolved: solution.isSolved,
     isDraft: solution.isDraft,
     language: solution.language,

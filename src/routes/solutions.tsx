@@ -249,7 +249,7 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
                   {filteredSolutions.map((solution) => (
                     <ListItem
                       key={solution.id}
-                      label={solution.problemId}
+                      label={getSolutionProblemName(solution)}
                       href={`/solutions/${solution.id}`}
                       startContent={
                         <Icon icon={Code2} size="sm" color="accent" />
@@ -277,9 +277,15 @@ function SolutionListMetadata({ solution, locale }: SolutionListMetadataProps) {
   const copy = useI18n().t.solutions.list
   const createdAt = formatSolutionDate(solution.createdAt, locale)
   const authorNickname = solution.authorNickname?.trim()
+  const problemMetadata = formatSolutionProblemMetadata(solution)
 
   return (
     <VStack gap={1.5}>
+      {problemMetadata ? (
+        <Text type="supporting" color="secondary">
+          {problemMetadata}
+        </Text>
+      ) : null}
       <HStack gap={2} wrap="wrap" vAlign="center">
         <Text type="supporting" color="secondary">
           {solution.language ?? copy.unknownLanguage}
@@ -298,6 +304,26 @@ function SolutionListMetadata({ solution, locale }: SolutionListMetadataProps) {
       ) : null}
     </VStack>
   )
+}
+
+function getSolutionProblemName(solution: SolutionSummary) {
+  const problemName = solution.problemName?.trim()
+
+  return problemName && problemName.length > 0
+    ? problemName
+    : solution.problemId
+}
+
+function formatSolutionProblemMetadata(solution: SolutionSummary) {
+  const problemNumber = solution.problemNumber?.trim()
+  const problemDifficulty = solution.problemDifficulty?.trim()
+  const problemSource = solution.problemProvider
+    ? problemNumber
+      ? `${solution.problemProvider} ${problemNumber}`
+      : solution.problemProvider
+    : problemNumber
+
+  return [problemSource, problemDifficulty].filter(Boolean).join(' · ')
 }
 
 function SolutionListSkeleton({ label }: { label: string }) {

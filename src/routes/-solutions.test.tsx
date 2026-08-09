@@ -65,9 +65,11 @@ it('renders solution rows that link to their detail pages', async () => {
   expect(
     await screen.findByRole('heading', { name: '풀이 목록', level: 1 }),
   ).toBeVisible()
-  expect(
-    await screen.findByRole('link', { name: /problem-1/ }),
-  ).toHaveAttribute('href', '/solutions/solution-1')
+  expect(await screen.findByRole('link', { name: /A\+B/ })).toHaveAttribute(
+    'href',
+    '/solutions/solution-1',
+  )
+  expect(screen.getByText('BOJ 1000 · BRONZE_5')).toBeVisible()
   expect(screen.getByRole('img', { name: '풀이 완료' })).toBeVisible()
   expect(screen.getByRole('img', { name: '작성 중' })).toBeVisible()
   expect(screen.getByText(/solution-author/)).toBeVisible()
@@ -83,18 +85,16 @@ it('filters the solution list by language', async () => {
 
   renderRoute(<SolutionsPage />)
 
-  await screen.findByRole('link', { name: /problem-1/ })
+  await screen.findByRole('link', { name: /A\+B/ })
   await userEvent.click(screen.getByLabelText('언어 필터'))
   await userEvent.click(screen.getByRole('option', { name: 'Python' }))
 
-  expect(
-    screen.queryByRole('link', { name: /problem-1/ }),
-  ).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: /A\+B/ })).not.toBeInTheDocument()
   expect(screen.getByRole('link', { name: /problem-2/ })).toBeVisible()
 
   await userEvent.click(screen.getByRole('button', { name: '필터 초기화' }))
 
-  expect(screen.getByRole('link', { name: /problem-1/ })).toBeVisible()
+  expect(screen.getByRole('link', { name: /A\+B/ })).toBeVisible()
 })
 
 it('shows an empty state when no solutions have been saved', async () => {
@@ -124,7 +124,7 @@ it('requests and identifies solutions scoped to a problem', async () => {
     'href',
     '/solutions',
   )
-  await screen.findByRole('link', { name: /problem-1/ })
+  await screen.findByRole('link', { name: /A\+B/ })
   expect(screen.getByRole('link', { name: '새 풀이 작성' })).toHaveAttribute(
     'href',
     '/solutions/new?problemId=problem-1',
@@ -189,7 +189,7 @@ it('shows a list error and retries the request', async () => {
 
   await userEvent.click(screen.getByRole('button', { name: '다시 시도' }))
 
-  expect(await screen.findByRole('link', { name: /problem-1/ })).toBeVisible()
+  expect(await screen.findByRole('link', { name: /A\+B/ })).toBeVisible()
   expect(getSolutions).toHaveBeenCalledTimes(2)
 })
 
@@ -396,6 +396,10 @@ const solvedSolution: SolutionSummary = {
   problemId: 'problem-1',
   userId: 'user-1',
   authorNickname: 'solution-author',
+  problemName: 'A+B',
+  problemProvider: 'BOJ',
+  problemNumber: '1000',
+  problemDifficulty: 'BRONZE_5',
   isSolved: true,
   isDraft: false,
   language: 'Java',
@@ -408,6 +412,10 @@ const solutionSummaries: SolutionSummary[] = [
     id: 'solution-2',
     problemId: 'problem-2',
     userId: 'user-2',
+    problemName: null,
+    problemProvider: null,
+    problemNumber: null,
+    problemDifficulty: null,
     isSolved: false,
     isDraft: true,
     language: 'Python',

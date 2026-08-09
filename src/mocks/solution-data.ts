@@ -4,11 +4,49 @@ import type {
   SolutionSummaryResponse,
   UpdateSolutionRequest,
 } from '@/lib/api/solutions'
+import type { ProblemProvider } from '@/lib/problems/problem-model'
 
 const problemIds = new Set([
   '10000000-0000-4000-8000-000000000001',
   '10000000-0000-4000-8000-000000000002',
   '10000000-0000-4000-8000-000000000003',
+])
+const solutionProblemMetadata = new Map<
+  string,
+  {
+    problemName: string
+    problemProvider: ProblemProvider
+    problemNumber: string
+    problemDifficulty: string | null
+  }
+>([
+  [
+    '10000000-0000-4000-8000-000000000001',
+    {
+      problemName: 'A+B',
+      problemProvider: 'BOJ',
+      problemNumber: '1000',
+      problemDifficulty: 'BRONZE_5',
+    },
+  ],
+  [
+    '10000000-0000-4000-8000-000000000002',
+    {
+      problemName: 'Hello World',
+      problemProvider: 'BOJ',
+      problemNumber: '2557',
+      problemDifficulty: 'BRONZE_5',
+    },
+  ],
+  [
+    '10000000-0000-4000-8000-000000000003',
+    {
+      problemName: '최빈수 구하기',
+      problemProvider: 'SWEA',
+      problemNumber: '1204',
+      problemDifficulty: null,
+    },
+  ],
 ])
 
 const seededUserId = '00000000-0000-4000-8000-000000000001'
@@ -104,10 +142,16 @@ export function updateMockSolution(
 function toSolutionSummary(
   solution: SolutionDetailResponse,
 ): SolutionSummaryResponse {
+  const problem = solutionProblemMetadata.get(solution.problemId)
+
   return {
     solutionId: solution.solutionId,
     problemId: solution.problemId,
     userId: solution.userId,
+    problemName: problem?.problemName ?? null,
+    problemProvider: problem?.problemProvider ?? null,
+    problemNumber: problem?.problemNumber ?? null,
+    problemDifficulty: problem?.problemDifficulty ?? null,
     language: solution.language,
     isSolved: solution.isSolved,
     isDraft: solution.isDraft,
