@@ -81,6 +81,7 @@ export const messages = {
       list: {
         title: '풀이 목록',
         description: '문제별 코드와 풀이 기록을 확인할 수 있습니다.',
+        create: '새 풀이 작성',
         languageFilter: '언어 필터',
         languagePlaceholder: '모든 언어',
         statusFilter: '상태 필터',
@@ -280,6 +281,7 @@ export const messages = {
       list: {
         title: 'Solutions',
         description: 'Review saved code and solution notes by problem.',
+        create: 'New solution',
         languageFilter: 'Language filter',
         languagePlaceholder: 'All languages',
         statusFilter: 'Status filter',

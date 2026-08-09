@@ -121,7 +121,13 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   await mockCurrentUser(page)
   const solutionApi = await mockSolutionApi(page)
 
-  await page.goto('/solutions/new')
+  await page.setViewportSize({ width: 320, height: 667 })
+  await page.goto('/solutions')
+  const createSolutionLink = page.getByRole('link', { name: '새 풀이 작성' })
+
+  await expect(createSolutionLink).toBeInViewport()
+  await createSolutionLink.click()
+  await page.waitForURL((url) => url.pathname === '/solutions/new')
 
   await page.getByLabel('문제 ID').fill(seededSolution.problemId)
 

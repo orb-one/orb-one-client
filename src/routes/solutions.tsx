@@ -14,7 +14,7 @@ import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { Code2, FilterX, SearchX } from 'lucide-react'
+import { Code2, FilePlus2, FilterX, SearchX } from 'lucide-react'
 import { useState } from 'react'
 
 import { SolutionStatus } from '@/components/solutions/solution-status'
@@ -79,6 +79,10 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
     languages: selectedLanguages,
     states: selectedStates,
   })
+  const showHeaderCreateAction =
+    !solutionsQuery.isPending &&
+    !isAuthRequired &&
+    (solutionsQuery.isError || solutions.length > 0)
   const hasActiveFilters =
     selectedLanguages.length > 0 || selectedStates.length > 0
 
@@ -96,12 +100,22 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
         paddingInline={4}
         paddingBlock={10}
       >
-        <VStack gap={2} maxWidth={672}>
-          <Heading level={1}>{copy.title}</Heading>
-          <Text type="body" color="secondary">
-            {copy.description}
-          </Text>
-        </VStack>
+        <HStack width="100%" gap={4} hAlign="between" vAlign="end" wrap="wrap">
+          <VStack gap={2} maxWidth={672}>
+            <Heading level={1}>{copy.title}</Heading>
+            <Text type="body" color="secondary">
+              {copy.description}
+            </Text>
+          </VStack>
+          {showHeaderCreateAction ? (
+            <Button
+              label={copy.create}
+              href="/solutions/new"
+              variant="primary"
+              icon={<Icon icon={FilePlus2} color="inherit" />}
+            />
+          ) : null}
+        </HStack>
 
         {problemId &&
         (solutionsQuery.isPending ||
@@ -153,14 +167,21 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
             }
             icon={<Icon icon={Code2} size="lg" color="secondary" />}
             actions={
-              problemId ? (
+              <HStack gap={2} wrap="wrap" hAlign="center">
                 <Button
-                  label={copy.viewAll}
-                  href="/solutions"
-                  size="sm"
-                  variant="secondary"
+                  label={copy.create}
+                  href="/solutions/new"
+                  variant="primary"
+                  icon={<Icon icon={FilePlus2} color="inherit" />}
                 />
-              ) : undefined
+                {problemId ? (
+                  <Button
+                    label={copy.viewAll}
+                    href="/solutions"
+                    variant="secondary"
+                  />
+                ) : null}
+              </HStack>
             }
             headingLevel={2}
           />

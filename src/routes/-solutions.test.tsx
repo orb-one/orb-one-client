@@ -72,6 +72,10 @@ it('renders solution rows that link to their detail pages', async () => {
   expect(screen.getByRole('img', { name: '작성 중' })).toBeVisible()
   expect(screen.getByText(/solution-author/)).toBeVisible()
   expect(screen.getByText(/user-2/)).toBeVisible()
+  expect(screen.getByRole('link', { name: '새 풀이 작성' })).toHaveAttribute(
+    'href',
+    '/solutions/new',
+  )
 })
 
 it('filters the solution list by language', async () => {
@@ -101,6 +105,10 @@ it('shows an empty state when no solutions have been saved', async () => {
   expect(
     await screen.findByRole('heading', { name: '저장된 풀이가 없습니다' }),
   ).toBeVisible()
+  expect(screen.getByRole('link', { name: '새 풀이 작성' })).toHaveAttribute(
+    'href',
+    '/solutions/new',
+  )
 })
 
 it('requests and identifies solutions scoped to a problem', async () => {
@@ -165,6 +173,10 @@ it('shows a list error and retries the request', async () => {
   expect(
     await screen.findByText('풀이 목록을 불러오지 못했습니다.'),
   ).toBeVisible()
+  expect(screen.getByRole('link', { name: '새 풀이 작성' })).toHaveAttribute(
+    'href',
+    '/solutions/new',
+  )
 
   await userEvent.click(screen.getByRole('button', { name: '다시 시도' }))
 
@@ -186,6 +198,9 @@ it('prompts signed-out users to log in instead of retrying the solution list', a
   )
   expect(
     screen.queryByRole('button', { name: '다시 시도' }),
+  ).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('link', { name: '새 풀이 작성' }),
   ).not.toBeInTheDocument()
 })
 
