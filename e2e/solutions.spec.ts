@@ -17,6 +17,7 @@ test('browses, copies, and collapses a saved solution across viewports', async (
   await expect(
     page.getByRole('heading', { name: '풀이 목록', level: 1 }),
   ).toBeVisible()
+  await expect(page.getByText(/풀이작성자/)).toBeVisible()
   const navigation = page.getByRole('navigation', { name: '주요 탐색' })
 
   await expect(navigation).toHaveCSS('backdrop-filter', 'blur(12px)')
@@ -32,10 +33,13 @@ test('browses, copies, and collapses a saved solution across viewports', async (
 
   await expect(
     page.getByRole('heading', {
-      name: seededSolution.problemId,
+      name: 'A+B',
       level: 1,
     }),
   ).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: /문제 원문 보기/ }),
+  ).toHaveAttribute('href', 'https://www.acmicpc.net/problem/1000')
   await expect(page.getByTestId('solution-code')).toContainText(
     'public class Main',
   )
@@ -163,13 +167,50 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   })
   await expect(
     page.getByRole('heading', {
-      name: seededSolution.problemId,
+      name: 'A+B',
       level: 1,
     }),
   ).toBeVisible()
   await expect(page.getByTestId('solution-code')).toContainText(
     'boolean value = true;',
   )
+})
+
+test('edits fields and preserves an author solution language alias', async ({
+  page,
+}) => {
+  const editableSolution = { ...seededSolution, language: 'PyPy3' }
+  await mockCurrentUser(page)
+  const solutionApi = await mockSolutionApi(page, editableSolution)
+
+  await page.goto(`/solutions/${editableSolution.solutionId}`)
+  await page.getByRole('link', { name: '풀이 수정' }).click()
+  await page.waitForURL(
+    (url) => url.pathname === `/solutions/${editableSolution.solutionId}/edit`,
+  )
+
+  const description = page.getByRole('textbox', { name: /풀이 설명/ })
+
+  await expect(
+    page.getByRole('combobox', { name: '프로그래밍 언어' }),
+  ).toHaveText('PyPy3')
+  await description.fill('수정된 풀이 설명')
+  await expect(page.getByRole('checkbox', { name: /임시 저장/ })).toHaveCount(0)
+  await page.getByRole('button', { name: '변경사항 저장' }).click()
+
+  await page.waitForURL(
+    (url) => url.pathname === `/solutions/${editableSolution.solutionId}`,
+  )
+  expect(solutionApi.lastUpdateRequest()).toEqual({
+    language: 'PyPy3',
+    code: editableSolution.code,
+    description: '수정된 풀이 설명',
+    isSolved: true,
+    isDraft: false,
+    memoryUsage: 14_128,
+    timeElapsed: 104,
+  })
+  await expect(page.getByText('수정된 풀이 설명')).toBeVisible()
 })
 
 async function mockCurrentUser(page: Page) {
@@ -182,11 +223,41 @@ async function mockCurrentUser(page: Page) {
   })
 }
 
-async function mockSolutionApi(page: Page) {
+async function mockSolutionApi(
+  page: Page,
+  initialSeededSolution = seededSolution,
+) {
   const createdSolutionId = 'solution-e2e-created'
+  let updatedSeededSolution = initialSeededSolution
   let createdSolution: SolutionDetailResponse | null = null
   let createRequest: CreateSolutionRequest | null = null
+  let updateRequest: UpdateSolutionRequest | null = null
   let listProblemId: string | null = null
+
+  await page.route(`${apiUrl('/problems')}/*`, async (route) => {
+    if (route.request().isNavigationRequest()) {
+      await route.fallback()
+      return
+    }
+
+    const problemId = decodeURIComponent(
+      new URL(route.request().url()).pathname.split('/').at(-1) ?? '',
+    )
+
+    if (problemId !== initialSeededSolution.problemId) {
+      await fulfillJson(route, { message: 'Problem not found' }, 404)
+      return
+    }
+
+    await fulfillJson(route, {
+      problemId,
+      provider: 'BOJ',
+      externalProblemId: '1000',
+      name: 'A+B',
+      url: 'https://www.acmicpc.net/problem/1000',
+      difficulty: 'BRONZE_5',
+    })
+  })
 
   await page.route(matchEndpoint(apiUrl('/solutions')), async (route) => {
     const request = route.request()
@@ -200,7 +271,7 @@ async function mockSolutionApi(page: Page) {
       listProblemId = new URL(request.url()).searchParams.get('problemId')
       await fulfillJson(route, {
         solutions: [
-          seededSolution,
+          updatedSeededSolution,
           ...(createdSolution ? [createdSolution] : []),
         ]
           .filter(
@@ -217,7 +288,7 @@ async function mockSolutionApi(page: Page) {
       createRequest = request.postDataJSON() as CreateSolutionRequest
       createdSolution = {
         solutionId: createdSolutionId,
-        problemId: seededSolution.problemId,
+        problemId: initialSeededSolution.problemId,
         userId: 'solution-e2e-user',
         isSolved: null,
         isDraft: null,
@@ -246,9 +317,27 @@ async function mockSolutionApi(page: Page) {
     const solutionId = decodeURIComponent(
       new URL(route.request().url()).pathname.split('/').at(-1) ?? '',
     )
+
+    if (route.request().method() === 'PUT') {
+      updateRequest = route.request().postDataJSON() as UpdateSolutionRequest
+
+      if (solutionId !== initialSeededSolution.solutionId) {
+        await fulfillJson(route, { message: 'Solution not found' }, 404)
+        return
+      }
+
+      updatedSeededSolution = {
+        ...updatedSeededSolution,
+        ...updateRequest,
+        updatedAt: '2026-07-26T07:00:00.000Z',
+      }
+      await fulfillJson(route, updatedSeededSolution)
+      return
+    }
+
     const solution =
-      solutionId === seededSolution.solutionId
-        ? seededSolution
+      solutionId === initialSeededSolution.solutionId
+        ? updatedSeededSolution
         : solutionId === createdSolutionId
           ? createdSolution
           : null
@@ -269,6 +358,9 @@ async function mockSolutionApi(page: Page) {
     lastListProblemId() {
       return listProblemId
     },
+    lastUpdateRequest() {
+      return updateRequest
+    },
   }
 }
 
@@ -288,6 +380,7 @@ function createSeededSolution(): SolutionDetailResponse {
     solutionId: 'solution-e2e-seeded',
     problemId: 'problem-e2e-addition',
     userId: 'solution-e2e-user',
+    authorNickname: '풀이작성자',
     isSolved: true,
     isDraft: false,
     language: 'Java',
@@ -316,6 +409,7 @@ function toSolutionSummary(solution: SolutionDetailResponse) {
     solutionId: solution.solutionId,
     problemId: solution.problemId,
     userId: solution.userId,
+    authorNickname: solution.authorNickname,
     isSolved: solution.isSolved,
     isDraft: solution.isDraft,
     language: solution.language,
@@ -367,10 +461,21 @@ interface CreateSolutionRequest {
   code: string
 }
 
+interface UpdateSolutionRequest {
+  language: string
+  code: string
+  isSolved: boolean | null
+  isDraft: boolean | null
+  memoryUsage: number | null
+  timeElapsed: number | null
+  description: string | null
+}
+
 interface SolutionDetailResponse {
   solutionId: string
   problemId: string
   userId: string
+  authorNickname?: string | null
   isSolved: boolean | null
   isDraft: boolean | null
   language: string

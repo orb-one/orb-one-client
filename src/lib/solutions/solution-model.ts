@@ -3,6 +3,7 @@ export interface SolutionSummary {
   id: string
   problemId: string
   userId: string
+  authorNickname?: string | null
   language: string | null
   isSolved: boolean | null
   isDraft: boolean | null

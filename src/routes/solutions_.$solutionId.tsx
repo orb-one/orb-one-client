@@ -14,8 +14,12 @@ import { createFileRoute } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
 
 import { SolutionStatus } from '@/components/solutions/solution-status'
+import type { CurrentUserResponse } from '@/lib/api/auth'
 import { ApiError, AuthSessionExpiredError } from '@/lib/api/client'
+import { currentUserQueryOptions } from '@/lib/auth/auth-queries'
 import { useI18n } from '@/lib/i18n/use-translations'
+import type { Problem } from '@/lib/problems/problem-model'
+import { problemQueryOptions } from '@/lib/problems/problem-queries'
 import {
   formatSolutionDate,
   formatSolutionElapsedTime,
@@ -54,6 +58,11 @@ export function SolutionDetailPage({ solutionId }: SolutionDetailPageProps) {
   const { t } = useI18n()
   const copy = t.solutions.detail
   const solutionQuery = useQuery(solutionQueryOptions(solutionId))
+  const currentUserQuery = useQuery(currentUserQueryOptions())
+  const problemQuery = useQuery({
+    ...problemQueryOptions(solutionQuery.data?.problemId ?? ''),
+    enabled: solutionQuery.data !== undefined,
+  })
   const isAuthRequired = solutionQuery.error instanceof AuthSessionExpiredError
   const isNotFound =
     solutionQuery.error instanceof ApiError &&
@@ -109,18 +118,42 @@ export function SolutionDetailPage({ solutionId }: SolutionDetailPageProps) {
                 : {})}
           />
         ) : (
-          <SolutionDetailContent solution={solutionQuery.data} />
+          <SolutionDetailContent
+            solution={solutionQuery.data}
+            problem={problemQuery.data ?? null}
+            currentUser={currentUserQuery.data ?? null}
+          />
         )}
       </VStack>
     </Center>
   )
 }
 
-function SolutionDetailContent({ solution }: { solution: SolutionDetail }) {
+function SolutionDetailContent({
+  solution,
+  problem,
+  currentUser,
+}: {
+  solution: SolutionDetail
+  problem: Problem | null
+  currentUser: CurrentUserResponse | null
+}) {
   const { locale, t } = useI18n()
   const copy = t.solutions.detail
   const createdAt = formatSolutionDate(solution.createdAt, locale)
   const updatedAt = formatSolutionDate(solution.updatedAt, locale)
+  const isCurrentUser = currentUser?.id === solution.userId
+  const currentUserNickname = currentUser?.nickname.trim()
+  const responseAuthorNickname = solution.authorNickname?.trim()
+  const fallbackAuthor =
+    responseAuthorNickname && responseAuthorNickname.length > 0
+      ? responseAuthorNickname
+      : solution.userId
+  const author = isCurrentUser
+    ? currentUserNickname && currentUserNickname.length > 0
+      ? `${currentUserNickname} (${copy.currentUserAuthor})`
+      : fallbackAuthor
+    : fallbackAuthor
 
   return (
     <VStack gap={6} width="100%">
@@ -128,8 +161,31 @@ function SolutionDetailContent({ solution }: { solution: SolutionDetail }) {
         <Text type="supporting" color="secondary">
           {copy.eyebrow}
         </Text>
-        <Heading level={1}>{solution.problemId}</Heading>
+        <Heading level={1}>{problem?.name ?? solution.problemId}</Heading>
+        {problem ? (
+          <Text type="supporting" color="secondary">
+            {problem.provider} {problem.externalId}
+          </Text>
+        ) : null}
         <SolutionStatus solution={solution} />
+        {problem?.url ? (
+          <Link
+            href={problem.url}
+            isExternalLink
+            isStandalone
+            newTabLabel={copy.openNewTab}
+          >
+            {copy.openProblem}
+          </Link>
+        ) : null}
+        {isCurrentUser ? (
+          <Button
+            label={copy.edit}
+            href={`/solutions/${solution.id}/edit`}
+            size="sm"
+            variant="secondary"
+          />
+        ) : null}
       </VStack>
 
       <Section width="100%" padding={0} variant="transparent">
@@ -137,12 +193,22 @@ function SolutionDetailContent({ solution }: { solution: SolutionDetail }) {
           title={<Heading level={2}>{copy.summaryTitle}</Heading>}
           orientation="horizontal"
         >
-          <MetadataListItem label={copy.problem}>
-            {solution.problemId}
-          </MetadataListItem>
-          <MetadataListItem label={copy.author}>
-            {solution.userId}
-          </MetadataListItem>
+          {problem ? (
+            <>
+              <MetadataListItem label={copy.problemProvider}>
+                {problem.provider}
+              </MetadataListItem>
+              <MetadataListItem label={copy.problemNumber}>
+                {problem.externalId}
+              </MetadataListItem>
+              {problem.difficulty ? (
+                <MetadataListItem label={copy.difficulty}>
+                  {problem.difficulty}
+                </MetadataListItem>
+              ) : null}
+            </>
+          ) : null}
+          <MetadataListItem label={copy.author}>{author}</MetadataListItem>
           <MetadataListItem label={copy.language}>
             {solution.language ?? copy.unavailable}
           </MetadataListItem>

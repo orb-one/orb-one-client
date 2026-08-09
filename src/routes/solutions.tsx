@@ -252,6 +252,7 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
 function SolutionListMetadata({ solution, locale }: SolutionListMetadataProps) {
   const copy = useI18n().t.solutions.list
   const createdAt = formatSolutionDate(solution.createdAt, locale)
+  const authorNickname = solution.authorNickname?.trim()
 
   return (
     <VStack gap={1.5}>
@@ -260,7 +261,10 @@ function SolutionListMetadata({ solution, locale }: SolutionListMetadataProps) {
           {solution.language ?? copy.unknownLanguage}
         </Text>
         <Text type="supporting" color="secondary">
-          {copy.author} {solution.userId}
+          {copy.author}{' '}
+          {authorNickname && authorNickname.length > 0
+            ? authorNickname
+            : solution.userId}
         </Text>
       </HStack>
       {createdAt ? (

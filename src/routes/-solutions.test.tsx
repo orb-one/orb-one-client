@@ -5,9 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
+import { getCurrentUser } from '@/lib/api/auth'
 import { ApiError, AuthSessionExpiredError } from '@/lib/api/client'
+import { getProblem } from '@/lib/api/problems'
 import { getSolution, getSolutions } from '@/lib/api/solutions'
 import type {
   SolutionDetail,
@@ -29,8 +31,25 @@ vi.mock('@/lib/api/solutions', () => ({
   getSolutions: vi.fn(),
 }))
 
+vi.mock('@/lib/api/auth', () => ({
+  getCurrentUser: vi.fn(),
+}))
+
+vi.mock('@/lib/api/problems', () => ({
+  getProblem: vi.fn(),
+}))
+
 import { SolutionDetailPage } from '@/routes/solutions_.$solutionId'
 import { normalizeSolutionsSearch, SolutionsPage } from '@/routes/solutions'
+
+beforeEach(() => {
+  vi.mocked(getCurrentUser).mockResolvedValue({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'user',
+  })
+  vi.mocked(getProblem).mockResolvedValue(problemDetail)
+})
 
 afterEach(() => {
   cleanup()
@@ -51,7 +70,8 @@ it('renders solution rows that link to their detail pages', async () => {
   ).toHaveAttribute('href', '/solutions/solution-1')
   expect(screen.getByRole('img', { name: '풀이 완료' })).toBeVisible()
   expect(screen.getByRole('img', { name: '작성 중' })).toBeVisible()
-  expect(screen.getByText(/user-1/)).toBeVisible()
+  expect(screen.getByText(/solution-author/)).toBeVisible()
+  expect(screen.getByText(/user-2/)).toBeVisible()
 })
 
 it('filters the solution list by language', async () => {
@@ -175,8 +195,14 @@ it('renders solution metadata, code, and Markdown notes', async () => {
   renderRoute(<SolutionDetailPage solutionId="solution-1" />)
 
   expect(
-    await screen.findByRole('heading', { name: 'problem-1', level: 1 }),
+    await screen.findByRole('heading', { name: 'A+B', level: 1 }),
   ).toBeVisible()
+  expect(screen.getByText('BOJ 1000')).toBeVisible()
+  expect(screen.getByText('BRONZE_5')).toBeVisible()
+  expect(screen.getByRole('link', { name: /문제 원문 보기/ })).toHaveAttribute(
+    'href',
+    'https://www.acmicpc.net/problem/1000',
+  )
   expect(await screen.findByTestId('solution-code')).toHaveTextContent(
     'class Main {}',
   )
@@ -194,7 +220,59 @@ it('renders solution metadata, code, and Markdown notes', async () => {
   expect(screen.getByText('14,128 KB')).toBeVisible()
   expect(screen.getByText('104 ms')).toBeVisible()
   expect(screen.getAllByText('풀이 완료')).toHaveLength(1)
-  expect(screen.getAllByText('user-1')).not.toHaveLength(0)
+  expect(screen.getByText('user (내 풀이)')).toBeVisible()
+  expect(screen.queryByText('user-1')).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '풀이 수정' })).toHaveAttribute(
+    'href',
+    '/solutions/solution-1/edit',
+  )
+})
+
+it('does not show the edit action to a different user', async () => {
+  vi.mocked(getCurrentUser).mockResolvedValue({
+    id: 'different-user',
+    email: 'different@example.com',
+    nickname: 'different',
+  })
+  vi.mocked(getSolution).mockResolvedValue(solutionDetail)
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  expect(
+    await screen.findByRole('heading', { name: 'A+B', level: 1 }),
+  ).toBeVisible()
+  expect(screen.getByText('solution-author')).toBeVisible()
+  expect(screen.queryByText('user-1')).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('link', { name: '풀이 수정' }),
+  ).not.toBeInTheDocument()
+})
+
+it('falls back to the author UUID when the response has no nickname', async () => {
+  vi.mocked(getCurrentUser).mockResolvedValue({
+    id: 'different-user',
+    email: 'different@example.com',
+    nickname: 'different',
+  })
+  vi.mocked(getSolution).mockResolvedValue({
+    ...solutionDetail,
+    authorNickname: null,
+  })
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  expect(await screen.findByText('user-1')).toBeVisible()
+})
+
+it('falls back to the problem UUID when problem details cannot be loaded', async () => {
+  vi.mocked(getProblem).mockRejectedValue(new Error('Unavailable'))
+  vi.mocked(getSolution).mockResolvedValue(solutionDetail)
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  expect(
+    await screen.findByRole('heading', { name: 'problem-1', level: 1 }),
+  ).toBeVisible()
 })
 
 it('allows long Markdown code blocks to be collapsed', async () => {
@@ -293,6 +371,7 @@ const solvedSolution: SolutionSummary = {
   id: 'solution-1',
   problemId: 'problem-1',
   userId: 'user-1',
+  authorNickname: 'solution-author',
   isSolved: true,
   isDraft: false,
   language: 'Java',
@@ -319,4 +398,13 @@ const solutionDetail: SolutionDetail = {
   memoryUsage: 14_128,
   timeElapsed: 104,
   updatedAt: '2026-07-15T01:05:00.000Z',
+}
+
+const problemDetail = {
+  id: 'problem-1',
+  provider: 'BOJ' as const,
+  externalId: '1000',
+  name: 'A+B',
+  url: 'https://www.acmicpc.net/problem/1000',
+  difficulty: 'BRONZE_5',
 }

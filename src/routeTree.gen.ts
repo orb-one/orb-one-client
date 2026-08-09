@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SolutionsNewRouteImport } from './routes/solutions_.new'
 import { Route as SolutionsSolutionIdRouteImport } from './routes/solutions_.$solutionId'
 import { Route as GroupsGroupIdRouteImport } from './routes/groups_.$groupId'
+import { Route as SolutionsSolutionIdEditRouteImport } from './routes/solutions_.$solutionId_.edit'
 
 const SolutionsRoute = SolutionsRouteImport.update({
   id: '/solutions',
@@ -58,6 +59,11 @@ const GroupsGroupIdRoute = GroupsGroupIdRouteImport.update({
   path: '/groups/$groupId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SolutionsSolutionIdEditRoute = SolutionsSolutionIdEditRouteImport.update({
+  id: '/solutions_/$solutionId_/edit',
+  path: '/solutions/$solutionId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/groups/$groupId': typeof GroupsGroupIdRoute
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
+  '/solutions/$solutionId/edit': typeof SolutionsSolutionIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/groups/$groupId': typeof GroupsGroupIdRoute
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
+  '/solutions/$solutionId/edit': typeof SolutionsSolutionIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/groups_/$groupId': typeof GroupsGroupIdRoute
   '/solutions_/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions_/new': typeof SolutionsNewRoute
+  '/solutions_/$solutionId_/edit': typeof SolutionsSolutionIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/groups/$groupId'
     | '/solutions/$solutionId'
     | '/solutions/new'
+    | '/solutions/$solutionId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/groups/$groupId'
     | '/solutions/$solutionId'
     | '/solutions/new'
+    | '/solutions/$solutionId/edit'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/groups_/$groupId'
     | '/solutions_/$solutionId'
     | '/solutions_/new'
+    | '/solutions_/$solutionId_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   GroupsGroupIdRoute: typeof GroupsGroupIdRoute
   SolutionsSolutionIdRoute: typeof SolutionsSolutionIdRoute
   SolutionsNewRoute: typeof SolutionsNewRoute
+  SolutionsSolutionIdEditRoute: typeof SolutionsSolutionIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroupsGroupIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/solutions_/$solutionId_/edit': {
+      id: '/solutions_/$solutionId_/edit'
+      path: '/solutions/$solutionId/edit'
+      fullPath: '/solutions/$solutionId/edit'
+      preLoaderRoute: typeof SolutionsSolutionIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,6 +224,7 @@ const rootRouteChildren: RootRouteChildren = {
   GroupsGroupIdRoute: GroupsGroupIdRoute,
   SolutionsSolutionIdRoute: SolutionsSolutionIdRoute,
   SolutionsNewRoute: SolutionsNewRoute,
+  SolutionsSolutionIdEditRoute: SolutionsSolutionIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

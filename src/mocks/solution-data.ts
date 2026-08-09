@@ -2,6 +2,7 @@ import type {
   CreateSolutionRequest,
   SolutionDetailResponse,
   SolutionSummaryResponse,
+  UpdateSolutionRequest,
 } from '@/lib/api/solutions'
 
 const problemIds = new Set([
@@ -59,6 +60,45 @@ export function createMockSolution(
   solutions = [solution, ...solutions]
 
   return solution
+}
+
+export function updateMockSolution(
+  solutionId: string,
+  editorId: string,
+  request: UpdateSolutionRequest,
+) {
+  const index = solutions.findIndex(
+    (solution) => solution.solutionId === solutionId,
+  )
+
+  if (index < 0) {
+    return { ok: false as const, status: 404 as const }
+  }
+
+  const current = solutions[index]
+
+  if (!current) {
+    return { ok: false as const, status: 404 as const }
+  }
+
+  if (current.userId !== editorId) {
+    return {
+      ok: false as const,
+      status: current.isDraft === true ? (404 as const) : (403 as const),
+    }
+  }
+
+  const updated: SolutionDetailResponse = {
+    ...current,
+    ...request,
+    updatedAt: new Date().toISOString(),
+  }
+
+  solutions = solutions.map((solution, solutionIndex) =>
+    solutionIndex === index ? updated : solution,
+  )
+
+  return { ok: true as const, solution: updated }
 }
 
 function toSolutionSummary(

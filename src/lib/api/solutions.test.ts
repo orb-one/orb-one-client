@@ -1,6 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest'
 
-import { createSolution, getSolution, getSolutions } from '@/lib/api/solutions'
+import {
+  createSolution,
+  getSolution,
+  getSolutions,
+  updateSolution,
+} from '@/lib/api/solutions'
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -14,6 +19,7 @@ it('gets and maps the solution list without a filter', async () => {
         solutionId: 'solution-1',
         problemId: 'problem-1',
         userId: 'user-1',
+        authorNickname: 'solution-author',
         isSolved: true,
         isDraft: false,
         language: 'Java',
@@ -27,6 +33,7 @@ it('gets and maps the solution list without a filter', async () => {
       id: 'solution-1',
       problemId: 'problem-1',
       userId: 'user-1',
+      authorNickname: 'solution-author',
       isSolved: true,
       isDraft: false,
       language: 'Java',
@@ -133,6 +140,50 @@ it('creates a solution with only the documented request fields', async () => {
 
   expect(headers).toBeInstanceOf(Headers)
   expect((headers as Headers).get('Content-Type')).toBe('application/json')
+})
+
+it('updates every replaceable solution field and maps the detail response', async () => {
+  const request = {
+    language: 'Python',
+    code: 'print(1)',
+    isSolved: true,
+    isDraft: false,
+    memoryUsage: 12_300,
+    timeElapsed: 45,
+    description: null,
+  }
+  const fetchMock = mockJsonResponse({
+    solutionId: 'solution/id',
+    problemId: 'problem-1',
+    userId: 'user-1',
+    ...request,
+    createdAt: '2026-08-01T01:00:00',
+    updatedAt: '2026-08-01T02:00:00',
+  })
+
+  await expect(updateSolution('solution/id', request)).resolves.toEqual({
+    id: 'solution/id',
+    problemId: 'problem-1',
+    userId: 'user-1',
+    language: 'Python',
+    code: 'print(1)',
+    isSolved: true,
+    isDraft: false,
+    memoryUsage: 12_300,
+    timeElapsed: 45,
+    description: '',
+    createdAt: '2026-08-01T01:00:00',
+    updatedAt: '2026-08-01T02:00:00',
+  })
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    'http://localhost:8080/solutions/solution%2Fid',
+    expect.objectContaining({
+      method: 'PUT',
+      credentials: 'include',
+      body: JSON.stringify(request),
+    }),
+  )
 })
 
 function mockJsonResponse(body: unknown) {

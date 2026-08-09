@@ -1,11 +1,15 @@
 import { http, HttpResponse, passthrough } from 'msw'
 
-import type { CreateSolutionRequest } from '@/lib/api/solutions'
+import type {
+  CreateSolutionRequest,
+  UpdateSolutionRequest,
+} from '@/lib/api/solutions'
 import { getCurrentMockUser } from '@/mocks/auth-session'
 import {
   createMockSolution,
   getMockSolution,
   getMockSolutionSummaries,
+  updateMockSolution,
 } from '@/mocks/solution-data'
 
 export const solutionHandlers = [
@@ -81,6 +85,49 @@ export const solutionHandlers = [
       { status: 201 },
     )
   }),
+  http.put('*/solutions/:solutionId', async ({ params, request }) => {
+    const solutionId = getPathParameter(params.solutionId)
+
+    if (
+      !solutionId ||
+      isDocumentNavigation(request) ||
+      !isSolutionApiRequest(
+        request,
+        `/solutions/${encodeURIComponent(solutionId)}`,
+      )
+    ) {
+      return passthrough()
+    }
+
+    const body = await parseJsonBody(request)
+
+    if (!isUpdateSolutionRequest(body)) {
+      return HttpResponse.json(
+        { message: 'Invalid solution request' },
+        { status: 400 },
+      )
+    }
+
+    const currentUser = getCurrentMockUser()
+
+    if (!currentUser) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const result = updateMockSolution(solutionId, currentUser.id, body)
+
+    if (!result.ok) {
+      return HttpResponse.json(
+        {
+          message:
+            result.status === 403 ? 'Solution forbidden' : 'Solution not found',
+        },
+        { status: result.status },
+      )
+    }
+
+    return HttpResponse.json(result.solution)
+  }),
 ]
 
 // wildcard handler가 `/src/**/solutions/**` 같은 프론트 모듈까지 가로채지 않도록
@@ -134,6 +181,21 @@ function isCreateSolutionRequest(
   )
 }
 
+function isUpdateSolutionRequest(
+  value: unknown,
+): value is UpdateSolutionRequest {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.language) &&
+    isNonEmptyString(value.code) &&
+    isNullableBoolean(value.isSolved) &&
+    isNullableBoolean(value.isDraft) &&
+    isNullableNumber(value.memoryUsage) &&
+    isNullableNumber(value.timeElapsed) &&
+    (typeof value.description === 'string' || value.description === null)
+  )
+}
+
 function getPathParameter(value: string | readonly string[] | undefined) {
   return typeof value === 'string' ? value : undefined
 }
@@ -144,4 +206,12 @@ function isNonEmptyString(value: unknown): value is string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function isNullableBoolean(value: unknown): value is boolean | null {
+  return typeof value === 'boolean' || value === null
+}
+
+function isNullableNumber(value: unknown): value is number | null {
+  return typeof value === 'number' || value === null
 }

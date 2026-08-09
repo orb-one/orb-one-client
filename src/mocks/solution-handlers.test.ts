@@ -2,7 +2,12 @@ import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest'
 
 import { ApiError, apiClient } from '@/lib/api/client'
-import { createSolution, getSolution, getSolutions } from '@/lib/api/solutions'
+import {
+  createSolution,
+  getSolution,
+  getSolutions,
+  updateSolution,
+} from '@/lib/api/solutions'
 import {
   getCurrentMockUser,
   rememberRegisteredUser,
@@ -133,6 +138,39 @@ it('creates a solution that subsequent list and detail requests can read', async
     id: result.id,
     code: 'console.log(input)',
     description: '',
+  })
+})
+
+it('updates an authored solution and rejects a different author', async () => {
+  const solutionId = '30000000-0000-4000-8000-000000000001'
+  const request = {
+    language: 'Kotlin',
+    code: 'fun main() = println(1)',
+    isSolved: true,
+    isDraft: false,
+    memoryUsage: 12_000,
+    timeElapsed: 40,
+    description: 'updated',
+  }
+
+  signInMockUser({ email: 'seeded-user@example.com' })
+
+  await expect(updateSolution(solutionId, request)).resolves.toMatchObject({
+    id: solutionId,
+    ...request,
+  })
+  await expect(getSolution(solutionId)).resolves.toMatchObject({
+    id: solutionId,
+    ...request,
+  })
+
+  const email = 'different-author@example.com'
+  rememberRegisteredUser({ email, nickname: 'different-author' })
+  signInMockUser({ email })
+
+  await expect(updateSolution(solutionId, request)).rejects.toMatchObject({
+    status: 403,
+    message: 'Solution forbidden',
   })
 })
 

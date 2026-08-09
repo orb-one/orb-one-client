@@ -18,11 +18,22 @@ export interface CreateSolutionResult {
   id: string
 }
 
+export interface UpdateSolutionRequest {
+  language: string
+  code: string
+  isSolved: boolean | null
+  isDraft: boolean | null
+  memoryUsage: number | null
+  timeElapsed: number | null
+  description: string | null
+}
+
 // 서버 DTO의 nullable 컬럼은 API 경계에서 명시적으로 수용한다.
 export interface SolutionSummaryResponse {
   solutionId: string
   problemId: string
   userId: string
+  authorNickname?: string | null
   language: string | null
   isSolved: boolean | null
   isDraft: boolean | null
@@ -67,15 +78,7 @@ export async function getSolution(solutionId: string): Promise<SolutionDetail> {
     `/solutions/${encodeURIComponent(solutionId)}`,
   )
 
-  return {
-    ...mapSolutionSummary(response),
-    // 기존 nullable 데이터도 상세 화면에서 안전하게 렌더링할 수 있게 한다.
-    code: response.code ?? '',
-    description: response.description ?? '',
-    memoryUsage: response.memoryUsage,
-    timeElapsed: response.timeElapsed,
-    updatedAt: response.updatedAt,
-  }
+  return mapSolutionDetail(response)
 }
 
 export async function createSolution(
@@ -89,6 +92,21 @@ export async function createSolution(
   return { id: response.solutionId }
 }
 
+export async function updateSolution(
+  solutionId: string,
+  request: UpdateSolutionRequest,
+): Promise<SolutionDetail> {
+  const response = await apiClient<SolutionDetailResponse>(
+    `/solutions/${encodeURIComponent(solutionId)}`,
+    {
+      method: 'PUT',
+      body: request,
+    },
+  )
+
+  return mapSolutionDetail(response)
+}
+
 function mapSolutionSummary(
   response: SolutionSummaryResponse,
 ): SolutionSummary {
@@ -96,9 +114,24 @@ function mapSolutionSummary(
     id: response.solutionId,
     problemId: response.problemId,
     userId: response.userId,
+    ...(response.authorNickname !== undefined
+      ? { authorNickname: response.authorNickname }
+      : {}),
     language: response.language,
     isSolved: response.isSolved,
     isDraft: response.isDraft,
     createdAt: response.createdAt,
+  }
+}
+
+function mapSolutionDetail(response: SolutionDetailResponse): SolutionDetail {
+  return {
+    ...mapSolutionSummary(response),
+    // 기존 nullable 데이터도 상세 화면에서 안전하게 렌더링할 수 있게 한다.
+    code: response.code ?? '',
+    description: response.description ?? '',
+    memoryUsage: response.memoryUsage,
+    timeElapsed: response.timeElapsed,
+    updatedAt: response.updatedAt,
   }
 }
