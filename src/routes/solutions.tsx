@@ -1,4 +1,3 @@
-import { Badge } from '@astryxdesign/core/Badge'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
@@ -15,7 +14,7 @@ import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { Code2, FilterX, SearchX } from 'lucide-react'
+import { Code2, FilePlus2, FilterX, SearchX } from 'lucide-react'
 import { useState } from 'react'
 
 import { SolutionStatus } from '@/components/solutions/solution-status'
@@ -80,8 +79,15 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
     languages: selectedLanguages,
     states: selectedStates,
   })
+  const showHeaderCreateAction =
+    !solutionsQuery.isPending &&
+    !isAuthRequired &&
+    (solutionsQuery.isError || solutions.length > 0)
   const hasActiveFilters =
     selectedLanguages.length > 0 || selectedStates.length > 0
+  const createHref = problemId
+    ? `/solutions/new?problemId=${encodeURIComponent(problemId)}`
+    : '/solutions/new'
 
   function clearFilters() {
     setSelectedLanguages([])
@@ -97,12 +103,22 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
         paddingInline={4}
         paddingBlock={10}
       >
-        <VStack gap={2} maxWidth={672}>
-          <Heading level={1}>{copy.title}</Heading>
-          <Text type="body" color="secondary">
-            {copy.description}
-          </Text>
-        </VStack>
+        <HStack width="100%" gap={4} hAlign="between" vAlign="end" wrap="wrap">
+          <VStack gap={2} maxWidth={672}>
+            <Heading level={1}>{copy.title}</Heading>
+            <Text type="body" color="secondary">
+              {copy.description}
+            </Text>
+          </VStack>
+          {showHeaderCreateAction ? (
+            <Button
+              label={copy.create}
+              href={createHref}
+              variant="primary"
+              icon={<Icon icon={FilePlus2} color="inherit" />}
+            />
+          ) : null}
+        </HStack>
 
         {problemId &&
         (solutionsQuery.isPending ||
@@ -154,14 +170,21 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
             }
             icon={<Icon icon={Code2} size="lg" color="secondary" />}
             actions={
-              problemId ? (
+              <HStack gap={2} wrap="wrap" hAlign="center">
                 <Button
-                  label={copy.viewAll}
-                  href="/solutions"
-                  size="sm"
-                  variant="secondary"
+                  label={copy.create}
+                  href={createHref}
+                  variant="primary"
+                  icon={<Icon icon={FilePlus2} color="inherit" />}
                 />
-              ) : undefined
+                {problemId ? (
+                  <Button
+                    label={copy.viewAll}
+                    href="/solutions"
+                    variant="secondary"
+                  />
+                ) : null}
+              </HStack>
             }
             headingLevel={2}
           />
@@ -226,7 +249,7 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
                   {filteredSolutions.map((solution) => (
                     <ListItem
                       key={solution.id}
-                      label={solution.problem?.name ?? copy.unknownProblem}
+                      label={getSolutionProblemName(solution)}
                       href={`/solutions/${solution.id}`}
                       startContent={
                         <Icon icon={Code2} size="sm" color="accent" />
@@ -252,31 +275,55 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
 
 function SolutionListMetadata({ solution, locale }: SolutionListMetadataProps) {
   const copy = useI18n().t.solutions.list
-  const updatedAt = formatSolutionDate(solution.updatedAt, locale)
+  const createdAt = formatSolutionDate(solution.createdAt, locale)
+  const authorNickname = solution.authorNickname?.trim()
+  const problemMetadata = formatSolutionProblemMetadata(solution)
 
   return (
     <VStack gap={1.5}>
+      {problemMetadata ? (
+        <Text type="supporting" color="secondary">
+          {problemMetadata}
+        </Text>
+      ) : null}
       <HStack gap={2} wrap="wrap" vAlign="center">
         <Text type="supporting" color="secondary">
           {solution.language ?? copy.unknownLanguage}
         </Text>
-        {solution.problem?.tier !== null &&
-        solution.problem?.tier !== undefined ? (
-          <Text type="supporting" color="secondary">
-            {copy.tier} {String(solution.problem.tier)}
-          </Text>
-        ) : null}
-        {solution.problem?.tags.map((tag) => (
-          <Badge key={tag.id} label={tag.name} variant="blue" />
-        ))}
-      </HStack>
-      {updatedAt ? (
         <Text type="supporting" color="secondary">
-          {copy.updatedAt} {updatedAt}
+          {copy.author}{' '}
+          {authorNickname && authorNickname.length > 0
+            ? authorNickname
+            : solution.userId}
+        </Text>
+      </HStack>
+      {createdAt ? (
+        <Text type="supporting" color="secondary">
+          {copy.createdAt} {createdAt}
         </Text>
       ) : null}
     </VStack>
   )
+}
+
+function getSolutionProblemName(solution: SolutionSummary) {
+  const problemName = solution.problemName?.trim()
+
+  return problemName && problemName.length > 0
+    ? problemName
+    : solution.problemId
+}
+
+function formatSolutionProblemMetadata(solution: SolutionSummary) {
+  const problemNumber = solution.problemNumber?.trim()
+  const problemDifficulty = solution.problemDifficulty?.trim()
+  const problemSource = solution.problemProvider
+    ? problemNumber
+      ? `${solution.problemProvider} ${problemNumber}`
+      : solution.problemProvider
+    : problemNumber
+
+  return [problemSource, problemDifficulty].filter(Boolean).join(' · ')
 }
 
 function SolutionListSkeleton({ label }: { label: string }) {

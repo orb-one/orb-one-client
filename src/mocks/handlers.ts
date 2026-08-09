@@ -5,9 +5,11 @@ import {
   failNextMockLogout,
   getCurrentMockUser,
 } from '@/mocks/auth-session'
+import { problemHandlers } from '@/mocks/problem-handlers'
 import { solutionHandlers } from '@/mocks/solution-handlers'
 
 export const handlers = [
+  ...problemHandlers,
   ...solutionHandlers,
   http.post('*/__msw/auth/logout-failure', () => {
     // Playwright route는 Service Worker가 제어하는 요청을 가로채기 어렵기 때문에,

@@ -5,13 +5,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 import { AuthSessionExpiredError } from '@/lib/api/client'
+import { getProblem, getProblems } from '@/lib/api/problems'
 import { createSolution } from '@/lib/api/solutions'
 import { useAppStore } from '@/stores/use-app-store'
 
 const navigate = vi.hoisted(() => vi.fn())
+const routeSearch = vi.hoisted<{ current: { problemId?: string } }>(() => ({
+  current: {},
+}))
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute:
@@ -19,6 +23,7 @@ vi.mock('@tanstack/react-router', () => ({
     <TOptions extends object>(options: TOptions) => ({
       ...options,
       useNavigate: () => navigate,
+      useSearch: () => routeSearch.current,
     }),
 }))
 
@@ -26,36 +31,60 @@ vi.mock('@/lib/api/solutions', () => ({
   createSolution: vi.fn(),
 }))
 
-import { SolutionCreatePage } from '@/routes/solutions_.new'
+vi.mock('@/lib/api/problems', () => ({
+  getProblem: vi.fn(),
+  getProblems: vi.fn(),
+}))
+
+import {
+  normalizeSolutionCreateSearch,
+  SolutionCreatePage,
+} from '@/routes/solutions_.new'
+
+beforeEach(() => {
+  vi.mocked(getProblems).mockResolvedValue(problemPage)
+})
 
 afterEach(() => {
   cleanup()
+  routeSearch.current = {}
   useAppStore.getState().setLocale('ko')
   vi.resetAllMocks()
 })
 
-it('connects required-field feedback to the problem ID input', async () => {
+it('connects required-field feedback to the problem picker', async () => {
   renderRoute(<SolutionCreatePage />)
 
   await userEvent.click(screen.getByRole('button', { name: '풀이 저장' }))
 
-  const problemIdInput = screen.getByLabelText('문제 ID')
+  const problemPicker = screen.getByRole('button', { name: '문제 선택' })
 
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    '문제 ID를 입력해 주세요.',
+  expect(await screen.findByText('문제를 선택해 주세요.')).toHaveAttribute(
+    'role',
+    'alert',
   )
-  expect(problemIdInput).toHaveAttribute('aria-invalid', 'true')
-  expect(problemIdInput).toHaveAccessibleDescription(
-    '풀이를 연결할 문제의 ID를 입력해 주세요. 문제 ID를 입력해 주세요.',
+  expect(problemPicker).toHaveAttribute('aria-invalid', 'true')
+  expect(problemPicker).toHaveAccessibleDescription(
+    '제공처와 문제 번호를 확인하고 풀이를 연결할 문제를 선택해 주세요. 문제를 선택해 주세요.',
   )
-  await waitFor(() => expect(problemIdInput).toHaveFocus())
+  await waitFor(() => expect(problemPicker).toHaveFocus())
   expect(createSolution).not.toHaveBeenCalled()
+})
+
+it('normalizes the problem ID search parameter', () => {
+  expect(normalizeSolutionCreateSearch({ problemId: ' problem-1 ' })).toEqual({
+    problemId: 'problem-1',
+  })
+  expect(normalizeSolutionCreateSearch({ problemId: '' })).toEqual({})
+  expect(normalizeSolutionCreateSearch({ problemId: ['problem-1'] })).toEqual(
+    {},
+  )
 })
 
 it('connects required-field feedback and focus to the code editor', async () => {
   renderRoute(<SolutionCreatePage />)
 
-  await userEvent.type(screen.getByLabelText('문제 ID'), 'problem-1')
+  await selectProblem('문제 1')
   await userEvent.click(
     screen.getByRole('combobox', { name: /프로그래밍 언어/ }),
   )
@@ -64,8 +93,9 @@ it('connects required-field feedback and focus to the code editor', async () => 
 
   const codeEditor = await screen.findByRole('textbox', { name: /소스 코드/ })
 
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    '소스 코드를 입력해 주세요.',
+  expect(await screen.findByText('소스 코드를 입력해 주세요.')).toHaveAttribute(
+    'role',
+    'alert',
   )
   expect(codeEditor).toHaveAttribute('aria-invalid', 'true')
   expect(codeEditor).toHaveAccessibleDescription(
@@ -80,6 +110,23 @@ it('submits the documented fields and navigates to the created solution', async 
   renderRoute(<SolutionCreatePage />)
 
   await fillCreateForm()
+  await userEvent.type(
+    screen.getByRole('textbox', { name: /풀이 설명/ }),
+    '새 풀이 설명',
+  )
+  await userEvent.click(screen.getByRole('checkbox', { name: /풀이 완료/ }))
+  await userEvent.type(
+    screen.getByRole('spinbutton', { name: /메모리 사용량/ }),
+    '12345',
+  )
+  await userEvent.type(
+    screen.getByRole('spinbutton', { name: /실행 시간/ }),
+    '67',
+  )
+
+  expect(
+    screen.queryByRole('checkbox', { name: /임시 저장/ }),
+  ).not.toBeInTheDocument()
 
   await waitFor(() => {
     expect(
@@ -97,6 +144,11 @@ it('submits the documented fields and navigates to the created solution', async 
       problemId: 'problem-1',
       language: 'Java',
       code: 'System.out.println(1);',
+      description: '새 풀이 설명',
+      isSolved: true,
+      isDraft: false,
+      memoryUsage: 12_345,
+      timeElapsed: 67,
     })
   })
   expect(navigate).toHaveBeenCalledWith({
@@ -104,6 +156,64 @@ it('submits the documented fields and navigates to the created solution', async 
     params: { solutionId: 'solution-1' },
   })
 })
+
+it('prefills a problem from the route search parameter', async () => {
+  routeSearch.current = { problemId: 'problem-1' }
+  vi.mocked(getProblem).mockResolvedValue(problemOne)
+
+  renderRoute(<SolutionCreatePage />)
+
+  expect(await screen.findByText('문제 1')).toBeVisible()
+  expect(screen.getByText(/BOJ 1000/)).toBeVisible()
+  expect(screen.getByRole('button', { name: '문제 변경' })).toBeVisible()
+  expect(getProblem).toHaveBeenCalledWith('problem-1')
+})
+
+it('shows localized optional labels', () => {
+  renderRoute(<SolutionCreatePage />)
+
+  expect(screen.queryByText('Optional')).not.toBeInTheDocument()
+  expect(screen.getByLabelText('풀이 설명 (선택)')).toBeInTheDocument()
+  expect(screen.getByLabelText('메모리 사용량 (선택)')).toBeInTheDocument()
+  expect(screen.getByLabelText('실행 시간 (선택)')).toBeInTheDocument()
+})
+
+it.each([
+  [
+    '메모리 사용량',
+    '-1',
+    '메모리 사용량은 0부터 2,147,483,647 사이의 정수로 입력해 주세요.',
+  ],
+  [
+    '실행 시간',
+    '2147483648',
+    '실행 시간은 0부터 2,147,483,647 사이의 정수로 입력해 주세요.',
+  ],
+] as const)(
+  'rejects an invalid %s instead of silently submitting it',
+  async (label, value, errorMessage) => {
+    renderRoute(<SolutionCreatePage />)
+    await fillCreateForm()
+
+    await userEvent.type(
+      screen.getByRole('spinbutton', { name: new RegExp(label) }),
+      value,
+    )
+    await userEvent.click(screen.getByRole('button', { name: '풀이 저장' }))
+
+    expect(await screen.findByText(errorMessage)).toHaveAttribute(
+      'role',
+      'alert',
+    )
+    expect(createSolution).not.toHaveBeenCalled()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('spinbutton', { name: new RegExp(label) }),
+      ).toHaveFocus(),
+    )
+    expect(screen.getByText(errorMessage)).toBeVisible()
+  },
+)
 
 it('indents code with spaces when Tab is pressed in the editor', async () => {
   renderRoute(<SolutionCreatePage />)
@@ -159,7 +269,8 @@ it('shows and clears generic creation errors', async () => {
     await screen.findByText('풀이를 저장하지 못했습니다. 다시 시도해 주세요.'),
   ).toBeVisible()
 
-  await userEvent.type(screen.getByLabelText('문제 ID'), '-updated')
+  await userEvent.click(screen.getByRole('button', { name: '문제 변경' }))
+  await userEvent.click(await screen.findByRole('button', { name: /문제 2/ }))
 
   expect(
     screen.queryByText('풀이를 저장하지 못했습니다. 다시 시도해 주세요.'),
@@ -187,7 +298,7 @@ function renderRoute(children: ReactNode) {
 }
 
 async function fillCreateForm() {
-  await userEvent.type(screen.getByLabelText('문제 ID'), 'problem-1')
+  await selectProblem('문제 1')
   await userEvent.click(
     screen.getByRole('combobox', { name: /프로그래밍 언어/ }),
   )
@@ -196,4 +307,37 @@ async function fillCreateForm() {
     await screen.findByRole('textbox', { name: /소스 코드/ }),
   )
   await userEvent.paste('System.out.println(1);')
+}
+
+async function selectProblem(name: string) {
+  await userEvent.click(screen.getByRole('button', { name: '문제 선택' }))
+  await userEvent.click(
+    await screen.findByRole('button', { name: new RegExp(name) }),
+  )
+}
+
+const problemOne = {
+  id: 'problem-1',
+  provider: 'BOJ' as const,
+  externalId: '1000',
+  name: '문제 1',
+  url: 'https://example.com/problems/1',
+  difficulty: 'BRONZE_5',
+}
+
+const problemTwo = {
+  id: 'problem-2',
+  provider: 'SWEA' as const,
+  externalId: '1204',
+  name: '문제 2',
+  url: 'https://example.com/problems/2',
+  difficulty: null,
+}
+
+const problemPage = {
+  problems: [problemOne, problemTwo],
+  page: 0,
+  size: 10,
+  totalElements: 2,
+  totalPages: 1,
 }

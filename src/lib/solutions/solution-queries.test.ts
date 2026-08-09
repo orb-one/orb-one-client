@@ -30,14 +30,16 @@ it('fetches a solution list with its filter', async () => {
   const solutions = [
     {
       id: 'solution-1',
-      problem: null,
+      problemId: 'problem-1',
+      userId: 'user-1',
+      problemName: 'A+B',
+      problemProvider: 'BOJ' as const,
+      problemNumber: '1000',
+      problemDifficulty: 'BRONZE_5',
       isSolved: null,
       isDraft: null,
       language: null,
-      memoryUsage: null,
-      timeElapsed: null,
       createdAt: null,
-      updatedAt: null,
     },
   ]
 
@@ -54,7 +56,8 @@ it('fetches a solution list with its filter', async () => {
 it('fetches a solution detail by id', async () => {
   const solution = {
     id: 'solution-1',
-    problem: null,
+    problemId: 'problem-1',
+    userId: 'user-1',
     isSolved: null,
     isDraft: null,
     language: null,
