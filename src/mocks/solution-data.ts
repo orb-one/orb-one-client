@@ -1,47 +1,58 @@
 import type {
   CreateSolutionRequest,
-  ProblemSummaryResponse,
   SolutionDetailResponse,
   SolutionSummaryResponse,
+  UpdateSolutionRequest,
 } from '@/lib/api/solutions'
+import type { ProblemProvider } from '@/lib/problems/problem-model'
 
-const additionProblem: ProblemSummaryResponse = {
-  problemId: '10000000-0000-4000-8000-000000000001',
-  name: 'A+B',
-  tier: 1,
-  url: 'https://www.acmicpc.net/problem/1000',
-  tags: [{ tagId: '20000000-0000-4000-8000-000000000001', name: '수학' }],
-}
-
-const mazeProblem: ProblemSummaryResponse = {
-  problemId: '10000000-0000-4000-8000-000000000002',
-  name: '미로 탐색',
-  tier: 10,
-  url: 'https://www.acmicpc.net/problem/2178',
-  tags: [
+const problemIds = new Set([
+  '10000000-0000-4000-8000-000000000001',
+  '10000000-0000-4000-8000-000000000002',
+  '10000000-0000-4000-8000-000000000003',
+])
+const solutionProblemMetadata = new Map<
+  string,
+  {
+    problemName: string
+    problemProvider: ProblemProvider
+    problemNumber: string
+    problemDifficulty: string | null
+  }
+>([
+  [
+    '10000000-0000-4000-8000-000000000001',
     {
-      tagId: '20000000-0000-4000-8000-000000000002',
-      name: '그래프 탐색',
-    },
-    {
-      tagId: '20000000-0000-4000-8000-000000000003',
-      name: '너비 우선 탐색',
+      problemName: 'A+B',
+      problemProvider: 'BOJ',
+      problemNumber: '1000',
+      problemDifficulty: 'BRONZE_5',
     },
   ],
-}
+  [
+    '10000000-0000-4000-8000-000000000002',
+    {
+      problemName: 'Hello World',
+      problemProvider: 'BOJ',
+      problemNumber: '2557',
+      problemDifficulty: 'BRONZE_5',
+    },
+  ],
+  [
+    '10000000-0000-4000-8000-000000000003',
+    {
+      problemName: '최빈수 구하기',
+      problemProvider: 'SWEA',
+      problemNumber: '1204',
+      problemDifficulty: null,
+    },
+  ],
+])
 
-const sequenceProblem: ProblemSummaryResponse = {
-  problemId: '10000000-0000-4000-8000-000000000003',
-  name: '가장 긴 증가하는 부분 수열',
-  tier: null,
-  url: null,
-}
-
-const problemFixtures = [additionProblem, mazeProblem, sequenceProblem]
+const seededUserId = '00000000-0000-4000-8000-000000000001'
 
 let solutions = createSolutionFixtures()
 
-// 테스트와 개발 중 상태를 동일한 seed로 되돌릴 수 있도록 명시적인 reset 경계를 제공한다.
 export function resetMockSolutions() {
   solutions = createSolutionFixtures()
 }
@@ -51,8 +62,7 @@ export function getMockSolutionSummaries(
 ): SolutionSummaryResponse[] {
   return solutions
     .filter(
-      (solution) =>
-        problemId === undefined || solution.problem?.problemId === problemId,
+      (solution) => problemId === undefined || solution.problemId === problemId,
     )
     .map(toSolutionSummary)
 }
@@ -61,27 +71,26 @@ export function getMockSolution(solutionId: string) {
   return solutions.find((solution) => solution.solutionId === solutionId)
 }
 
-export function createMockSolution(request: CreateSolutionRequest) {
-  const problem = problemFixtures.find(
-    (candidate) => candidate.problemId === request.problemId,
-  )
-
-  if (!problem) {
+export function createMockSolution(
+  request: CreateSolutionRequest,
+  authorId: string,
+) {
+  if (!problemIds.has(request.problemId)) {
     return null
   }
 
   const now = new Date().toISOString()
   const solution: SolutionDetailResponse = {
     solutionId: crypto.randomUUID(),
-    problem,
-    isSolved: false,
-    isDraft: false,
+    problemId: request.problemId,
+    userId: authorId,
     language: request.language,
-    memoryUsage: null,
-    timeElapsed: null,
     code: request.code,
-    // 등록 명세에는 description이 없지만 상세 응답에서는 필수이므로 빈 문자열로 초기화한다.
-    description: '',
+    description: request.description,
+    isSolved: request.isSolved,
+    isDraft: request.isDraft,
+    memoryUsage: request.memoryUsage,
+    timeElapsed: request.timeElapsed,
     createdAt: now,
     updatedAt: now,
   }
@@ -91,27 +100,62 @@ export function createMockSolution(request: CreateSolutionRequest) {
   return solution
 }
 
+export function updateMockSolution(
+  solutionId: string,
+  editorId: string,
+  request: UpdateSolutionRequest,
+) {
+  const index = solutions.findIndex(
+    (solution) => solution.solutionId === solutionId,
+  )
+
+  if (index < 0) {
+    return { ok: false as const, status: 404 as const }
+  }
+
+  const current = solutions[index]
+
+  if (!current) {
+    return { ok: false as const, status: 404 as const }
+  }
+
+  if (current.userId !== editorId) {
+    return {
+      ok: false as const,
+      status: current.isDraft === true ? (404 as const) : (403 as const),
+    }
+  }
+
+  const updated: SolutionDetailResponse = {
+    ...current,
+    ...request,
+    updatedAt: new Date().toISOString(),
+  }
+
+  solutions = solutions.map((solution, solutionIndex) =>
+    solutionIndex === index ? updated : solution,
+  )
+
+  return { ok: true as const, solution: updated }
+}
+
 function toSolutionSummary(
   solution: SolutionDetailResponse,
 ): SolutionSummaryResponse {
+  const problem = solutionProblemMetadata.get(solution.problemId)
+
   return {
     solutionId: solution.solutionId,
-    ...(solution.problem ? { problem: solution.problem } : {}),
-    ...(solution.isSolved !== undefined ? { isSolved: solution.isSolved } : {}),
-    ...(solution.isDraft !== undefined ? { isDraft: solution.isDraft } : {}),
-    ...(solution.language !== undefined ? { language: solution.language } : {}),
-    ...(solution.memoryUsage !== undefined
-      ? { memoryUsage: solution.memoryUsage }
-      : {}),
-    ...(solution.timeElapsed !== undefined
-      ? { timeElapsed: solution.timeElapsed }
-      : {}),
-    ...(solution.createdAt !== undefined
-      ? { createdAt: solution.createdAt }
-      : {}),
-    ...(solution.updatedAt !== undefined
-      ? { updatedAt: solution.updatedAt }
-      : {}),
+    problemId: solution.problemId,
+    userId: solution.userId,
+    problemName: problem?.problemName ?? null,
+    problemProvider: problem?.problemProvider ?? null,
+    problemNumber: problem?.problemNumber ?? null,
+    problemDifficulty: problem?.problemDifficulty ?? null,
+    language: solution.language,
+    isSolved: solution.isSolved,
+    isDraft: solution.isDraft,
+    createdAt: solution.createdAt,
   }
 }
 
@@ -119,7 +163,8 @@ function createSolutionFixtures(): SolutionDetailResponse[] {
   return [
     {
       solutionId: '30000000-0000-4000-8000-000000000001',
-      problem: additionProblem,
+      problemId: '10000000-0000-4000-8000-000000000001',
+      userId: seededUserId,
       isSolved: true,
       isDraft: false,
       language: 'Java',
@@ -175,7 +220,8 @@ function createSolutionFixtures(): SolutionDetailResponse[] {
     },
     {
       solutionId: '30000000-0000-4000-8000-000000000002',
-      problem: mazeProblem,
+      problemId: '10000000-0000-4000-8000-000000000002',
+      userId: seededUserId,
       isSolved: true,
       isDraft: false,
       language: 'Python',
@@ -193,14 +239,8 @@ function createSolutionFixtures(): SolutionDetailResponse[] {
         '',
         '시작점부터 **BFS**를 수행해 도착점까지의 최단 거리를 구한다.',
         '',
-        '- `deque`에 방문할 좌표를 저장한다.',
-        '- 방문하지 않은 인접 칸을 큐에 추가한다.',
-        '- 처음 도착점에 도달했을 때의 거리가 최단 거리다.',
-        '',
         '```python',
         'queue = deque([(0, 0)])',
-        'while queue:',
-        '    row, column = queue.popleft()',
         '```',
       ].join('\n'),
       createdAt: '2026-07-16T03:00:00.000Z',
@@ -208,14 +248,15 @@ function createSolutionFixtures(): SolutionDetailResponse[] {
     },
     {
       solutionId: '30000000-0000-4000-8000-000000000003',
-      problem: sequenceProblem,
+      problemId: '10000000-0000-4000-8000-000000000003',
+      userId: seededUserId,
       isSolved: false,
       isDraft: true,
       language: 'Java',
       memoryUsage: null,
       timeElapsed: null,
       code: 'public class Main {\n}',
-      description: '',
+      description: null,
       createdAt: '2026-07-17T05:00:00.000Z',
       updatedAt: '2026-07-18T07:30:00.000Z',
     },

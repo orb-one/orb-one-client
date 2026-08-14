@@ -39,13 +39,15 @@ function createSolution(
 ): SolutionSummary {
   return {
     id,
-    problem: null,
+    problemId: 'problem-1',
+    userId: 'user-1',
+    problemName: 'A+B',
+    problemProvider: 'BOJ',
+    problemNumber: '1000',
+    problemDifficulty: 'BRONZE_5',
     isDraft,
     isSolved,
     language,
-    memoryUsage: null,
-    timeElapsed: null,
     createdAt: null,
-    updatedAt: null,
   }
 }

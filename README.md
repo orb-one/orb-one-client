@@ -112,7 +112,7 @@ VITE_ENABLE_MSW=true
 VITE_MSW_USER_NICKNAME=dev-user
 ```
 
-현재 mock layer는 `/auth/register`, `/auth/login`, `/auth/logout` 요청은 실제 서버로 통과시키고, 성공한 auth 요청을 기준으로 `GET /users/me`를 mock 응답으로 대체합니다. 아직 서버에 구현되지 않은 `GET /solutions`, `GET /solutions/{solutionId}`, `POST /solutions`도 browser memory 기반 mock으로 제공합니다.
+현재 mock layer는 `/auth/register`, `/auth/login`, `/auth/logout` 요청은 실제 서버로 통과시키고, 성공한 auth 요청을 기준으로 `GET /users/me`를 mock 응답으로 대체합니다. `GET /solutions`, `GET /solutions/{solutionId}`, `POST /solutions`는 최신 서버 DTO와 같은 형태의 browser memory 기반 mock으로 제공합니다.
 실제 서버의 `/users/me` 구현을 확인할 때는 `VITE_ENABLE_MSW=false`로 둡니다.
 
 주의:

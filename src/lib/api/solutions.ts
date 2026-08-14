@@ -1,58 +1,65 @@
 import { apiClient } from '@/lib/api/client'
 import type {
-  ProblemSummary,
   SolutionDetail,
   SolutionSummary,
 } from '@/lib/solutions/solution-model'
+import type { ProblemProvider } from '@/lib/problems/problem-model'
 
 export interface GetSolutionsParams {
-  // 명세상 선택값이며, 없으면 현재 사용자의 전체 풀이를 조회한다.
   problemId?: string
 }
 
-// 풀이 등록 API에 문서화된 필드만 전송한다. description은 서버 계약 확정 전까지 제외한다.
 export interface CreateSolutionRequest {
   problemId: string
   language: string
   code: string
+  isSolved: boolean
+  isDraft: false
+  memoryUsage: number | null
+  timeElapsed: number | null
+  description: string | null
 }
 
-// API의 solutionId를 도메인 공통 명명인 id로 변환한 등록 결과
 export interface CreateSolutionResult {
   id: string
 }
 
-// 아래 응답 타입은 향후 서버 DTO 변경을 한곳에서 흡수하기 위한 API 경계 모델이다.
-export interface ProblemTagResponse {
-  tagId: string
-  name: string
-}
-
-export interface ProblemSummaryResponse {
-  problemId: string
-  name: string
-  tier: number | null
-  url: string | null
-  tags?: ProblemTagResponse[]
-}
-
-export interface SolutionSummaryResponse {
-  solutionId: string
-  // 목록 원소가 명세에 정의되지 않아 컬럼정의서 기반 필드는 optional로 수용한다.
-  problem?: ProblemSummaryResponse
-  isSolved?: boolean
-  isDraft?: boolean
-  language?: string
-  memoryUsage?: number | null
-  timeElapsed?: number | null
-  createdAt?: string
-  updatedAt?: string
-}
-
-export interface SolutionDetailResponse extends SolutionSummaryResponse {
-  // 상세 API 명세에서 두 필드는 필수 응답으로 정의된다.
+export interface UpdateSolutionRequest {
+  language: string
   code: string
-  description: string
+  isSolved: boolean | null
+  isDraft: boolean | null
+  memoryUsage: number | null
+  timeElapsed: number | null
+  description: string | null
+}
+
+// 목록과 상세 응답이 공통으로 제공하는 풀이 메타데이터다.
+interface SolutionBaseResponse {
+  solutionId: string
+  problemId: string
+  userId: string
+  authorNickname?: string | null
+  language: string | null
+  isSolved: boolean | null
+  isDraft: boolean | null
+  createdAt: string | null
+}
+
+// 문제 레코드를 찾지 못한 기존 데이터는 서버가 문제 정보를 null로 응답한다.
+export interface SolutionSummaryResponse extends SolutionBaseResponse {
+  problemName: string | null
+  problemProvider: ProblemProvider | null
+  problemNumber: string | null
+  problemDifficulty: string | null
+}
+
+export interface SolutionDetailResponse extends SolutionBaseResponse {
+  code: string | null
+  description: string | null
+  memoryUsage: number | null
+  timeElapsed: number | null
+  updatedAt: string | null
 }
 
 export interface GetSolutionsResponse {
@@ -63,7 +70,6 @@ export interface CreateSolutionResponse {
   solutionId: string
 }
 
-// API 응답을 그대로 노출하지 않고 UI가 일관되게 소비할 수 있는 도메인 모델로 변환한다.
 export async function getSolutions(
   params: GetSolutionsParams = {},
 ): Promise<SolutionSummary[]> {
@@ -81,20 +87,14 @@ export async function getSolutions(
   return response.solutions.map(mapSolutionSummary)
 }
 
-// path parameter가 URL 경계를 넘지 않도록 solutionId를 개별 segment로 인코딩한다.
 export async function getSolution(solutionId: string): Promise<SolutionDetail> {
   const response = await apiClient<SolutionDetailResponse>(
     `/solutions/${encodeURIComponent(solutionId)}`,
   )
 
-  return {
-    ...mapSolutionSummary(response),
-    code: response.code,
-    description: response.description,
-  }
+  return mapSolutionDetail(response)
 }
 
-// 서버의 solutionId를 프론트 도메인의 공통 id 이름으로 정규화한다.
 export async function createSolution(
   request: CreateSolutionRequest,
 ): Promise<CreateSolutionResult> {
@@ -106,33 +106,56 @@ export async function createSolution(
   return { id: response.solutionId }
 }
 
+export async function updateSolution(
+  solutionId: string,
+  request: UpdateSolutionRequest,
+): Promise<SolutionDetail> {
+  const response = await apiClient<SolutionDetailResponse>(
+    `/solutions/${encodeURIComponent(solutionId)}`,
+    {
+      method: 'PUT',
+      body: request,
+    },
+  )
+
+  return mapSolutionDetail(response)
+}
+
 function mapSolutionSummary(
   response: SolutionSummaryResponse,
 ): SolutionSummary {
   return {
-    id: response.solutionId,
-    problem: response.problem ? mapProblemSummary(response.problem) : null,
-    // false와 0은 유효한 값이므로 논리 OR 대신 nullish coalescing을 사용한다.
-    isSolved: response.isSolved ?? null,
-    isDraft: response.isDraft ?? null,
-    language: response.language ?? null,
-    memoryUsage: response.memoryUsage ?? null,
-    timeElapsed: response.timeElapsed ?? null,
-    createdAt: response.createdAt ?? null,
-    updatedAt: response.updatedAt ?? null,
+    ...mapSolutionBase(response),
+    problemName: response.problemName,
+    problemProvider: response.problemProvider,
+    problemNumber: response.problemNumber,
+    problemDifficulty: response.problemDifficulty,
   }
 }
 
-function mapProblemSummary(response: ProblemSummaryResponse): ProblemSummary {
+function mapSolutionDetail(response: SolutionDetailResponse): SolutionDetail {
   return {
-    id: response.problemId,
-    name: response.name,
-    tier: response.tier,
-    url: response.url,
-    // 태그가 응답에 포함되지 않은 경우 UI에서는 빈 목록으로 취급한다.
-    tags: (response.tags ?? []).map((tag) => ({
-      id: tag.tagId,
-      name: tag.name,
-    })),
+    ...mapSolutionBase(response),
+    // 기존 nullable 데이터도 상세 화면에서 안전하게 렌더링할 수 있게 한다.
+    code: response.code ?? '',
+    description: response.description ?? '',
+    memoryUsage: response.memoryUsage,
+    timeElapsed: response.timeElapsed,
+    updatedAt: response.updatedAt,
+  }
+}
+
+function mapSolutionBase(response: SolutionBaseResponse) {
+  return {
+    id: response.solutionId,
+    problemId: response.problemId,
+    userId: response.userId,
+    ...(response.authorNickname !== undefined
+      ? { authorNickname: response.authorNickname }
+      : {}),
+    language: response.language,
+    isSolved: response.isSolved,
+    isDraft: response.isDraft,
+    createdAt: response.createdAt,
   }
 }

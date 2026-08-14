@@ -1,6 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { createSolution, type CreateSolutionRequest } from '@/lib/api/solutions'
+import {
+  createSolution,
+  type CreateSolutionRequest,
+  type UpdateSolutionRequest,
+  updateSolution,
+} from '@/lib/api/solutions'
 import { solutionQueryKeys } from '@/lib/solutions/solution-queries'
 
 export function useCreateSolution() {
@@ -21,6 +26,21 @@ export function useCreateSolution() {
           exact: true,
         }),
       ])
+    },
+  })
+}
+
+export function useUpdateSolution(solutionId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: UpdateSolutionRequest) =>
+      updateSolution(solutionId, request),
+    onSuccess: async (solution) => {
+      queryClient.setQueryData(solutionQueryKeys.detail(solutionId), solution)
+      await queryClient.invalidateQueries({
+        queryKey: [...solutionQueryKeys.all, 'list'],
+      })
     },
   })
 }

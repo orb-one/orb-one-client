@@ -1,6 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest'
 
-import { createSolution, getSolution, getSolutions } from '@/lib/api/solutions'
+import {
+  createSolution,
+  getSolution,
+  getSolutions,
+  updateSolution,
+} from '@/lib/api/solutions'
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -12,20 +17,17 @@ it('gets and maps the solution list without a filter', async () => {
     solutions: [
       {
         solutionId: 'solution-1',
-        problem: {
-          problemId: 'problem-1',
-          name: '두 수의 합',
-          tier: 3,
-          url: 'https://example.com/problems/1',
-          tags: [{ tagId: 'tag-1', name: '구현' }],
-        },
+        problemId: 'problem-1',
+        userId: 'user-1',
+        authorNickname: 'solution-author',
+        problemName: 'A+B',
+        problemProvider: 'BOJ',
+        problemNumber: '1000',
+        problemDifficulty: 'BRONZE_5',
         isSolved: true,
         isDraft: false,
         language: 'Java',
-        memoryUsage: 128,
-        timeElapsed: 24,
         createdAt: '2026-07-18T09:00:00Z',
-        updatedAt: '2026-07-18T09:30:00Z',
       },
     ],
   })
@@ -33,20 +35,17 @@ it('gets and maps the solution list without a filter', async () => {
   await expect(getSolutions()).resolves.toEqual([
     {
       id: 'solution-1',
-      problem: {
-        id: 'problem-1',
-        name: '두 수의 합',
-        tier: 3,
-        url: 'https://example.com/problems/1',
-        tags: [{ id: 'tag-1', name: '구현' }],
-      },
+      problemId: 'problem-1',
+      userId: 'user-1',
+      authorNickname: 'solution-author',
+      problemName: 'A+B',
+      problemProvider: 'BOJ',
+      problemNumber: '1000',
+      problemDifficulty: 'BRONZE_5',
       isSolved: true,
       isDraft: false,
       language: 'Java',
-      memoryUsage: 128,
-      timeElapsed: 24,
       createdAt: '2026-07-18T09:00:00Z',
-      updatedAt: '2026-07-18T09:30:00Z',
     },
   ])
 
@@ -56,22 +55,38 @@ it('gets and maps the solution list without a filter', async () => {
   )
 })
 
-it('encodes the optional problem filter and tolerates minimal list items', async () => {
+it('encodes the optional problem filter', async () => {
   const fetchMock = mockJsonResponse({
-    solutions: [{ solutionId: 'solution-2' }],
+    solutions: [
+      {
+        solutionId: 'solution-2',
+        problemId: 'problem-2',
+        userId: 'user-2',
+        problemName: null,
+        problemProvider: null,
+        problemNumber: null,
+        problemDifficulty: null,
+        language: null,
+        isSolved: null,
+        isDraft: null,
+        createdAt: null,
+      },
+    ],
   })
 
   await expect(getSolutions({ problemId: 'problem id/2' })).resolves.toEqual([
     {
       id: 'solution-2',
-      problem: null,
+      problemId: 'problem-2',
+      userId: 'user-2',
+      problemName: null,
+      problemProvider: null,
+      problemNumber: null,
+      problemDifficulty: null,
       isSolved: null,
       isDraft: null,
       language: null,
-      memoryUsage: null,
-      timeElapsed: null,
       createdAt: null,
-      updatedAt: null,
     },
   ])
 
@@ -81,16 +96,26 @@ it('encodes the optional problem filter and tolerates minimal list items', async
   )
 })
 
-it('gets a solution detail and maps absent extension fields to null', async () => {
+it('gets a solution detail and normalizes nullable text fields', async () => {
   const fetchMock = mockJsonResponse({
     solutionId: 'solution/id',
-    code: 'class Main {}',
-    description: '풀이 설명',
+    problemId: 'problem-1',
+    userId: 'user-1',
+    language: null,
+    code: null,
+    description: null,
+    isSolved: null,
+    isDraft: null,
+    memoryUsage: null,
+    timeElapsed: null,
+    createdAt: null,
+    updatedAt: null,
   })
 
   await expect(getSolution('solution/id')).resolves.toEqual({
     id: 'solution/id',
-    problem: null,
+    problemId: 'problem-1',
+    userId: 'user-1',
     isSolved: null,
     isDraft: null,
     language: null,
@@ -98,8 +123,8 @@ it('gets a solution detail and maps absent extension fields to null', async () =
     timeElapsed: null,
     createdAt: null,
     updatedAt: null,
-    code: 'class Main {}',
-    description: '풀이 설명',
+    code: '',
+    description: '',
   })
 
   expect(fetchMock).toHaveBeenCalledWith(
@@ -108,11 +133,16 @@ it('gets a solution detail and maps absent extension fields to null', async () =
   )
 })
 
-it('creates a solution with only the documented request fields', async () => {
+it('creates a solution with every documented request field', async () => {
   const request = {
     problemId: 'problem-1',
     language: 'Java',
     code: 'class Main {}',
+    isSolved: true,
+    isDraft: false as const,
+    memoryUsage: 12_345,
+    timeElapsed: 67,
+    description: '풀이 설명',
   }
   const fetchMock = mockJsonResponse({ solutionId: 'solution-3' })
 
@@ -131,6 +161,50 @@ it('creates a solution with only the documented request fields', async () => {
 
   expect(headers).toBeInstanceOf(Headers)
   expect((headers as Headers).get('Content-Type')).toBe('application/json')
+})
+
+it('updates every replaceable solution field and maps the detail response', async () => {
+  const request = {
+    language: 'Python',
+    code: 'print(1)',
+    isSolved: true,
+    isDraft: false,
+    memoryUsage: 12_300,
+    timeElapsed: 45,
+    description: null,
+  }
+  const fetchMock = mockJsonResponse({
+    solutionId: 'solution/id',
+    problemId: 'problem-1',
+    userId: 'user-1',
+    ...request,
+    createdAt: '2026-08-01T01:00:00',
+    updatedAt: '2026-08-01T02:00:00',
+  })
+
+  await expect(updateSolution('solution/id', request)).resolves.toEqual({
+    id: 'solution/id',
+    problemId: 'problem-1',
+    userId: 'user-1',
+    language: 'Python',
+    code: 'print(1)',
+    isSolved: true,
+    isDraft: false,
+    memoryUsage: 12_300,
+    timeElapsed: 45,
+    description: '',
+    createdAt: '2026-08-01T01:00:00',
+    updatedAt: '2026-08-01T02:00:00',
+  })
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    'http://localhost:8080/solutions/solution%2Fid',
+    expect.objectContaining({
+      method: 'PUT',
+      credentials: 'include',
+      body: JSON.stringify(request),
+    }),
+  )
 })
 
 function mockJsonResponse(body: unknown) {

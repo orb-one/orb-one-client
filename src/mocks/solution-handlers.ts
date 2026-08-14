@@ -1,15 +1,23 @@
 import { http, HttpResponse, passthrough } from 'msw'
 
-import type { CreateSolutionRequest } from '@/lib/api/solutions'
+import type {
+  CreateSolutionRequest,
+  UpdateSolutionRequest,
+} from '@/lib/api/solutions'
+import { getCurrentMockUser } from '@/mocks/auth-session'
 import {
   createMockSolution,
   getMockSolution,
   getMockSolutionSummaries,
+  updateMockSolution,
 } from '@/mocks/solution-data'
 
 export const solutionHandlers = [
   http.get('*/solutions', ({ request }) => {
-    if (!isSolutionApiRequest(request, '/solutions')) {
+    if (
+      isDocumentNavigation(request) ||
+      !isSolutionApiRequest(request, '/solutions')
+    ) {
       return passthrough()
     }
 
@@ -23,6 +31,7 @@ export const solutionHandlers = [
 
     if (
       !solutionId ||
+      isDocumentNavigation(request) ||
       !isSolutionApiRequest(
         request,
         `/solutions/${encodeURIComponent(solutionId)}`,
@@ -56,7 +65,13 @@ export const solutionHandlers = [
       )
     }
 
-    const solution = createMockSolution(body)
+    const currentUser = getCurrentMockUser()
+
+    if (!currentUser) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const solution = createMockSolution(body, currentUser.id)
 
     if (!solution) {
       return HttpResponse.json(
@@ -69,6 +84,49 @@ export const solutionHandlers = [
       { solutionId: solution.solutionId },
       { status: 201 },
     )
+  }),
+  http.put('*/solutions/:solutionId', async ({ params, request }) => {
+    const solutionId = getPathParameter(params.solutionId)
+
+    if (
+      !solutionId ||
+      isDocumentNavigation(request) ||
+      !isSolutionApiRequest(
+        request,
+        `/solutions/${encodeURIComponent(solutionId)}`,
+      )
+    ) {
+      return passthrough()
+    }
+
+    const body = await parseJsonBody(request)
+
+    if (!isUpdateSolutionRequest(body)) {
+      return HttpResponse.json(
+        { message: 'Invalid solution request' },
+        { status: 400 },
+      )
+    }
+
+    const currentUser = getCurrentMockUser()
+
+    if (!currentUser) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const result = updateMockSolution(solutionId, currentUser.id, body)
+
+    if (!result.ok) {
+      return HttpResponse.json(
+        {
+          message:
+            result.status === 403 ? 'Solution forbidden' : 'Solution not found',
+        },
+        { status: result.status },
+      )
+    }
+
+    return HttpResponse.json(result.solution)
   }),
 ]
 
@@ -92,6 +150,14 @@ export function isSolutionApiRequest(request: Request, path: string) {
   )
 }
 
+export function isDocumentNavigation(request: Request) {
+  return (
+    request.mode === 'navigate' ||
+    request.destination === 'document' ||
+    request.headers.get('accept')?.includes('text/html') === true
+  )
+}
+
 function ensureTrailingSlash(value: string) {
   return value.endsWith('/') ? value : `${value}/`
 }
@@ -111,7 +177,27 @@ function isCreateSolutionRequest(
     isRecord(value) &&
     isNonEmptyString(value.problemId) &&
     isNonEmptyString(value.language) &&
-    isNonEmptyString(value.code)
+    isNonEmptyString(value.code) &&
+    typeof value.isSolved === 'boolean' &&
+    value.isDraft === false &&
+    isNullableNumber(value.memoryUsage) &&
+    isNullableNumber(value.timeElapsed) &&
+    (typeof value.description === 'string' || value.description === null)
+  )
+}
+
+function isUpdateSolutionRequest(
+  value: unknown,
+): value is UpdateSolutionRequest {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.language) &&
+    isNonEmptyString(value.code) &&
+    isNullableBoolean(value.isSolved) &&
+    isNullableBoolean(value.isDraft) &&
+    isNullableNumber(value.memoryUsage) &&
+    isNullableNumber(value.timeElapsed) &&
+    (typeof value.description === 'string' || value.description === null)
   )
 }
 
@@ -125,4 +211,12 @@ function isNonEmptyString(value: unknown): value is string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function isNullableBoolean(value: unknown): value is boolean | null {
+  return typeof value === 'boolean' || value === null
+}
+
+function isNullableNumber(value: unknown): value is number | null {
+  return typeof value === 'number' || value === null
 }
