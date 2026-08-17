@@ -19,7 +19,7 @@ export interface GroupMemberResponse {
   role: string
 }
 
-export interface GetGroupDetailResponse {
+export interface GroupDetailResponse {
   groupId: string
   groupName: string
   members: GroupMemberResponse[]
@@ -80,7 +80,7 @@ export function mapGroupSummary(response: GroupSummaryResponse): GroupSummary {
   }
 }
 
-function mapGroupDetail(response: GetGroupDetailResponse): GroupDetail {
+function mapGroupDetail(response: GroupDetailResponse): GroupDetail {
   return {
     groupId: response.groupId,
     name: response.groupName,
@@ -103,7 +103,7 @@ export async function getGroups(): Promise<GroupSummary[]> {
 // 2) 특정 그룹 상세 정보를 조회한다. (GET /groups/{groupId})
 export async function getGroup(groupId: string): Promise<GroupDetail> {
   const encodedGroupId = encodeURIComponent(groupId)
-  const response = await apiClient<GetGroupDetailResponse>(
+  const response = await apiClient<GroupDetailResponse>(
     `/groups/${encodedGroupId}`,
   )
 
@@ -124,7 +124,7 @@ export async function joinGroup(groupId: string): Promise<GroupJoinResponse> {
   return response
 }
 
-// 그룹 생성 API (POST /groups)
+// 4) 그룹 생성 API (POST /groups)
 export async function createGroup(
   data: CreateGroupRequest,
 ): Promise<CreateGroupResponse> {

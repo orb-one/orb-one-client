@@ -1,10 +1,14 @@
-import type { GroupSummaryResponse } from '@/lib/api/groups'
+import type {
+  GroupDetailResponse,
+  GroupSummaryResponse,
+} from '@/lib/api/groups'
 
+// 1. GET /groups 목록용 Mock
 export const mockGroupSummaryList: GroupSummaryResponse[] = [
   {
-    groupId: '12be2f52-81dd-41b7-914c-03d73e417130',
+    groupId: '6f9619ff-8b86-d011-b42d-00c04fc964ff',
     name: '알고리즘 스터디 1반',
-    nickname: 'userA',
+    nickname: 'algo_master',
     createdAt: '2026-07-31T15:46:25',
   },
   {
@@ -13,10 +17,24 @@ export const mockGroupSummaryList: GroupSummaryResponse[] = [
     nickname: 'testerB',
     createdAt: '2026-07-26T14:18:42',
   },
-  {
-    groupId: '54f2cc6b-c10b-4e79-96d2-e933297fe748',
-    name: 'React 프로젝트 스터디',
-    nickname: 'devMaster',
-    createdAt: '2026-08-01T09:00:00',
-  },
 ]
+
+// 2. GET /groups/:groupId 상세용 Mock
+export const mockGroupDetails: Record<string, GroupDetailResponse> = {
+  '6f9619ff-8b86-d011-b42d-00c04fc964ff': {
+    groupId: '6f9619ff-8b86-d011-b42d-00c04fc964ff',
+    groupName: '알고리즘 스터디 1반',
+    members: [
+      {
+        userId: '3f2504e0-4f89-11d3-9a0c-0305e82c3301',
+        nickname: 'algo_master',
+        role: 'OWNER',
+      },
+      {
+        userId: 'a0e2d4de-b268-44b1-bf8a-fb49d725deb4',
+        nickname: 'userA',
+        role: 'MEMBER',
+      },
+    ],
+  },
+}
