@@ -180,6 +180,69 @@ test('refreshes expired current user requests before showing signed-in UI', asyn
   expect(currentUserRequestCount).toBe(2)
 })
 
+test('does not repeat auth requests after the signed-out state becomes stale', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control auth requests through the service worker.',
+  )
+
+  const initialTime = new Date('2026-08-17T00:00:00Z').getTime()
+  const requestCounts = {
+    currentUser: 0,
+    csrf: 0,
+    refresh: 0,
+  }
+
+  await page.clock.setFixedTime(initialTime)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    requestCounts.currentUser += 1
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Unauthorized' }),
+    })
+  })
+  await page.route(apiUrl('/auth/csrf'), async (route) => {
+    requestCounts.csrf += 1
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'e2e-csrf-token',
+        headerName: 'X-XSRF-TOKEN',
+      }),
+    })
+  })
+  await page.route(apiUrl('/auth/refresh'), async (route) => {
+    requestCounts.refresh += 1
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Unauthorized' }),
+    })
+  })
+
+  await page.goto('/')
+  await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
+  expect(requestCounts.currentUser).toBeGreaterThan(0)
+  expect(requestCounts.csrf).toBe(1)
+  expect(requestCounts.refresh).toBe(1)
+
+  const requestCountsAfterBootstrap = { ...requestCounts }
+
+  await page.clock.setFixedTime(initialTime + 61_000)
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event('visibilitychange'))
+    window.dispatchEvent(new Event('offline'))
+    window.dispatchEvent(new Event('online'))
+  })
+  await page.waitForTimeout(100)
+
+  expect(requestCounts).toEqual(requestCountsAfterBootstrap)
+})
+
 test('registers a random account, logs in, and logs out through the auth pages', async ({
   page,
 }) => {
