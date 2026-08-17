@@ -51,6 +51,9 @@ test('updates, deletes, and restores a solution through the real API', async ({
       solutionId: string
     }
     const createdSolutionId = createResult.solutionId
+    const createdSolutionLink = page.locator(
+      `a[href="/solutions/${createdSolutionId}"]`,
+    )
     solutionId = createdSolutionId
 
     await page.goto(`/solutions/${createdSolutionId}`)
@@ -156,9 +159,7 @@ test('updates, deletes, and restores a solution through the real API', async ({
     await page.waitForURL((url) => url.pathname === '/solutions')
     expect((await listResponsePromise).status()).toBe(200)
     await expect(page.getByText('풀이를 삭제했습니다.')).toBeVisible()
-    await expect(
-      page.getByRole('link').filter({ hasText: problem.name }),
-    ).toHaveCount(0)
+    await expect(createdSolutionLink).toHaveCount(0)
     await page.waitForTimeout(300)
 
     const undoScreenshot = testInfo.outputPath('solution-delete-undo.png')
@@ -179,9 +180,7 @@ test('updates, deletes, and restores a solution through the real API', async ({
 
     expect((await restoreResponsePromise).status()).toBe(204)
     await expect(page.getByText('풀이를 복구했습니다.')).toBeVisible()
-    await expect(
-      page.getByRole('link').filter({ hasText: problem.name }),
-    ).toBeVisible()
+    await expect(createdSolutionLink).toBeVisible()
 
     const restoredResponse = await page.request.get(
       `/solutions/${createdSolutionId}`,
