@@ -228,6 +228,10 @@ export const messages = {
         genericError: '풀이를 수정하지 못했습니다. 다시 시도해 주세요.',
         languageRequired: '프로그래밍 언어를 선택해 주세요.',
         codeRequired: '소스 코드를 입력해 주세요.',
+        memoryUsageInvalid:
+          '메모리 사용량은 -2,147,483,648부터 2,147,483,647 사이의 정수로 입력해 주세요.',
+        timeElapsedInvalid:
+          '실행 시간은 -2,147,483,648부터 2,147,483,647 사이의 정수로 입력해 주세요.',
       },
     },
     groups: {
@@ -478,6 +482,10 @@ export const messages = {
         genericError: 'Could not update the solution. Please try again.',
         languageRequired: 'Choose a programming language.',
         codeRequired: 'Enter source code.',
+        memoryUsageInvalid:
+          'Enter memory usage as an integer from -2,147,483,648 to 2,147,483,647.',
+        timeElapsedInvalid:
+          'Enter execution time as an integer from -2,147,483,648 to 2,147,483,647.',
       },
     },
     groups: {
