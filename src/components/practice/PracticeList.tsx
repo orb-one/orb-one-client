@@ -2,14 +2,25 @@ import { Button } from '@astryxdesign/core/Button'
 import { Table, pixel, proportional } from '@astryxdesign/core/Table'
 import { Text } from '@astryxdesign/core/Text'
 import { Link } from '@tanstack/react-router'
-import type { MockPractice } from '@/mocks/practice-data'
+import type { Practice } from '@/lib/api/practice'
+import { Trash2 } from 'lucide-react'
+import { Icon } from '@astryxdesign/core/Icon'
 
 interface PracticeListProps {
-  practices: MockPractice[]
+  practices: Practice[]
   groupId: string
+  isDeleteMode: boolean
+  onDeletePractice: (practiceId: string) => void
+  onEditPractice: (practice: Practice) => void
 }
 
-export function PracticeList({ practices, groupId }: PracticeListProps) {
+export function PracticeList({
+  practices,
+  groupId,
+  isDeleteMode,
+  onDeletePractice,
+  onEditPractice,
+}: PracticeListProps) {
   if (!Array.isArray(practices)) {
     return (
       <div className="p-8 text-center text-red-500">
@@ -30,17 +41,17 @@ export function PracticeList({ practices, groupId }: PracticeListProps) {
   }
 
   return (
-    <Table
-      data={practices}
-      idKey="practiceId"
+    <Table<Practice & Record<string, unknown>>
+      data={practices as (Practice & Record<string, unknown>)[]}
+      idKey="id"
       columns={[
         {
           key: 'id',
           header: '연습 ID',
           width: proportional(1),
-          renderCell: (p: MockPractice) => (
+          renderCell: (p: Practice) => (
             <Text type="supporting" color="secondary">
-              {p.practiceId}
+              {p.id}
             </Text>
           ),
         },
@@ -48,10 +59,10 @@ export function PracticeList({ practices, groupId }: PracticeListProps) {
           key: 'title',
           header: '제목',
           width: proportional(2),
-          renderCell: (p: MockPractice) => (
+          renderCell: (p: Practice) => (
             <Link
               to="/groups/$groupId/practices/$practiceId"
-              params={{ groupId, practiceId: p.practiceId }}
+              params={{ groupId, practiceId: p.id }}
               className="text-primary font-medium hover:underline"
             >
               {p.title}
@@ -62,7 +73,7 @@ export function PracticeList({ practices, groupId }: PracticeListProps) {
           key: 'start',
           header: '시작일시',
           width: proportional(1.5),
-          renderCell: (p: MockPractice) => (
+          renderCell: (p: Practice) => (
             <Text type="supporting">
               {new Date(p.startDate).toLocaleString()}
             </Text>
@@ -72,7 +83,7 @@ export function PracticeList({ practices, groupId }: PracticeListProps) {
           key: 'end',
           header: '종료일시',
           width: proportional(1.5),
-          renderCell: (p: MockPractice) => (
+          renderCell: (p: Practice) => (
             <Text type="supporting">
               {new Date(p.endDate).toLocaleString()}
             </Text>
@@ -80,9 +91,31 @@ export function PracticeList({ practices, groupId }: PracticeListProps) {
         },
         {
           key: 'action',
-          header: '수정',
-          width: pixel(80),
-          renderCell: () => <Button size="sm" variant="ghost" label="수정" />,
+          header: isDeleteMode ? '삭제' : '수정',
+          width: pixel(100),
+          renderCell: (p: Practice) =>
+            isDeleteMode ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                label="삭제"
+                icon={<Icon icon={Trash2} size="sm" />}
+                onClick={() => {
+                  if (confirm(`'${p.title}' 연습을 정말 삭제하시겠습니까?`)) {
+                    onDeletePractice(p.id)
+                  }
+                }}
+              />
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                label="수정"
+                onClick={() => {
+                  onEditPractice(p)
+                }}
+              />
+            ),
         },
       ]}
     />

@@ -108,9 +108,7 @@ export function GroupDetailPage() {
               )}
 
               {/* [탭 2] 연습 탭 */}
-              {activeTab === 'practice' && (
-                <PracticeTab groupId={groupId} />
-              )}
+              {activeTab === 'practice' && <PracticeTab groupId={groupId} />}
 
               {/* [탭 3] 멤버 탭 (독립 컴포넌트 호출) */}
               {activeTab === 'members' && <MemberTab groupId={groupId} />}

@@ -8,52 +8,62 @@ type ISODateString =
   `${number}${number}${number}${number}-${number}${number}-${number}${number}`
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { useToast } from '@astryxdesign/core/Toast'
-import { useState } from 'react'
-import { useCreatePractice } from '@/lib/api/practice'
+import { useState, useEffect } from 'react'
+import { useUpdatePractice, type Practice } from '@/lib/api/practice'
 
-interface CreatePracticeModalProps {
+interface EditPracticeModalProps {
   groupId: string
+  practice: Practice | null
   isOpen: boolean
   onClose: () => void
 }
 
-export function CreatePracticeModal({
+export function EditPracticeModal({
   groupId,
+  practice,
   isOpen,
   onClose,
-}: CreatePracticeModalProps) {
+}: EditPracticeModalProps) {
   const [title, setTitle] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const showToast = useToast()
 
-  const createPractice = useCreatePractice(groupId)
+  // practice prop이 변경될 때마다 모달의 초기값을 세팅합니다.
+  useEffect(() => {
+    if (practice) {
+      // eslint-disable-next-line
+      setTitle(practice.title)
+      setStartDate(practice.startDate.split('T')[0] ?? '')
+      setEndDate(practice.endDate.split('T')[0] ?? '')
+    }
+  }, [practice])
+
+  const updatePractice = useUpdatePractice(groupId, practice?.id ?? '')
 
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
+
+    if (!practice) return
 
     if (!title || !startDate || !endDate) {
       showToast({ body: '모든 필드를 입력해주세요.', type: 'error' })
       return
     }
 
-    createPractice.mutate(
+    updatePractice.mutate(
       {
         title,
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
-        problems: [], // 빈 문제 목록으로 생성
       },
       {
         onSuccess: () => {
-          showToast({ body: '연습이 생성되었습니다.' })
-          setTitle('')
-          setStartDate('')
-          setEndDate('')
+          showToast({ body: '연습이 수정되었습니다.' })
           onClose()
         },
         onError: () => {
-          showToast({ body: '연습 생성에 실패했습니다.', type: 'error' })
+          showToast({ body: '연습 수정에 실패했습니다.', type: 'error' })
         },
       },
     )
@@ -67,7 +77,7 @@ export function CreatePracticeModal({
       }}
     >
       <DialogHeader
-        title="연습 만들기"
+        title="연습 수정하기"
         onOpenChange={(open: boolean) => {
           if (!open) onClose()
         }}
@@ -85,6 +95,7 @@ export function CreatePracticeModal({
             placeholder="1주차"
           />
           <Stack gap={4} direction="horizontal">
+            {}
             <DateInput
               label="시작 일시"
               value={startDate as ISODateString}
@@ -93,6 +104,7 @@ export function CreatePracticeModal({
               }}
               placeholder="YYYY-MM-DD"
             />
+            {}
             <DateInput
               label="종료 일시"
               value={endDate as ISODateString}
@@ -107,9 +119,9 @@ export function CreatePracticeModal({
           <Button label="취소" variant="secondary" onClick={onClose} />
           <Button
             type="submit"
-            label="연습 만들기"
+            label="저장"
             variant="primary"
-            isLoading={createPractice.isPending}
+            isLoading={updatePractice.isPending}
           />
         </div>
       </form>
