@@ -20,7 +20,7 @@ import { Layers, Plus, UserCheck, Users } from 'lucide-react'
 import { useState } from 'react'
 
 import { AuthSessionExpiredError } from '@/lib/api/client'
-import { createGroup, getGroups, joinGroup } from '@/lib/api/groups'
+import { createGroup, getGroups, getGroup, joinGroup } from '@/lib/api/groups'
 import type { GroupSummary } from '@/lib/api/groups'
 import { useI18n } from '@/lib/i18n/use-translations'
 
@@ -37,6 +37,9 @@ export function GroupListPage() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
+  const [isCheckingGroupId, setIsCheckingGroupId] = useState<string | null>(
+    null,
+  )
 
   // i18n 다국어 및 폴백 문구
   const copy = t.groups
@@ -113,11 +116,23 @@ export function GroupListPage() {
   }
 
   // 행 더블클릭 (상세 페이지 이동)
-  function handleDoubleClickRow(groupId: string) {
-    void navigate({
-      to: '/groups/$groupId',
-      params: { groupId },
-    })
+  async function handleDoubleClickRow(groupId: string) {
+    try {
+      setIsCheckingGroupId(groupId)
+      // 그룹 상세 정보 및 멤버 권한 사전 검증
+      await getGroup(groupId)
+
+      // 성공(200) 시 상세 페이지로 이동
+      void navigate({
+        to: '/groups/$groupId',
+        params: { groupId },
+      })
+    } catch {
+      // 400, 401, 404 등 오류 응답 시 에러 메시지 알림 후 이동 차단
+      alert('그룹에 가입되어 있지 않거나 접근 권한이 없습니다.')
+    } finally {
+      setIsCheckingGroupId(null)
+    }
   }
 
   return (
@@ -201,6 +216,7 @@ export function GroupListPage() {
               {groups.map((group) => {
                 const isSelected =
                   Boolean(selectedGroupId) && selectedGroupId === group.groupId
+                const isChecking = isCheckingGroupId === group.groupId
 
                 return (
                   <div
@@ -209,10 +225,11 @@ export function GroupListPage() {
                       handleSelectRow(group.groupId)
                     }}
                     onDoubleClick={() => {
-                      handleDoubleClickRow(group.groupId)
+                      void handleDoubleClickRow(group.groupId)
                     }}
                     style={{
-                      cursor: 'pointer',
+                      cursor: isChecking ? 'wait' : 'pointer',
+                      opacity: isChecking ? 0.6 : 1,
                       backgroundColor: isSelected
                         ? 'var(--astryxdesign-color-bg-selected, rgba(59, 130, 246, 0.08))'
                         : 'transparent',
@@ -220,6 +237,7 @@ export function GroupListPage() {
                       transition: 'background-color 0.15s ease',
                       userSelect: 'none',
                     }}
+                    title="더블 클릭하여 그룹으로 이동"
                   >
                     <ListItem
                       label={group.name}
@@ -234,11 +252,7 @@ export function GroupListPage() {
                       endContent={
                         <Badge
                           label={
-                            isSelected
-                              ? '선택됨'
-                              : group.nickname
-                                ? '소유자 지정됨'
-                                : '공용'
+                            isSelected ? '선택됨' : group.nickname || '공용'
                           }
                           variant={isSelected ? 'blue' : 'neutral'}
                         />
