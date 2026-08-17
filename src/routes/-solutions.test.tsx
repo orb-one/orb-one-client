@@ -1,8 +1,15 @@
 import { LayerProvider } from '@astryxdesign/core/Layer'
 import { Theme } from '@astryxdesign/core/theme'
+import type { ToastOptions } from '@astryxdesign/core/Toast'
 import { neutralTheme } from '@astryxdesign/theme-neutral/built'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -10,12 +17,28 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { getCurrentUser } from '@/lib/api/auth'
 import { ApiError, AuthSessionExpiredError } from '@/lib/api/client'
 import { getProblem } from '@/lib/api/problems'
-import { getSolution, getSolutions } from '@/lib/api/solutions'
+import {
+  deleteSolution,
+  getSolution,
+  getSolutions,
+  restoreSolution,
+} from '@/lib/api/solutions'
 import type {
   SolutionDetail,
   SolutionSummary,
 } from '@/lib/solutions/solution-model'
+import { solutionQueryKeys } from '@/lib/solutions/solution-queries'
 import { useAppStore } from '@/stores/use-app-store'
+
+const { dismissToast, navigate, showToast } = vi.hoisted(() => ({
+  dismissToast: vi.fn(),
+  navigate: vi.fn(() => Promise.resolve()),
+  showToast: vi.fn<(options: ToastOptions) => () => void>(),
+}))
+
+vi.mock('@astryxdesign/core/Toast', () => ({
+  useToast: () => showToast,
+}))
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute:
@@ -23,12 +46,15 @@ vi.mock('@tanstack/react-router', () => ({
     <TOptions extends object>(options: TOptions) => ({
       ...options,
       useParams: () => ({ solutionId: 'solution-1' }),
+      useNavigate: () => navigate,
     }),
 }))
 
 vi.mock('@/lib/api/solutions', () => ({
+  deleteSolution: vi.fn(),
   getSolution: vi.fn(),
   getSolutions: vi.fn(),
+  restoreSolution: vi.fn(),
 }))
 
 vi.mock('@/lib/api/auth', () => ({
@@ -43,6 +69,7 @@ import { SolutionDetailPage } from '@/routes/solutions_.$solutionId'
 import { normalizeSolutionsSearch, SolutionsPage } from '@/routes/solutions'
 
 beforeEach(() => {
+  showToast.mockReturnValue(dismissToast)
   vi.mocked(getCurrentUser).mockResolvedValue({
     id: 'user-1',
     email: 'user@example.com',
@@ -250,9 +277,10 @@ it('renders solution metadata, code, and Markdown notes', async () => {
     'href',
     '/solutions/solution-1/edit',
   )
+  expect(screen.getByRole('button', { name: '풀이 삭제' })).toBeVisible()
 })
 
-it('does not show the edit action to a different user', async () => {
+it('does not show edit or delete actions to a different user', async () => {
   vi.mocked(getCurrentUser).mockResolvedValue({
     id: 'different-user',
     email: 'different@example.com',
@@ -270,7 +298,270 @@ it('does not show the edit action to a different user', async () => {
   expect(
     screen.queryByRole('link', { name: '풀이 수정' }),
   ).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('button', { name: '풀이 삭제' }),
+  ).not.toBeInTheDocument()
 })
+
+it('confirms deletion, moves to the list, and restores from the toast', async () => {
+  vi.mocked(getSolution).mockResolvedValue(solutionDetail)
+  vi.mocked(deleteSolution).mockResolvedValue()
+  vi.mocked(restoreSolution).mockResolvedValue()
+
+  const { queryClient } = renderRoute(
+    <SolutionDetailPage solutionId="solution-1" />,
+  )
+
+  await screen.findByRole('heading', { name: 'A+B', level: 1 })
+  await userEvent.click(screen.getByRole('button', { name: '풀이 삭제' }))
+
+  const dialog = screen.getByRole('alertdialog', {
+    name: '풀이를 삭제할까요?',
+  })
+
+  expect(
+    within(dialog).getByText(
+      '풀이가 즉시 목록에서 숨겨집니다. 삭제 후 표시되는 실행 취소로 복구할 수 있습니다.',
+    ),
+  ).toBeVisible()
+
+  await userEvent.click(
+    within(dialog).getByRole('button', { name: '풀이 삭제' }),
+  )
+
+  await waitFor(() => {
+    expect(deleteSolution).toHaveBeenCalledWith('solution-1')
+    expect(navigate).toHaveBeenCalledWith({ to: '/solutions' })
+    expect(
+      queryClient.getQueryState(solutionQueryKeys.detail('solution-1')),
+    ).toBeUndefined()
+  })
+
+  const deleteToast = showToast.mock.calls.find(
+    ([options]) => options.body === '풀이를 삭제했습니다.',
+  )?.[0]
+
+  expect(deleteToast).toMatchObject({
+    body: '풀이를 삭제했습니다.',
+    uniqueID: 'solution.delete.solution-1',
+  })
+
+  renderRoute(deleteToast?.endContent)
+
+  await userEvent.click(screen.getByRole('button', { name: '실행 취소' }))
+
+  await waitFor(() => {
+    expect(restoreSolution).toHaveBeenCalledWith('solution-1')
+  })
+  expect(showToast).toHaveBeenCalledWith(
+    expect.objectContaining({
+      body: '풀이를 복구했습니다.',
+      uniqueID: 'solution.restore.solution-1',
+    }),
+  )
+  expect(dismissToast).toHaveBeenCalledOnce()
+})
+
+it('keeps restore available for retry after a transient failure', async () => {
+  vi.mocked(getSolution).mockResolvedValue(solutionDetail)
+  vi.mocked(deleteSolution).mockResolvedValue()
+  vi.mocked(restoreSolution)
+    .mockRejectedValueOnce(new Error('Temporary failure'))
+    .mockResolvedValueOnce()
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  await screen.findByRole('heading', { name: 'A+B', level: 1 })
+  await userEvent.click(screen.getByRole('button', { name: '풀이 삭제' }))
+  await userEvent.click(
+    within(
+      screen.getByRole('alertdialog', { name: '풀이를 삭제할까요?' }),
+    ).getByRole('button', { name: '풀이 삭제' }),
+  )
+
+  const deleteToast = showToast.mock.calls.find(
+    ([options]) => options.body === '풀이를 삭제했습니다.',
+  )?.[0]
+
+  renderRoute(deleteToast?.endContent)
+  await userEvent.click(screen.getByRole('button', { name: '실행 취소' }))
+
+  expect(await screen.findByRole('button', { name: '다시 시도' })).toBeVisible()
+  expect(showToast).toHaveBeenCalledWith(
+    expect.objectContaining({
+      body: '풀이를 복구하지 못했습니다.',
+      type: 'error',
+    }),
+  )
+  expect(dismissToast).not.toHaveBeenCalled()
+
+  await userEvent.click(screen.getByRole('button', { name: '다시 시도' }))
+
+  await waitFor(() => {
+    expect(restoreSolution).toHaveBeenCalledTimes(2)
+    expect(showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ body: '풀이를 복구했습니다.' }),
+    )
+  })
+  expect(dismissToast).toHaveBeenCalledOnce()
+})
+
+it('prevents duplicate restore requests while one is pending', async () => {
+  let resolveRestore: (() => void) | undefined
+  const pendingRestore = new Promise<void>((resolve) => {
+    resolveRestore = resolve
+  })
+
+  vi.mocked(getSolution).mockResolvedValue(solutionDetail)
+  vi.mocked(deleteSolution).mockResolvedValue()
+  vi.mocked(restoreSolution).mockReturnValue(pendingRestore)
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  await screen.findByRole('heading', { name: 'A+B', level: 1 })
+  await userEvent.click(screen.getByRole('button', { name: '풀이 삭제' }))
+  await userEvent.click(
+    within(
+      screen.getByRole('alertdialog', { name: '풀이를 삭제할까요?' }),
+    ).getByRole('button', { name: '풀이 삭제' }),
+  )
+
+  const deleteToast = showToast.mock.calls.find(
+    ([options]) => options.body === '풀이를 삭제했습니다.',
+  )?.[0]
+
+  renderRoute(deleteToast?.endContent)
+  const undoButton = screen.getByRole('button', { name: '실행 취소' })
+
+  await userEvent.click(undoButton)
+  await waitFor(() => {
+    expect(restoreSolution).toHaveBeenCalledOnce()
+    expect(undoButton).toBeDisabled()
+  })
+
+  await userEvent.click(undoButton)
+  expect(restoreSolution).toHaveBeenCalledOnce()
+
+  resolveRestore?.()
+  await waitFor(() => {
+    expect(showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ body: '풀이를 복구했습니다.' }),
+    )
+  })
+})
+
+it('dismisses undo and reports an expired restore without offering retry', async () => {
+  vi.mocked(getSolution).mockResolvedValue(solutionDetail)
+  vi.mocked(deleteSolution).mockResolvedValue()
+  vi.mocked(restoreSolution).mockRejectedValue(
+    createApiError(404, 'Solution not found'),
+  )
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  await screen.findByRole('heading', { name: 'A+B', level: 1 })
+  await userEvent.click(screen.getByRole('button', { name: '풀이 삭제' }))
+  await userEvent.click(
+    within(
+      screen.getByRole('alertdialog', { name: '풀이를 삭제할까요?' }),
+    ).getByRole('button', { name: '풀이 삭제' }),
+  )
+
+  const deleteToast = showToast.mock.calls.find(
+    ([options]) => options.body === '풀이를 삭제했습니다.',
+  )?.[0]
+
+  renderRoute(deleteToast?.endContent)
+  await userEvent.click(screen.getByRole('button', { name: '실행 취소' }))
+
+  await waitFor(() => {
+    expect(showToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: '복구 가능 시간이 지났거나 풀이를 찾을 수 없습니다.',
+        type: 'error',
+      }),
+    )
+  })
+  expect(dismissToast).toHaveBeenCalledOnce()
+  expect(screen.queryByRole('button', { name: '다시 시도' })).toBeNull()
+})
+
+it('closes the delete dialog without sending a request', async () => {
+  vi.mocked(getSolution).mockResolvedValue(solutionDetail)
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  await screen.findByRole('heading', { name: 'A+B', level: 1 })
+  await userEvent.click(screen.getByRole('button', { name: '풀이 삭제' }))
+  await userEvent.click(screen.getByRole('button', { name: '취소' }))
+
+  expect(deleteSolution).not.toHaveBeenCalled()
+  expect(
+    screen.queryByRole('alertdialog', { name: '풀이를 삭제할까요?' }),
+  ).not.toBeInTheDocument()
+})
+
+it('reports a forbidden delete without leaving the detail page', async () => {
+  vi.mocked(getSolution).mockResolvedValue(solutionDetail)
+  vi.mocked(deleteSolution).mockRejectedValue(
+    new ApiError(
+      'Solution forbidden',
+      403,
+      new Response(null, { status: 403 }),
+      { message: 'Solution forbidden' },
+    ),
+  )
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  await screen.findByRole('heading', { name: 'A+B', level: 1 })
+  await userEvent.click(screen.getByRole('button', { name: '풀이 삭제' }))
+  await userEvent.click(
+    within(
+      screen.getByRole('alertdialog', { name: '풀이를 삭제할까요?' }),
+    ).getByRole('button', { name: '풀이 삭제' }),
+  )
+
+  await waitFor(() => {
+    expect(showToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: '이 풀이를 삭제할 권한이 없습니다.',
+        type: 'error',
+      }),
+    )
+  })
+  expect(navigate).not.toHaveBeenCalled()
+})
+
+it.each([
+  [404, '이미 삭제되었거나 찾을 수 없는 풀이입니다.'],
+  [500, '풀이를 삭제하지 못했습니다. 다시 시도해 주세요.'],
+])(
+  'reports a %i delete failure without leaving the detail page',
+  async (status, expectedMessage) => {
+    vi.mocked(getSolution).mockResolvedValue(solutionDetail)
+    vi.mocked(deleteSolution).mockRejectedValue(
+      createApiError(status, 'Delete failed'),
+    )
+
+    renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+    await screen.findByRole('heading', { name: 'A+B', level: 1 })
+    await userEvent.click(screen.getByRole('button', { name: '풀이 삭제' }))
+    await userEvent.click(
+      within(
+        screen.getByRole('alertdialog', { name: '풀이를 삭제할까요?' }),
+      ).getByRole('button', { name: '풀이 삭제' }),
+    )
+
+    await waitFor(() => {
+      expect(showToast).toHaveBeenCalledWith(
+        expect.objectContaining({ body: expectedMessage, type: 'error' }),
+      )
+    })
+    expect(navigate).not.toHaveBeenCalled()
+  },
+)
 
 it('falls back to the author UUID when the response has no nickname', async () => {
   vi.mocked(getCurrentUser).mockResolvedValue({
@@ -380,7 +671,7 @@ function renderRoute(children: ReactNode) {
     },
   })
 
-  return render(
+  const renderResult = render(
     <Theme theme={neutralTheme} mode="light">
       <LayerProvider>
         <QueryClientProvider client={queryClient}>
@@ -389,6 +680,14 @@ function renderRoute(children: ReactNode) {
       </LayerProvider>
     </Theme>,
   )
+
+  return { ...renderResult, queryClient }
+}
+
+function createApiError(status: number, message: string) {
+  return new ApiError(message, status, new Response(null, { status }), {
+    message,
+  })
 }
 
 const solvedSolution: SolutionSummary = {

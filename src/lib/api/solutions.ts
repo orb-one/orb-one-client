@@ -121,6 +121,23 @@ export async function updateSolution(
   return mapSolutionDetail(response)
 }
 
+/** 작성자의 풀이를 복구 유예 상태로 삭제한다. */
+export async function deleteSolution(solutionId: string): Promise<void> {
+  await apiClient<undefined>(`/solutions/${encodeURIComponent(solutionId)}`, {
+    method: 'DELETE',
+  })
+}
+
+/** 삭제 유예 시간 안에 작성자의 풀이를 복구한다. */
+export async function restoreSolution(solutionId: string): Promise<void> {
+  await apiClient<undefined>(
+    `/solutions/${encodeURIComponent(solutionId)}/restore`,
+    {
+      method: 'POST',
+    },
+  )
+}
+
 function mapSolutionSummary(
   response: SolutionSummaryResponse,
 ): SolutionSummary {
