@@ -188,6 +188,18 @@ test('registers a random account, logs in, and logs out through the auth pages',
 
   await registerAndLogin(page, account, currentUserContract)
 
+  const currentUserRequestCountBeforeLogout =
+    currentUserContract.currentUserRequestCount()
+  const unexpectedPostLogoutRequests: string[] = []
+
+  page.on('request', (request) => {
+    const pathname = new URL(request.url()).pathname
+
+    if (pathname === '/users/me' || pathname === '/auth/refresh') {
+      unexpectedPostLogoutRequests.push(pathname)
+    }
+  })
+
   if (expectAuthCookies) {
     // 직접 API 호출은 cross-site가 될 수 있으므로 proxy 또는 same-site 환경에서 켠다.
     const cookies = await page.context().cookies(apiBaseUrl)
@@ -210,6 +222,10 @@ test('registers a random account, logs in, and logs out through the auth pages',
 
   expect(logoutResponse.status()).toBe(200)
   await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
+  expect(currentUserContract.currentUserRequestCount()).toBe(
+    currentUserRequestCountBeforeLogout,
+  )
+  expect(unexpectedPostLogoutRequests).toEqual([])
 
   if (expectAuthCookies) {
     const cookies = await page.context().cookies(apiBaseUrl)
@@ -327,9 +343,12 @@ async function mockCurrentUserContract(
   account: ReturnType<typeof createRandomAccount>,
 ) {
   let isSignedIn = false
+  let currentUserRequestCount = 0
 
   // 서버의 /users/me가 구현될 때까지 현재 사용자 조회만 계약 응답으로 대체한다.
   await page.route(apiUrl('/users/me'), async (route) => {
+    currentUserRequestCount += 1
+
     if (!isSignedIn) {
       await route.fulfill({
         status: 401,
@@ -356,6 +375,9 @@ async function mockCurrentUserContract(
     },
     signOut() {
       isSignedIn = false
+    },
+    currentUserRequestCount() {
+      return currentUserRequestCount
     },
   }
 }

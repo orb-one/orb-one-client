@@ -8,14 +8,14 @@ export const currentUserQueryKey = ['auth', 'currentUser'] as const
 export function currentUserQueryOptions() {
   return queryOptions({
     queryKey: currentUserQueryKey,
-    queryFn: getAuthenticatedUser,
+    queryFn: ({ signal }) => getAuthenticatedUser(signal),
     retry: false,
   })
 }
 
-async function getAuthenticatedUser() {
+async function getAuthenticatedUser(signal: AbortSignal) {
   try {
-    return await getCurrentUser()
+    return await getCurrentUser(signal)
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       return null
