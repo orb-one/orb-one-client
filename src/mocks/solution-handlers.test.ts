@@ -1,3 +1,4 @@
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest'
 
@@ -21,7 +22,12 @@ import {
   solutionHandlers,
 } from '@/mocks/solution-handlers'
 
-const server = setupServer(...solutionHandlers)
+const server = setupServer(
+  ...solutionHandlers,
+  http.get('*/auth/csrf', () =>
+    HttpResponse.json({ token: 'csrf-token', headerName: 'X-XSRF-TOKEN' }),
+  ),
+)
 
 beforeAll(() => {
   vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
