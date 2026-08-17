@@ -133,6 +133,7 @@ test('refreshes expired current user requests before showing signed-in UI', asyn
   const account = createRandomAccount()
   let currentUserRequestCount = 0
 
+  await mockCsrfEndpoint(page)
   await page.route(apiUrl('/users/me'), async (route) => {
     currentUserRequestCount += 1
 
@@ -156,6 +157,7 @@ test('refreshes expired current user requests before showing signed-in UI', asyn
     })
   })
   await page.route(apiUrl('/auth/refresh'), async (route) => {
+    expect(route.request().headers()['x-xsrf-token']).toBe('e2e-csrf-token')
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -356,6 +358,19 @@ async function mockCurrentUserContract(
       isSignedIn = false
     },
   }
+}
+
+async function mockCsrfEndpoint(page: Page) {
+  await page.route(apiUrl('/auth/csrf'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'e2e-csrf-token',
+        headerName: 'X-XSRF-TOKEN',
+      }),
+    })
+  })
 }
 
 async function failNextMswLogout(page: Page) {

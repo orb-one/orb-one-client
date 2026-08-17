@@ -181,7 +181,7 @@ UI 변경 시 다음 상태를 함께 확인합니다.
 
 실제 API 서버를 대상으로 인증 화면 흐름을 확인할 때는 Playwright E2E를 사용합니다.
 테스트는 매 실행마다 랜덤 이메일을 만들어 회원가입 후 같은 계정으로 로그인하고 로그아웃합니다.
-현재 서버의 `/users/me`는 Contract only 상태이므로, E2E에서는 해당 endpoint만 계약 응답으로 대체해 로그인 상태 UI를 검증합니다.
+기본 인증 E2E는 화면 흐름을 독립적으로 검증하기 위해 `/users/me`만 계약 응답으로 대체합니다. 실제 refresh E2E는 전용 계정으로 `/users/me`와 `/auth/refresh`를 포함한 인증 경로 전체를 서버에 요청합니다.
 
 처음 실행하거나 Playwright 버전이 변경된 뒤에는 Chromium을 설치합니다.
 
@@ -209,9 +209,16 @@ E2E_REUSE_SERVER=true pnpm test:e2e
 - `E2E_TEST_EMAIL_DOMAIN`: 랜덤 테스트 이메일 domain. 기본값은 `example.com`입니다.
 - `E2E_TEST_PASSWORD`: 테스트 계정 비밀번호. 기본값은 `password123!`입니다.
 - `E2E_EXPECT_AUTH_COOKIES`: `true`이면 로그인 후 auth cookie 저장까지 검증합니다.
+- `E2E_LIVE_AUTH`: `true`이면 실제 API의 로그인, access token 만료, refresh cookie 재발급 경로를 검증합니다.
 
 로컬 proxy mode에서 auth cookie 저장까지 확인하려면:
 
 ```bash
 VITE_API_BASE_URL=http://localhost:5173 API_PROXY_TARGET=https://api.example.com E2E_EXPECT_AUTH_COOKIES=true pnpm test:e2e
+```
+
+실제 API의 refresh 경로까지 검증하려면 전용 테스트 계정을 지정합니다. 테스트는 access cookie만 무효화한 뒤 `/users/me`의 401, `/auth/refresh`의 200, 원 요청 재시도 성공과 인증 cookie 재발급을 확인합니다.
+
+```bash
+VITE_API_BASE_URL=http://localhost:5173 API_PROXY_TARGET=https://api.example.com E2E_TEST_EMAIL=auth-e2e@example.com E2E_TEST_PASSWORD=replace-with-dedicated-test-account-password pnpm test:e2e:auth-live
 ```

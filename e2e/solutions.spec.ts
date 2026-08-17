@@ -344,6 +344,13 @@ async function mockSolutionApi(
   let updateRequest: UpdateSolutionRequest | null = null
   let listProblemId: string | null = null
 
+  await page.route(apiUrl('/auth/csrf'), async (route) => {
+    await fulfillJson(route, {
+      token: 'e2e-csrf-token',
+      headerName: 'X-XSRF-TOKEN',
+    })
+  })
+
   await page.route(`${apiUrl('/problems')}/*`, async (route) => {
     if (route.request().isNavigationRequest()) {
       await route.fallback()
@@ -428,6 +435,7 @@ async function mockSolutionApi(
     }
 
     if (request.method() === 'POST') {
+      expect(request.headers()['x-xsrf-token']).toBe('e2e-csrf-token')
       createRequest = request.postDataJSON() as CreateSolutionRequest
       createdSolution = {
         solutionId: createdSolutionId,
@@ -462,6 +470,7 @@ async function mockSolutionApi(
     )
 
     if (route.request().method() === 'PUT') {
+      expect(route.request().headers()['x-xsrf-token']).toBe('e2e-csrf-token')
       updateRequest = route.request().postDataJSON() as UpdateSolutionRequest
 
       if (solutionId !== initialSeededSolution.solutionId) {

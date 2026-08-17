@@ -1,12 +1,25 @@
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
-import {
-  getCurrentUser,
-  loginAccount,
-  logoutAccount,
-  refreshSession,
-  registerAccount,
-} from '@/lib/api/auth'
+let getCurrentUser: typeof import('@/lib/api/auth').getCurrentUser
+let loginAccount: typeof import('@/lib/api/auth').loginAccount
+let logoutAccount: typeof import('@/lib/api/auth').logoutAccount
+let refreshSession: typeof import('@/lib/api/auth').refreshSession
+let registerAccount: typeof import('@/lib/api/auth').registerAccount
+let AuthSessionExpiredError: typeof import('@/lib/api/client').AuthSessionExpiredError
+
+beforeEach(async () => {
+  vi.resetModules()
+  const auth = await import('@/lib/api/auth')
+  const client = await import('@/lib/api/client')
+
+  getCurrentUser = auth.getCurrentUser
+  loginAccount = auth.loginAccount
+  logoutAccount = auth.logoutAccount
+  refreshSession = auth.refreshSession
+  registerAccount = auth.registerAccount
+  AuthSessionExpiredError = client.AuthSessionExpiredError
+  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
+})
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -21,10 +34,9 @@ it('posts register requests to the auth API', async () => {
     nickname: 'orbone-user',
   }
   const fetchMock = mockFetch(
+    csrfResponse(),
     new Response(JSON.stringify(response), jsonResponseInit()),
   )
-
-  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
 
   await expect(registerAccount(request)).resolves.toEqual(response)
 
@@ -37,11 +49,12 @@ it('posts register requests to the auth API', async () => {
     }),
   )
 
-  const requestInit = fetchMock.mock.calls[0]?.[1]
+  const requestInit = fetchMock.mock.calls[1]?.[1]
   const headers = requestInit?.headers
 
   expect(headers).toBeInstanceOf(Headers)
   expect((headers as Headers).get('Content-Type')).toBe('application/json')
+  expect((headers as Headers).get('X-XSRF-TOKEN')).toBe('csrf-token')
 })
 
 it('posts login requests to the auth API', async () => {
@@ -51,10 +64,9 @@ it('posts login requests to the auth API', async () => {
     password: 'password123!',
   }
   const fetchMock = mockFetch(
+    csrfResponse(),
     new Response(JSON.stringify(response), jsonResponseInit()),
   )
-
-  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
 
   await expect(loginAccount(request)).resolves.toEqual(response)
 
@@ -67,20 +79,20 @@ it('posts login requests to the auth API', async () => {
     }),
   )
 
-  const requestInit = fetchMock.mock.calls[0]?.[1]
+  const requestInit = fetchMock.mock.calls[1]?.[1]
   const headers = requestInit?.headers
 
   expect(headers).toBeInstanceOf(Headers)
   expect((headers as Headers).get('Content-Type')).toBe('application/json')
+  expect((headers as Headers).get('X-XSRF-TOKEN')).toBe('csrf-token')
 })
 
 it('posts refresh requests to the auth API', async () => {
   const response = { message: 'Token refreshed' }
   const fetchMock = mockFetch(
+    csrfResponse(),
     new Response(JSON.stringify(response), jsonResponseInit()),
   )
-
-  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
 
   await expect(refreshSession()).resolves.toEqual(response)
 
@@ -91,15 +103,29 @@ it('posts refresh requests to the auth API', async () => {
       credentials: 'include',
     }),
   )
+  expect(getRequestHeader(fetchMock, 2, 'X-XSRF-TOKEN')).toBe('csrf-token')
+})
+
+it('treats refresh 401 responses as an expired auth session', async () => {
+  const fetchMock = mockFetch(
+    csrfResponse(),
+    new Response(JSON.stringify({ message: 'Refresh expired' }), {
+      ...jsonResponseInit(),
+      status: 401,
+      statusText: 'Unauthorized',
+    }),
+  )
+
+  await expect(refreshSession()).rejects.toBeInstanceOf(AuthSessionExpiredError)
+  expect(fetchMock).toHaveBeenCalledTimes(2)
 })
 
 it('posts logout requests to the auth API', async () => {
   const response = { message: 'Logout successful' }
   const fetchMock = mockFetch(
+    csrfResponse(),
     new Response(JSON.stringify(response), jsonResponseInit()),
   )
-
-  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
 
   await expect(logoutAccount()).resolves.toEqual(response)
 
@@ -110,6 +136,7 @@ it('posts logout requests to the auth API', async () => {
       credentials: 'include',
     }),
   )
+  expect(getRequestHeader(fetchMock, 2, 'X-XSRF-TOKEN')).toBe('csrf-token')
 })
 
 it('gets the current user from the user API', async () => {
@@ -121,8 +148,6 @@ it('gets the current user from the user API', async () => {
   const fetchMock = mockFetch(
     new Response(JSON.stringify(response), jsonResponseInit()),
   )
-
-  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
 
   await expect(getCurrentUser()).resolves.toEqual(response)
 
@@ -140,10 +165,31 @@ function jsonResponseInit(): ResponseInit {
   }
 }
 
-function mockFetch(response: Response) {
-  const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(response)
+function csrfResponse() {
+  return new Response(
+    JSON.stringify({ token: 'csrf-token', headerName: 'X-XSRF-TOKEN' }),
+    jsonResponseInit(),
+  )
+}
+
+function mockFetch(...responses: Response[]) {
+  const fetchMock = vi.fn<typeof fetch>()
+
+  for (const response of responses) {
+    fetchMock.mockResolvedValueOnce(response)
+  }
 
   vi.stubGlobal('fetch', fetchMock)
 
   return fetchMock
+}
+
+function getRequestHeader(
+  fetchMock: ReturnType<typeof mockFetch>,
+  callNumber: number,
+  name: string,
+) {
+  return new Headers(fetchMock.mock.calls[callNumber - 1]?.[1]?.headers).get(
+    name,
+  )
 }
