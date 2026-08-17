@@ -11,6 +11,7 @@ import { Text } from '@astryxdesign/core/Text'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import { BookOpen, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -21,20 +22,18 @@ interface ProblemSetTabProps {
 }
 
 export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  // 1. 모달 및 입력 상태 관리
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [newProblemSetName, setNewProblemSetName] = useState('')
 
-  // 2. 문제집 목록 Query
   const problemSetsQuery = useQuery({
     queryKey: ['problemSets', groupId],
     queryFn: () => getProblemSets(groupId),
     enabled: Boolean(groupId),
   })
 
-  // 모달 제어 핸들러
   function handleOpenCreateModal() {
     setNewProblemSetName('')
     setIsCreateModalOpen(true)
@@ -45,7 +44,6 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
     setIsCreateModalOpen(false)
   }
 
-  // 문제집 생성 제출 핸들러 (추후 createProblemSet Mutation 적용)
   function handleSubmitCreateProblemSet() {
     const trimmedName = newProblemSetName.trim()
     if (!trimmedName) {
@@ -53,22 +51,28 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
       return
     }
 
-    // TODO: createProblemSetMutation.mutate({ groupId, name: trimmedName })
     alert(`'${trimmedName}' 문제집이 생성되었습니다.`)
     handleCloseCreateModal()
     void queryClient.invalidateQueries({ queryKey: ['problemSets', groupId] })
   }
 
-  // 문제집 삭제 핸들러 (추후 deleteProblemSet Mutation 적용)
   function handleDeleteProblemSet() {
     alert('삭제할 문제집을 선택해 주세요.')
+  }
+
+  // 더블 클릭 시 문제집 상세 페이지로 이동
+  function handleNavigateToProblemSetDetail(problemSetId: string) {
+    void navigate({
+      to: '/groups/$groupId/problem-sets/$problemSetId',
+      params: { groupId, problemSetId },
+    })
   }
 
   const problemSets = problemSetsQuery.data ?? []
 
   return (
     <VStack width="100%" gap={6}>
-      {/* 1. 상단 액션 버튼 영역 */}
+      {/* 상단 액션 버튼 */}
       <HStack width="100%" hAlign="end" gap={2}>
         <Button
           label="문제집 삭제"
@@ -86,7 +90,7 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
         />
       </HStack>
 
-      {/* 2. 조건부 상태 렌더링 */}
+      {/* 상태별 화면 및 문제집 목록 */}
       {problemSetsQuery.isPending ? (
         <Skeleton width="100%" height={48} radius={2} />
       ) : problemSetsQuery.isError ? (
@@ -112,25 +116,33 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
       ) : (
         <List density="balanced" hasDividers>
           {problemSets.map((ps) => (
-            <ListItem
-              key={ps.id}
-              label={ps.name}
-              description={`생성일: ${new Date(ps.createdAt).toLocaleDateString()}`}
-              startContent={
-                <Icon icon={BookOpen} size="sm" color="secondary" />
-              }
-              endContent={
-                <Badge
-                  label={ps.isPublic ? '공개' : '비공개'}
-                  variant={ps.isPublic ? 'blue' : 'neutral'}
-                />
-              }
-            />
+            <div
+              key={ps.problemSetId}
+              onDoubleClick={() => {
+                handleNavigateToProblemSetDetail(ps.problemSetId)
+              }}
+              style={{ cursor: 'pointer', userSelect: 'none' }}
+              title="더블 클릭하여 문제 목록으로 이동"
+            >
+              <ListItem
+                label={ps.name}
+                description={`문제 수: ${String(ps.problemCount)}개 · 생성일: ${new Date(ps.createdAt).toLocaleDateString()}`}
+                startContent={
+                  <Icon icon={BookOpen} size="sm" color="secondary" />
+                }
+                endContent={
+                  <Badge
+                    label={`${String(ps.problemCount)}문제`}
+                    variant="neutral"
+                  />
+                }
+              />
+            </div>
           ))}
         </List>
       )}
 
-      {/* 3. 문제집 생성 모달 (Dialog) */}
+      {/* 문제집 생성 모달 */}
       <Dialog
         isOpen={isCreateModalOpen}
         onOpenChange={(open) => {
