@@ -17,6 +17,7 @@ test('browses, copies, and collapses a saved solution across viewports', async (
   await expect(
     page.getByRole('heading', { name: '풀이 목록', level: 1 }),
   ).toBeVisible()
+  await expect(page.getByText(/풀이작성자/)).toBeVisible()
   const navigation = page.getByRole('navigation', { name: '주요 탐색' })
 
   await expect(navigation).toHaveCSS('backdrop-filter', 'blur(12px)')
@@ -28,14 +29,18 @@ test('browses, copies, and collapses a saved solution across viewports', async (
     )
     .not.toBe('rgba(0, 0, 0, 0)')
 
-  await page.getByRole('link', { name: seededSolution.problem.name }).click()
+  await expect(page.getByText('BOJ 1000 · BRONZE_5')).toBeVisible()
+  await page.getByRole('link', { name: /A\+B/ }).click()
 
   await expect(
     page.getByRole('heading', {
-      name: seededSolution.problem.name,
+      name: 'A+B',
       level: 1,
     }),
   ).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: /문제 원문 보기/ }),
+  ).toHaveAttribute('href', 'https://www.acmicpc.net/problem/1000')
   await expect(page.getByTestId('solution-code')).toContainText(
     'public class Main',
   )
@@ -90,7 +95,7 @@ test('scopes the solution list from the problem query string', async ({
 }) => {
   await mockCurrentUser(page)
   const solutionApi = await mockSolutionApi(page)
-  const problemId = seededSolution.problem.problemId
+  const problemId = seededSolution.problemId
 
   await page.goto(`/solutions?problemId=${encodeURIComponent(problemId)}`)
 
@@ -117,9 +122,102 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   await mockCurrentUser(page)
   const solutionApi = await mockSolutionApi(page)
 
-  await page.goto('/solutions/new')
+  await page.setViewportSize({ width: 320, height: 667 })
+  await page.goto('/solutions')
+  const createSolutionLink = page.getByRole('link', { name: '새 풀이 작성' })
 
-  await page.getByLabel('문제 ID').fill(seededSolution.problem.problemId)
+  await expect(createSolutionLink).toBeInViewport()
+  await createSolutionLink.click()
+  await page.waitForURL((url) => url.pathname === '/solutions/new')
+
+  await page.getByRole('button', { name: '문제 선택' }).click()
+  await expect(
+    page.getByRole('heading', { name: '문제 선택', level: 2 }),
+  ).toBeVisible()
+  const problemPickerHeading = page.getByRole('heading', {
+    name: '문제 선택',
+    level: 2,
+  })
+  const problemPickerDialog = page.getByRole('dialog')
+  const problemPickerDescription = page.getByText(
+    '풀이를 등록할 문제를 선택해 주세요.',
+    { exact: true },
+  )
+  const problemPickerPagination = page.getByText('Page 1 of 2', {
+    exact: true,
+  })
+  const problemScrollArea = page.getByTestId('problem-picker-list-scroll-area')
+
+  await expect
+    .poll(() =>
+      problemScrollArea.evaluate(
+        (element) => element.scrollHeight > element.clientHeight,
+      ),
+    )
+    .toBe(true)
+  await problemPickerDialog.evaluate(async (element) => {
+    await Promise.all(
+      element.getAnimations().map((animation) => animation.finished),
+    )
+  })
+  const headingTopBeforeScroll = await problemPickerHeading.evaluate(
+    (element) => element.getBoundingClientRect().top,
+  )
+  const descriptionTopBeforeScroll = await problemPickerDescription.evaluate(
+    (element) => element.getBoundingClientRect().top,
+  )
+  const paginationTopBeforeScroll = await problemPickerPagination.evaluate(
+    (element) => element.getBoundingClientRect().top,
+  )
+  const [descriptionBox, listBox, paginationBox] = await Promise.all([
+    problemPickerDescription.boundingBox(),
+    problemScrollArea.boundingBox(),
+    problemPickerPagination.boundingBox(),
+  ])
+
+  if (!descriptionBox || !listBox || !paginationBox) {
+    throw new Error('Problem picker layout elements must have visible bounds')
+  }
+
+  expect(listBox.y).toBeGreaterThanOrEqual(
+    descriptionBox.y + descriptionBox.height,
+  )
+  expect(listBox.y + listBox.height).toBeLessThanOrEqual(paginationBox.y)
+  await problemScrollArea.evaluate((element) => {
+    element.scrollTo({ top: element.scrollHeight })
+  })
+  await expect
+    .poll(() => problemScrollArea.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(0)
+  await expect
+    .poll(() =>
+      problemPickerHeading.evaluate(
+        (element) => element.getBoundingClientRect().top,
+      ),
+    )
+    .toBe(headingTopBeforeScroll)
+  await expect
+    .poll(() =>
+      problemPickerDescription.evaluate(
+        (element) => element.getBoundingClientRect().top,
+      ),
+    )
+    .toBe(descriptionTopBeforeScroll)
+  await expect
+    .poll(() =>
+      problemPickerPagination.evaluate(
+        (element) => element.getBoundingClientRect().top,
+      ),
+    )
+    .toBe(paginationTopBeforeScroll)
+  await expect
+    .poll(() => problemPickerDialog.evaluate((element) => element.scrollTop))
+    .toBe(0)
+  await problemScrollArea.evaluate((element) => {
+    element.scrollTo({ top: 0 })
+  })
+  await page.getByRole('button', { name: /A\+B/ }).click()
+  await expect(page.locator('form').getByText(/BOJ 1000/)).toBeVisible()
 
   const languageSelector = page.getByRole('combobox', {
     name: /프로그래밍 언어/,
@@ -151,25 +249,78 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   await page.getByRole('option', { name: 'Java', exact: true }).click()
   await expect(javaConstant).not.toHaveCount(0)
 
+  await page
+    .getByRole('textbox', { name: /풀이 설명/ })
+    .fill('E2E 신규 풀이 설명')
+  await page.getByRole('checkbox', { name: /풀이 완료/ }).check()
+  await page.getByRole('spinbutton', { name: /메모리 사용량/ }).fill('12345')
+  await page.getByRole('spinbutton', { name: /실행 시간/ }).fill('67')
+  await expect(page.getByRole('checkbox', { name: /임시 저장/ })).toHaveCount(0)
+
   await page.getByRole('button', { name: '풀이 저장' }).click()
   await page.waitForURL(
     (url) => url.pathname === `/solutions/${solutionApi.createdSolutionId}`,
   )
 
   expect(solutionApi.lastCreateRequest()).toEqual({
-    problemId: seededSolution.problem.problemId,
+    problemId: seededSolution.problemId,
     language: 'Java',
     code: '  boolean value = true;',
+    description: 'E2E 신규 풀이 설명',
+    isSolved: true,
+    isDraft: false,
+    memoryUsage: 12_345,
+    timeElapsed: 67,
   })
   await expect(
     page.getByRole('heading', {
-      name: seededSolution.problem.name,
+      name: 'A+B',
       level: 1,
     }),
   ).toBeVisible()
   await expect(page.getByTestId('solution-code')).toContainText(
     'boolean value = true;',
   )
+  await expect(page.getByText('E2E 신규 풀이 설명')).toBeVisible()
+  await expect(page.getByText('12,345 KB')).toBeVisible()
+  await expect(page.getByText('67 ms')).toBeVisible()
+})
+
+test('edits fields and preserves an author solution language alias', async ({
+  page,
+}) => {
+  const editableSolution = { ...seededSolution, language: 'PyPy3' }
+  await mockCurrentUser(page)
+  const solutionApi = await mockSolutionApi(page, editableSolution)
+
+  await page.goto(`/solutions/${editableSolution.solutionId}`)
+  await page.getByRole('link', { name: '풀이 수정' }).click()
+  await page.waitForURL(
+    (url) => url.pathname === `/solutions/${editableSolution.solutionId}/edit`,
+  )
+
+  const description = page.getByRole('textbox', { name: /풀이 설명/ })
+
+  await expect(
+    page.getByRole('combobox', { name: '프로그래밍 언어' }),
+  ).toHaveText('PyPy3')
+  await description.fill('수정된 풀이 설명')
+  await expect(page.getByRole('checkbox', { name: /임시 저장/ })).toHaveCount(0)
+  await page.getByRole('button', { name: '변경사항 저장' }).click()
+
+  await page.waitForURL(
+    (url) => url.pathname === `/solutions/${editableSolution.solutionId}`,
+  )
+  expect(solutionApi.lastUpdateRequest()).toEqual({
+    language: 'PyPy3',
+    code: editableSolution.code,
+    description: '수정된 풀이 설명',
+    isSolved: true,
+    isDraft: false,
+    memoryUsage: 14_128,
+    timeElapsed: 104,
+  })
+  await expect(page.getByText('수정된 풀이 설명')).toBeVisible()
 })
 
 async function mockCurrentUser(page: Page) {
@@ -182,26 +333,93 @@ async function mockCurrentUser(page: Page) {
   })
 }
 
-async function mockSolutionApi(page: Page) {
+async function mockSolutionApi(
+  page: Page,
+  initialSeededSolution = seededSolution,
+) {
   const createdSolutionId = 'solution-e2e-created'
+  let updatedSeededSolution = initialSeededSolution
   let createdSolution: SolutionDetailResponse | null = null
   let createRequest: CreateSolutionRequest | null = null
+  let updateRequest: UpdateSolutionRequest | null = null
   let listProblemId: string | null = null
+
+  await page.route(`${apiUrl('/problems')}/*`, async (route) => {
+    if (route.request().isNavigationRequest()) {
+      await route.fallback()
+      return
+    }
+
+    const problemId = decodeURIComponent(
+      new URL(route.request().url()).pathname.split('/').at(-1) ?? '',
+    )
+
+    if (problemId !== initialSeededSolution.problemId) {
+      await fulfillJson(route, { message: 'Problem not found' }, 404)
+      return
+    }
+
+    await fulfillJson(route, {
+      problemId,
+      provider: 'BOJ',
+      externalProblemId: '1000',
+      name: 'A+B',
+      url: 'https://www.acmicpc.net/problem/1000',
+      difficulty: 'BRONZE_5',
+    })
+  })
+
+  await page.route(matchEndpoint(apiUrl('/problems')), async (route) => {
+    if (route.request().isNavigationRequest()) {
+      await route.fallback()
+      return
+    }
+
+    await fulfillJson(route, {
+      problems: Array.from({ length: 10 }, (_, index) =>
+        index === 0
+          ? {
+              problemId: initialSeededSolution.problemId,
+              provider: 'BOJ',
+              externalProblemId: '1000',
+              name: 'A+B',
+              url: 'https://www.acmicpc.net/problem/1000',
+              difficulty: 'BRONZE_5',
+            }
+          : {
+              problemId: `problem-e2e-${String(index)}`,
+              provider: 'BOJ',
+              externalProblemId: String(1000 + index),
+              name: `E2E 문제 ${String(index)}`,
+              url: `https://www.acmicpc.net/problem/${String(1000 + index)}`,
+              difficulty: 'BRONZE_5',
+            },
+      ),
+      page: 0,
+      size: 10,
+      totalElements: 12,
+      totalPages: 2,
+    })
+  })
 
   await page.route(matchEndpoint(apiUrl('/solutions')), async (route) => {
     const request = route.request()
+
+    if (request.isNavigationRequest()) {
+      await route.fallback()
+      return
+    }
 
     if (request.method() === 'GET') {
       listProblemId = new URL(request.url()).searchParams.get('problemId')
       await fulfillJson(route, {
         solutions: [
-          seededSolution,
+          updatedSeededSolution,
           ...(createdSolution ? [createdSolution] : []),
         ]
           .filter(
             (solution) =>
-              listProblemId === null ||
-              solution.problem.problemId === listProblemId,
+              listProblemId === null || solution.problemId === listProblemId,
           )
           .map(toSolutionSummary)
           .reverse(),
@@ -213,14 +431,15 @@ async function mockSolutionApi(page: Page) {
       createRequest = request.postDataJSON() as CreateSolutionRequest
       createdSolution = {
         solutionId: createdSolutionId,
-        problem: seededSolution.problem,
-        isSolved: false,
-        isDraft: false,
+        problemId: initialSeededSolution.problemId,
+        userId: 'solution-e2e-user',
+        isSolved: createRequest.isSolved,
+        isDraft: createRequest.isDraft,
         language: createRequest.language,
-        memoryUsage: null,
-        timeElapsed: null,
+        memoryUsage: createRequest.memoryUsage,
+        timeElapsed: createRequest.timeElapsed,
         code: createRequest.code,
-        description: '',
+        description: createRequest.description,
         createdAt: '2026-07-26T06:00:00.000Z',
         updatedAt: '2026-07-26T06:00:00.000Z',
       }
@@ -233,12 +452,35 @@ async function mockSolutionApi(page: Page) {
   })
 
   await page.route(`${apiUrl('/solutions')}/*`, async (route) => {
+    if (route.request().isNavigationRequest()) {
+      await route.fallback()
+      return
+    }
+
     const solutionId = decodeURIComponent(
       new URL(route.request().url()).pathname.split('/').at(-1) ?? '',
     )
+
+    if (route.request().method() === 'PUT') {
+      updateRequest = route.request().postDataJSON() as UpdateSolutionRequest
+
+      if (solutionId !== initialSeededSolution.solutionId) {
+        await fulfillJson(route, { message: 'Solution not found' }, 404)
+        return
+      }
+
+      updatedSeededSolution = {
+        ...updatedSeededSolution,
+        ...updateRequest,
+        updatedAt: '2026-07-26T07:00:00.000Z',
+      }
+      await fulfillJson(route, updatedSeededSolution)
+      return
+    }
+
     const solution =
-      solutionId === seededSolution.solutionId
-        ? seededSolution
+      solutionId === initialSeededSolution.solutionId
+        ? updatedSeededSolution
         : solutionId === createdSolutionId
           ? createdSolution
           : null
@@ -259,6 +501,9 @@ async function mockSolutionApi(page: Page) {
     lastListProblemId() {
       return listProblemId
     },
+    lastUpdateRequest() {
+      return updateRequest
+    },
   }
 }
 
@@ -276,13 +521,9 @@ function createSeededSolution(): SolutionDetailResponse {
 
   return {
     solutionId: 'solution-e2e-seeded',
-    problem: {
-      problemId: 'problem-e2e-addition',
-      name: 'A+B E2E',
-      tier: 1,
-      url: 'https://www.acmicpc.net/problem/1000',
-      tags: [{ tagId: 'tag-e2e-math', name: '수학' }],
-    },
+    problemId: 'problem-e2e-addition',
+    userId: 'solution-e2e-user',
+    authorNickname: '풀이작성자',
     isSolved: true,
     isDraft: false,
     language: 'Java',
@@ -309,14 +550,17 @@ function createSeededSolution(): SolutionDetailResponse {
 function toSolutionSummary(solution: SolutionDetailResponse) {
   return {
     solutionId: solution.solutionId,
-    problem: solution.problem,
+    problemId: solution.problemId,
+    userId: solution.userId,
+    authorNickname: solution.authorNickname,
+    problemName: 'A+B',
+    problemProvider: 'BOJ',
+    problemNumber: '1000',
+    problemDifficulty: 'BRONZE_5',
     isSolved: solution.isSolved,
     isDraft: solution.isDraft,
     language: solution.language,
-    memoryUsage: solution.memoryUsage,
-    timeElapsed: solution.timeElapsed,
     createdAt: solution.createdAt,
-    updatedAt: solution.updatedAt,
   }
 }
 
@@ -362,24 +606,35 @@ interface CreateSolutionRequest {
   problemId: string
   language: string
   code: string
+  isSolved: boolean
+  isDraft: false
+  memoryUsage: number | null
+  timeElapsed: number | null
+  description: string | null
+}
+
+interface UpdateSolutionRequest {
+  language: string
+  code: string
+  isSolved: boolean | null
+  isDraft: boolean | null
+  memoryUsage: number | null
+  timeElapsed: number | null
+  description: string | null
 }
 
 interface SolutionDetailResponse {
   solutionId: string
-  problem: {
-    problemId: string
-    name: string
-    tier: number | null
-    url: string | null
-    tags: { tagId: string; name: string }[]
-  }
-  isSolved: boolean
-  isDraft: boolean
+  problemId: string
+  userId: string
+  authorNickname?: string | null
+  isSolved: boolean | null
+  isDraft: boolean | null
   language: string
   memoryUsage: number | null
   timeElapsed: number | null
   code: string
-  description: string
+  description: string | null
   createdAt: string
   updatedAt: string
 }

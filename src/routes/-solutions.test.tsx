@@ -5,9 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
+import { getCurrentUser } from '@/lib/api/auth'
 import { ApiError, AuthSessionExpiredError } from '@/lib/api/client'
+import { getProblem } from '@/lib/api/problems'
 import { getSolution, getSolutions } from '@/lib/api/solutions'
 import type {
   SolutionDetail,
@@ -29,8 +31,25 @@ vi.mock('@/lib/api/solutions', () => ({
   getSolutions: vi.fn(),
 }))
 
+vi.mock('@/lib/api/auth', () => ({
+  getCurrentUser: vi.fn(),
+}))
+
+vi.mock('@/lib/api/problems', () => ({
+  getProblem: vi.fn(),
+}))
+
 import { SolutionDetailPage } from '@/routes/solutions_.$solutionId'
 import { normalizeSolutionsSearch, SolutionsPage } from '@/routes/solutions'
+
+beforeEach(() => {
+  vi.mocked(getCurrentUser).mockResolvedValue({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'user',
+  })
+  vi.mocked(getProblem).mockResolvedValue(problemDetail)
+})
 
 afterEach(() => {
   cleanup()
@@ -50,9 +69,15 @@ it('renders solution rows that link to their detail pages', async () => {
     'href',
     '/solutions/solution-1',
   )
+  expect(screen.getByText('BOJ 1000 · BRONZE_5')).toBeVisible()
   expect(screen.getByRole('img', { name: '풀이 완료' })).toBeVisible()
   expect(screen.getByRole('img', { name: '작성 중' })).toBeVisible()
-  expect(screen.getByText('수학')).toBeVisible()
+  expect(screen.getByText(/solution-author/)).toBeVisible()
+  expect(screen.getByText(/user-2/)).toBeVisible()
+  expect(screen.getByRole('link', { name: '새 풀이 작성' })).toHaveAttribute(
+    'href',
+    '/solutions/new',
+  )
 })
 
 it('filters the solution list by language', async () => {
@@ -65,7 +90,7 @@ it('filters the solution list by language', async () => {
   await userEvent.click(screen.getByRole('option', { name: 'Python' }))
 
   expect(screen.queryByRole('link', { name: /A\+B/ })).not.toBeInTheDocument()
-  expect(screen.getByRole('link', { name: /미로 탐색/ })).toBeVisible()
+  expect(screen.getByRole('link', { name: /problem-2/ })).toBeVisible()
 
   await userEvent.click(screen.getByRole('button', { name: '필터 초기화' }))
 
@@ -80,6 +105,10 @@ it('shows an empty state when no solutions have been saved', async () => {
   expect(
     await screen.findByRole('heading', { name: '저장된 풀이가 없습니다' }),
   ).toBeVisible()
+  expect(screen.getByRole('link', { name: '새 풀이 작성' })).toHaveAttribute(
+    'href',
+    '/solutions/new',
+  )
 })
 
 it('requests and identifies solutions scoped to a problem', async () => {
@@ -94,6 +123,11 @@ it('requests and identifies solutions scoped to a problem', async () => {
   expect(screen.getByRole('link', { name: '전체 풀이 보기' })).toHaveAttribute(
     'href',
     '/solutions',
+  )
+  await screen.findByRole('link', { name: /A\+B/ })
+  expect(screen.getByRole('link', { name: '새 풀이 작성' })).toHaveAttribute(
+    'href',
+    '/solutions/new?problemId=problem-1',
   )
 })
 
@@ -115,6 +149,10 @@ it('shows a problem-specific empty state for an empty scoped list', async () => 
   expect(screen.getByRole('link', { name: '전체 풀이 보기' })).toHaveAttribute(
     'href',
     '/solutions',
+  )
+  expect(screen.getByRole('link', { name: '새 풀이 작성' })).toHaveAttribute(
+    'href',
+    '/solutions/new?problemId=problem-1',
   )
 })
 
@@ -144,6 +182,10 @@ it('shows a list error and retries the request', async () => {
   expect(
     await screen.findByText('풀이 목록을 불러오지 못했습니다.'),
   ).toBeVisible()
+  expect(screen.getByRole('link', { name: '새 풀이 작성' })).toHaveAttribute(
+    'href',
+    '/solutions/new',
+  )
 
   await userEvent.click(screen.getByRole('button', { name: '다시 시도' }))
 
@@ -166,9 +208,12 @@ it('prompts signed-out users to log in instead of retrying the solution list', a
   expect(
     screen.queryByRole('button', { name: '다시 시도' }),
   ).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('link', { name: '새 풀이 작성' }),
+  ).not.toBeInTheDocument()
 })
 
-it('renders solution metadata, code, Markdown notes, and the external problem link', async () => {
+it('renders solution metadata, code, and Markdown notes', async () => {
   vi.mocked(getSolution).mockResolvedValue(solutionDetail)
 
   renderRoute(<SolutionDetailPage solutionId="solution-1" />)
@@ -176,6 +221,12 @@ it('renders solution metadata, code, Markdown notes, and the external problem li
   expect(
     await screen.findByRole('heading', { name: 'A+B', level: 1 }),
   ).toBeVisible()
+  expect(screen.getByText('BOJ 1000')).toBeVisible()
+  expect(screen.getByText('BRONZE_5')).toBeVisible()
+  expect(screen.getByRole('link', { name: /문제 원문 보기/ })).toHaveAttribute(
+    'href',
+    'https://www.acmicpc.net/problem/1000',
+  )
   expect(await screen.findByTestId('solution-code')).toHaveTextContent(
     'class Main {}',
   )
@@ -193,9 +244,59 @@ it('renders solution metadata, code, Markdown notes, and the external problem li
   expect(screen.getByText('14,128 KB')).toBeVisible()
   expect(screen.getByText('104 ms')).toBeVisible()
   expect(screen.getAllByText('풀이 완료')).toHaveLength(1)
+  expect(screen.getByText('user (내 풀이)')).toBeVisible()
+  expect(screen.queryByText('user-1')).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '풀이 수정' })).toHaveAttribute(
+    'href',
+    '/solutions/solution-1/edit',
+  )
+})
+
+it('does not show the edit action to a different user', async () => {
+  vi.mocked(getCurrentUser).mockResolvedValue({
+    id: 'different-user',
+    email: 'different@example.com',
+    nickname: 'different',
+  })
+  vi.mocked(getSolution).mockResolvedValue(solutionDetail)
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
   expect(
-    screen.getByRole('link', { name: /문제 페이지 열기/ }),
-  ).toHaveAttribute('href', 'https://www.acmicpc.net/problem/1000')
+    await screen.findByRole('heading', { name: 'A+B', level: 1 }),
+  ).toBeVisible()
+  expect(screen.getByText('solution-author')).toBeVisible()
+  expect(screen.queryByText('user-1')).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('link', { name: '풀이 수정' }),
+  ).not.toBeInTheDocument()
+})
+
+it('falls back to the author UUID when the response has no nickname', async () => {
+  vi.mocked(getCurrentUser).mockResolvedValue({
+    id: 'different-user',
+    email: 'different@example.com',
+    nickname: 'different',
+  })
+  vi.mocked(getSolution).mockResolvedValue({
+    ...solutionDetail,
+    authorNickname: null,
+  })
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  expect(await screen.findByText('user-1')).toBeVisible()
+})
+
+it('falls back to the problem UUID when problem details cannot be loaded', async () => {
+  vi.mocked(getProblem).mockRejectedValue(new Error('Unavailable'))
+  vi.mocked(getSolution).mockResolvedValue(solutionDetail)
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  expect(
+    await screen.findByRole('heading', { name: 'problem-1', level: 1 }),
+  ).toBeVisible()
 })
 
 it('allows long Markdown code blocks to be collapsed', async () => {
@@ -292,40 +393,33 @@ function renderRoute(children: ReactNode) {
 
 const solvedSolution: SolutionSummary = {
   id: 'solution-1',
-  problem: {
-    id: 'problem-1',
-    name: 'A+B',
-    tier: 1,
-    url: 'https://www.acmicpc.net/problem/1000',
-    tags: [{ id: 'tag-1', name: '수학' }],
-  },
+  problemId: 'problem-1',
+  userId: 'user-1',
+  authorNickname: 'solution-author',
+  problemName: 'A+B',
+  problemProvider: 'BOJ',
+  problemNumber: '1000',
+  problemDifficulty: 'BRONZE_5',
   isSolved: true,
   isDraft: false,
   language: 'Java',
-  memoryUsage: 14_128,
-  timeElapsed: 104,
   createdAt: '2026-07-15T01:00:00.000Z',
-  updatedAt: '2026-07-15T01:05:00.000Z',
 }
 
 const solutionSummaries: SolutionSummary[] = [
   solvedSolution,
   {
     id: 'solution-2',
-    problem: {
-      id: 'problem-2',
-      name: '미로 탐색',
-      tier: null,
-      url: null,
-      tags: [],
-    },
+    problemId: 'problem-2',
+    userId: 'user-2',
+    problemName: null,
+    problemProvider: null,
+    problemNumber: null,
+    problemDifficulty: null,
     isSolved: false,
     isDraft: true,
     language: 'Python',
-    memoryUsage: null,
-    timeElapsed: null,
     createdAt: null,
-    updatedAt: null,
   },
 ]
 
@@ -333,4 +427,16 @@ const solutionDetail: SolutionDetail = {
   ...solvedSolution,
   code: 'class Main {}',
   description: '# 접근 방법\n\n- 두 수를 더한다.\n\n복잡도는 `O(1)`이다.',
+  memoryUsage: 14_128,
+  timeElapsed: 104,
+  updatedAt: '2026-07-15T01:05:00.000Z',
+}
+
+const problemDetail = {
+  id: 'problem-1',
+  provider: 'BOJ' as const,
+  externalId: '1000',
+  name: 'A+B',
+  url: 'https://www.acmicpc.net/problem/1000',
+  difficulty: 'BRONZE_5',
 }

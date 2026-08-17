@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SolutionsNewRouteImport } from './routes/solutions_.new'
 import { Route as SolutionsSolutionIdRouteImport } from './routes/solutions_.$solutionId'
 import { Route as GroupsGroupIdRouteImport } from './routes/groups_.$groupId'
+import { Route as SolutionsSolutionIdEditRouteImport } from './routes/solutions_.$solutionId_.edit'
 import { Route as GroupsGroupIdProblemSetsProblemSetIdRouteImport } from './routes/groups_.$groupId_.problem-sets.$problemSetId'
 
 const SolutionsRoute = SolutionsRouteImport.update({
@@ -59,6 +60,11 @@ const GroupsGroupIdRoute = GroupsGroupIdRouteImport.update({
   path: '/groups/$groupId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SolutionsSolutionIdEditRoute = SolutionsSolutionIdEditRouteImport.update({
+  id: '/solutions_/$solutionId_/edit',
+  path: '/solutions/$solutionId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GroupsGroupIdProblemSetsProblemSetIdRoute =
   GroupsGroupIdProblemSetsProblemSetIdRouteImport.update({
     id: '/groups_/$groupId_/problem-sets/$problemSetId',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/groups/$groupId': typeof GroupsGroupIdRoute
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
+  '/solutions/$solutionId/edit': typeof SolutionsSolutionIdEditRoute
   '/groups/$groupId/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRoutesByTo {
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/groups/$groupId': typeof GroupsGroupIdRoute
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
+  '/solutions/$solutionId/edit': typeof SolutionsSolutionIdEditRoute
   '/groups/$groupId/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRoutesById {
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/groups_/$groupId': typeof GroupsGroupIdRoute
   '/solutions_/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions_/new': typeof SolutionsNewRoute
+  '/solutions_/$solutionId_/edit': typeof SolutionsSolutionIdEditRoute
   '/groups_/$groupId_/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRouteTypes {
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/groups/$groupId'
     | '/solutions/$solutionId'
     | '/solutions/new'
+    | '/solutions/$solutionId/edit'
     | '/groups/$groupId/problem-sets/$problemSetId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/groups/$groupId'
     | '/solutions/$solutionId'
     | '/solutions/new'
+    | '/solutions/$solutionId/edit'
     | '/groups/$groupId/problem-sets/$problemSetId'
   id:
     | '__root__'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/groups_/$groupId'
     | '/solutions_/$solutionId'
     | '/solutions_/new'
+    | '/solutions_/$solutionId_/edit'
     | '/groups_/$groupId_/problem-sets/$problemSetId'
   fileRoutesById: FileRoutesById
 }
@@ -145,6 +157,7 @@ export interface RootRouteChildren {
   GroupsGroupIdRoute: typeof GroupsGroupIdRoute
   SolutionsSolutionIdRoute: typeof SolutionsSolutionIdRoute
   SolutionsNewRoute: typeof SolutionsNewRoute
+  SolutionsSolutionIdEditRoute: typeof SolutionsSolutionIdEditRoute
   GroupsGroupIdProblemSetsProblemSetIdRoute: typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroupsGroupIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/solutions_/$solutionId_/edit': {
+      id: '/solutions_/$solutionId_/edit'
+      path: '/solutions/$solutionId/edit'
+      fullPath: '/solutions/$solutionId/edit'
+      preLoaderRoute: typeof SolutionsSolutionIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/groups_/$groupId_/problem-sets/$problemSetId': {
       id: '/groups_/$groupId_/problem-sets/$problemSetId'
       path: '/groups/$groupId/problem-sets/$problemSetId'
@@ -225,6 +245,7 @@ const rootRouteChildren: RootRouteChildren = {
   GroupsGroupIdRoute: GroupsGroupIdRoute,
   SolutionsSolutionIdRoute: SolutionsSolutionIdRoute,
   SolutionsNewRoute: SolutionsNewRoute,
+  SolutionsSolutionIdEditRoute: SolutionsSolutionIdEditRoute,
   GroupsGroupIdProblemSetsProblemSetIdRoute:
     GroupsGroupIdProblemSetsProblemSetIdRoute,
 }

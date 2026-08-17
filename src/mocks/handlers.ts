@@ -5,11 +5,13 @@ import {
   failNextMockLogout,
   getCurrentMockUser,
 } from '@/mocks/auth-session'
+import { problemHandlers } from '@/mocks/problem-handlers'
 import { solutionHandlers } from '@/mocks/solution-handlers'
 import { groupHandlers } from '@/mocks/groups-handlers'
 import { problemSetHandlers } from '@/mocks/problem-sets-handlers'
 
 export const handlers = [
+  ...problemHandlers,
   ...solutionHandlers,
   ...groupHandlers,
   ...problemSetHandlers,
