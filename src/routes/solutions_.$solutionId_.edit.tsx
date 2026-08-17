@@ -171,10 +171,18 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
   const [isSolved, setIsSolved] = useState(solution.isSolved)
   const [memoryUsage, setMemoryUsage] = useState(solution.memoryUsage)
   const [timeElapsed, setTimeElapsed] = useState(solution.timeElapsed)
+  const [memoryUsageInput, setMemoryUsageInput] = useState(
+    solution.memoryUsage === null ? '' : String(solution.memoryUsage),
+  )
+  const [timeElapsedInput, setTimeElapsedInput] = useState(
+    solution.timeElapsed === null ? '' : String(solution.timeElapsed),
+  )
   const [formError, setFormError] = useState<SolutionUpdateFormError | null>(
     null,
   )
   const codeInputRef = useRef<SolutionCodeEditorHandle>(null)
+  const memoryUsageInputRef = useRef<HTMLInputElement>(null)
+  const timeElapsedInputRef = useRef<HTMLInputElement>(null)
   const updateMutation = useUpdateSolution(solution.id)
   const selectableLanguageOptions = getLanguageOptions(solution.language)
   const isSubmitting = updateMutation.isPending
@@ -205,6 +213,17 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
     )
   }
 
+  function focusInvalidField(error: SolutionUpdateFormError) {
+    const inputRef = {
+      languageRequired: null,
+      codeRequired: codeInputRef,
+      memoryUsageInvalid: memoryUsageInputRef,
+      timeElapsedInvalid: timeElapsedInputRef,
+    }[error]
+
+    inputRef?.current?.focus()
+  }
+
   const handleSubmit: FormSubmitHandler = (event) => {
     event.preventDefault()
 
@@ -220,16 +239,17 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
       isDraft: solution.isDraft,
       memoryUsage,
       timeElapsed,
+      memoryUsageInput,
+      timeElapsedInput,
     })
 
     resetFeedback()
 
     if (!validation.ok) {
       setFormError(validation.error)
-
-      if (validation.error === 'codeRequired') {
-        requestAnimationFrame(() => codeInputRef.current?.focus())
-      }
+      requestAnimationFrame(() => {
+        focusInvalidField(validation.error)
+      })
       return
     }
 
@@ -357,30 +377,92 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
 
             <FormLayout direction="horizontal">
               <NumberInput
+                ref={memoryUsageInputRef}
                 label={copy.memoryUsageLabel}
                 description={copy.memoryUsageDescription}
                 value={memoryUsage}
-                onChange={setMemoryUsage}
-                min={0}
+                onChange={(nextValue) => {
+                  setMemoryUsage(nextValue)
+                  setMemoryUsageInput(
+                    nextValue === null ? '' : String(nextValue),
+                  )
+                  clearFeedback('memoryUsageInvalid')
+                }}
+                onInput={(event) => {
+                  const inputElement = event.currentTarget as HTMLInputElement
+                  const input = inputElement.value
+                  const parsedValue = Number(input)
+
+                  setMemoryUsageInput(
+                    getNumberInputValidationValue(inputElement),
+                  )
+                  if (!input.trim() || !Number.isFinite(parsedValue)) {
+                    setMemoryUsage(null)
+                  } else {
+                    setMemoryUsage(parsedValue)
+                  }
+                  clearFeedback('memoryUsageInvalid')
+                }}
+                min={-2_147_483_648}
+                max={2_147_483_647}
                 units="KB"
                 isIntegerOnly
                 hasClear
                 isOptional
                 isDisabled={isSubmitting}
                 size="lg"
+                {...(formError === 'memoryUsageInvalid' && formErrorMessage
+                  ? {
+                      status: {
+                        type: 'error' as const,
+                        message: formErrorMessage,
+                      },
+                    }
+                  : {})}
               />
               <NumberInput
+                ref={timeElapsedInputRef}
                 label={copy.timeElapsedLabel}
                 description={copy.timeElapsedDescription}
                 value={timeElapsed}
-                onChange={setTimeElapsed}
-                min={0}
+                onChange={(nextValue) => {
+                  setTimeElapsed(nextValue)
+                  setTimeElapsedInput(
+                    nextValue === null ? '' : String(nextValue),
+                  )
+                  clearFeedback('timeElapsedInvalid')
+                }}
+                onInput={(event) => {
+                  const inputElement = event.currentTarget as HTMLInputElement
+                  const input = inputElement.value
+                  const parsedValue = Number(input)
+
+                  setTimeElapsedInput(
+                    getNumberInputValidationValue(inputElement),
+                  )
+                  if (!input.trim() || !Number.isFinite(parsedValue)) {
+                    setTimeElapsed(null)
+                  } else {
+                    setTimeElapsed(parsedValue)
+                  }
+                  clearFeedback('timeElapsedInvalid')
+                }}
+                min={-2_147_483_648}
+                max={2_147_483_647}
                 units="ms"
                 isIntegerOnly
                 hasClear
                 isOptional
                 isDisabled={isSubmitting}
                 size="lg"
+                {...(formError === 'timeElapsedInvalid' && formErrorMessage
+                  ? {
+                      status: {
+                        type: 'error' as const,
+                        message: formErrorMessage,
+                      },
+                    }
+                  : {})}
               />
             </FormLayout>
           </FormLayout>
@@ -413,6 +495,14 @@ function SolutionEditSkeleton({ label }: { label: string }) {
 
 interface SolutionEditPageProps {
   solutionId: string
+}
+
+/**
+ * Preserves native bad-input state because number inputs expose its value as
+ * an empty string, which would otherwise be indistinguishable from clearing.
+ */
+function getNumberInputValidationValue(input: HTMLInputElement) {
+  return input.validity.badInput ? String(Number.NaN) : input.value
 }
 
 function getLanguageOptions(currentLanguage: string | null) {

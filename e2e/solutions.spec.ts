@@ -306,6 +306,10 @@ test('edits fields and preserves an author solution language alias', async ({
   ).toHaveText('PyPy3')
   await description.fill('수정된 풀이 설명')
   await expect(page.getByRole('checkbox', { name: /임시 저장/ })).toHaveCount(0)
+  await page
+    .getByRole('spinbutton', { name: /메모리 사용량/ })
+    .fill('-2147483648')
+  await page.getByRole('spinbutton', { name: /실행 시간/ }).fill('2147483647')
   await page.getByRole('button', { name: '변경사항 저장' }).click()
 
   await page.waitForURL(
@@ -317,8 +321,8 @@ test('edits fields and preserves an author solution language alias', async ({
     description: '수정된 풀이 설명',
     isSolved: true,
     isDraft: false,
-    memoryUsage: 14_128,
-    timeElapsed: 104,
+    memoryUsage: -2_147_483_648,
+    timeElapsed: 2_147_483_647,
   })
   await expect(page.getByText('수정된 풀이 설명')).toBeVisible()
 })
