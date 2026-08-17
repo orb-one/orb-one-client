@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SolutionsNewRouteImport } from './routes/solutions_.new'
 import { Route as SolutionsSolutionIdRouteImport } from './routes/solutions_.$solutionId'
 import { Route as GroupsGroupIdRouteImport } from './routes/groups_.$groupId'
+import { Route as GroupsGroupIdProblemSetsProblemSetIdRouteImport } from './routes/groups_.$groupId_.problem-sets.$problemSetId'
 
 const SolutionsRoute = SolutionsRouteImport.update({
   id: '/solutions',
@@ -58,6 +59,12 @@ const GroupsGroupIdRoute = GroupsGroupIdRouteImport.update({
   path: '/groups/$groupId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GroupsGroupIdProblemSetsProblemSetIdRoute =
+  GroupsGroupIdProblemSetsProblemSetIdRouteImport.update({
+    id: '/groups_/$groupId_/problem-sets/$problemSetId',
+    path: '/groups/$groupId/problem-sets/$problemSetId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/groups/$groupId': typeof GroupsGroupIdRoute
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
+  '/groups/$groupId/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +86,7 @@ export interface FileRoutesByTo {
   '/groups/$groupId': typeof GroupsGroupIdRoute
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
+  '/groups/$groupId/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +98,7 @@ export interface FileRoutesById {
   '/groups_/$groupId': typeof GroupsGroupIdRoute
   '/solutions_/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions_/new': typeof SolutionsNewRoute
+  '/groups_/$groupId_/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
     | '/groups/$groupId'
     | '/solutions/$solutionId'
     | '/solutions/new'
+    | '/groups/$groupId/problem-sets/$problemSetId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
     | '/groups/$groupId'
     | '/solutions/$solutionId'
     | '/solutions/new'
+    | '/groups/$groupId/problem-sets/$problemSetId'
   id:
     | '__root__'
     | '/'
@@ -121,6 +133,7 @@ export interface FileRouteTypes {
     | '/groups_/$groupId'
     | '/solutions_/$solutionId'
     | '/solutions_/new'
+    | '/groups_/$groupId_/problem-sets/$problemSetId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +145,7 @@ export interface RootRouteChildren {
   GroupsGroupIdRoute: typeof GroupsGroupIdRoute
   SolutionsSolutionIdRoute: typeof SolutionsSolutionIdRoute
   SolutionsNewRoute: typeof SolutionsNewRoute
+  GroupsGroupIdProblemSetsProblemSetIdRoute: typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroupsGroupIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups_/$groupId_/problem-sets/$problemSetId': {
+      id: '/groups_/$groupId_/problem-sets/$problemSetId'
+      path: '/groups/$groupId/problem-sets/$problemSetId'
+      fullPath: '/groups/$groupId/problem-sets/$problemSetId'
+      preLoaderRoute: typeof GroupsGroupIdProblemSetsProblemSetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,6 +225,8 @@ const rootRouteChildren: RootRouteChildren = {
   GroupsGroupIdRoute: GroupsGroupIdRoute,
   SolutionsSolutionIdRoute: SolutionsSolutionIdRoute,
   SolutionsNewRoute: SolutionsNewRoute,
+  GroupsGroupIdProblemSetsProblemSetIdRoute:
+    GroupsGroupIdProblemSetsProblemSetIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
