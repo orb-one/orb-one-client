@@ -1,8 +1,8 @@
 import { apiClient } from '@/lib/api/client'
 
-// 1. API Response DTO
+// 1. API Request & Response DTO
 
-// 문제집 목록 조회 API Response DTO
+// 1) [문제집 목록 조회 응답] (GET /groups/{groupId}/problem-sets)
 export interface ProblemSetResponse {
   problemSetId: string
   name: string
@@ -11,7 +11,7 @@ export interface ProblemSetResponse {
   createdAt: string
 }
 
-// 문제 API Response DTO
+// 2) [개별 문제 항목 응답]
 export interface ProblemResponse {
   problemId: string
   provider: string
@@ -21,7 +21,7 @@ export interface ProblemResponse {
   difficulty: string
 }
 
-// 문제집 상세 조회 API Response DTO
+// 3) [문제집 상세 및 문제 목록 조회 응답] (GET /groups/{groupId}/problem-sets/{problemSetId})
 export interface ProblemSetDetailResponse {
   problemSetId: string
   groupId: string
@@ -32,9 +32,33 @@ export interface ProblemSetDetailResponse {
   updatedAt: string
 }
 
+// 4) [문제집 생성 요청 시 포함되는 개별 문제 DTO]
+export interface ProblemCreateItemDto {
+  provider: string
+  externalProblemId: string
+  name: string
+  url: string
+}
+
+// 5) [문제집 생성 요청 본문 DTO] (POST /groups/{groupId}/problem-sets)
+export interface ProblemSetCreateRequest {
+  name: string
+  problems: ProblemCreateItemDto[]
+}
+
+// 6) [문제집 생성 응답 본문 DTO] (POST /groups/{groupId}/problem-sets)
+export interface ProblemSetCreateResponse {
+  problemSetId: string
+  groupId: string
+  name: string
+  problems: ProblemResponse[]
+  createdBy: string
+  createdAt: string
+}
+
 // 2. 도메인 모델
 
-// 문제집 목록 도메인 모델
+// 1) 문제집 목록 화면용 도메인 모델
 export interface ProblemSet {
   problemSetId: string
   name: string
@@ -43,7 +67,7 @@ export interface ProblemSet {
   createdAt: string
 }
 
-// 개별 문제 도메인 모델
+// 2) 개별 문제 도메인 모델
 export interface Problem {
   problemId: string
   provider: string
@@ -53,7 +77,7 @@ export interface Problem {
   difficulty: string
 }
 
-// 문제집 상세 도메인 모델
+// 3) 문제집 상세 페이지용 도메인 모델
 export interface ProblemSetDetail {
   problemSetId: string
   groupId: string
@@ -64,8 +88,38 @@ export interface ProblemSetDetail {
   updatedAt: string
 }
 
-// 3. Mapper 함수
+// 4) 문제집 생성 폼 UI 입력 상태 관리 모델
+export interface ProblemFormItem {
+  provider: string
+  externalProblemId: string
+  name: string
+  url: string
+}
 
+// 5) 도메인 계층 문제 엔티티
+export interface ProblemItem {
+  id: string
+  provider: string
+  externalId: string
+  name: string
+  url: string
+  difficulty: string
+}
+
+// 6) 도메인 계층 생성 완료 문제집 엔티티 (Date 객체 변환 모델)
+export interface CreatedProblemSet {
+  problemSetId: string
+  groupId: string
+  name: string
+  problems: ProblemItem[]
+  createdBy: string
+  createdAt: Date
+}
+
+// 3. Mapper 함수
+// 계층 간 데이터 격리를 위한 양방향 변환 함수
+
+// 1) 문제집 요약 DTO -> 문제집 요약 도메인 변환
 export function mapProblemSet(response: ProblemSetResponse): ProblemSet {
   return {
     problemSetId: response.problemSetId,
@@ -76,6 +130,7 @@ export function mapProblemSet(response: ProblemSetResponse): ProblemSet {
   }
 }
 
+// 2) 개별 문제 DTO -> 개별 문제 도메인 변환
 export function mapProblem(response: ProblemResponse): Problem {
   return {
     problemId: response.problemId,
@@ -87,6 +142,7 @@ export function mapProblem(response: ProblemResponse): Problem {
   }
 }
 
+// 3) 문제집 상세 DTO -> 문제집 상세 도메인 변환
 export function mapProblemSetDetail(
   response: ProblemSetDetailResponse,
 ): ProblemSetDetail {
@@ -101,25 +157,87 @@ export function mapProblemSetDetail(
   }
 }
 
-// 4. API 호출 함수
+// 4) 폼 입력 도메인 상태 -> 문제집 생성 요청 DTO 변환
+export function toProblemSetCreateRequest(
+  name: string,
+  problems: ProblemFormItem[],
+): ProblemSetCreateRequest {
+  return {
+    name: name.trim(),
+    problems: problems.map((p) => ({
+      provider: p.provider.trim(),
+      externalProblemId: p.externalProblemId.trim(),
+      name: p.name.trim(),
+      url: p.url.trim(),
+    })),
+  }
+}
 
-// 문제집 전체 목록 조회
-// GET /groups/{groupId}/problem-sets
+// 5) 문제집 생성 응답 DTO -> 생성 완료 도메인 모델 변환
+export function toCreatedProblemSetDomain(
+  dto: ProblemSetCreateResponse,
+): CreatedProblemSet {
+  return {
+    problemSetId: dto.problemSetId,
+    groupId: dto.groupId,
+    name: dto.name,
+    problems: dto.problems.map((p) => ({
+      id: p.problemId,
+      provider: p.provider,
+      externalId: p.externalProblemId,
+      name: p.name,
+      url: p.url,
+      difficulty: p.difficulty,
+    })),
+    createdBy: dto.createdBy,
+    createdAt: new Date(dto.createdAt),
+  }
+}
+
+// 4. API 요청 함수
+
+// 1) 특정 그룹의 문제집 전체 목록을 조회한다. (GET /groups/{groupId}/problem-sets)
 export async function getProblemSets(groupId: string): Promise<ProblemSet[]> {
+  const encodedGroupId = encodeURIComponent(groupId)
   const response = await apiClient<ProblemSetResponse[]>(
-    `/groups/${encodeURIComponent(groupId)}/problem-sets`,
+    `/groups/${encodedGroupId}/problem-sets`,
   )
+
   return response.map(mapProblemSet)
 }
 
-// 문제집 상세 및 문제 목록 조회
-// GET /groups/{groupId}/problem-sets/{problemSetId}
+// 2) 특정 문제집의 상세 정보 및 포함된 문제 목록을 조회한다. (GET /groups/{groupId}/problem-sets/{problemSetId})
 export async function getProblemSetDetail(
   groupId: string,
   problemSetId: string,
 ): Promise<ProblemSetDetail> {
+  const encodedGroupId = encodeURIComponent(groupId)
+  const encodedProblemSetId = encodeURIComponent(problemSetId)
+
   const response = await apiClient<ProblemSetDetailResponse>(
-    `/groups/${encodeURIComponent(groupId)}/problem-sets/${encodeURIComponent(problemSetId)}`,
+    `/groups/${encodedGroupId}/problem-sets/${encodedProblemSetId}`,
   )
+
   return mapProblemSetDetail(response)
+}
+
+// 3) 특정 그룹 내에 새 문제집 생성을 요청한다. (POST /groups/{groupId}/problem-sets)
+export async function createProblemSet(
+  groupId: string,
+  data: ProblemSetCreateRequest,
+): Promise<ProblemSetCreateResponse> {
+  const encodedGroupId = encodeURIComponent(groupId)
+
+  const response = await apiClient<ProblemSetCreateResponse>(
+    `/groups/${encodedGroupId}/problem-sets`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: data,
+    },
+  )
+
+  return response
 }
