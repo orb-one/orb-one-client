@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 let createSolution: typeof import('@/lib/api/solutions').createSolution
+let deleteSolution: typeof import('@/lib/api/solutions').deleteSolution
 let getSolution: typeof import('@/lib/api/solutions').getSolution
 let getSolutions: typeof import('@/lib/api/solutions').getSolutions
+let restoreSolution: typeof import('@/lib/api/solutions').restoreSolution
 let updateSolution: typeof import('@/lib/api/solutions').updateSolution
 
 beforeEach(async () => {
@@ -10,8 +12,10 @@ beforeEach(async () => {
   const solutions = await import('@/lib/api/solutions')
 
   createSolution = solutions.createSolution
+  deleteSolution = solutions.deleteSolution
   getSolution = solutions.getSolution
   getSolutions = solutions.getSolutions
+  restoreSolution = solutions.restoreSolution
   updateSolution = solutions.updateSolution
   vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
 })
@@ -226,6 +230,40 @@ it('updates every replaceable solution field and maps the detail response', asyn
   ).toBe('csrf-token')
 })
 
+it('deletes an encoded solution path with CSRF protection', async () => {
+  const fetchMock = mockEmptyResponseWithCsrf()
+
+  await expect(deleteSolution('solution/id')).resolves.toBeUndefined()
+
+  expect(fetchMock).toHaveBeenLastCalledWith(
+    'http://localhost:8080/solutions/solution%2Fid',
+    expect.objectContaining({
+      method: 'DELETE',
+      credentials: 'include',
+    }),
+  )
+  expect(
+    new Headers(fetchMock.mock.calls[1]?.[1]?.headers).get('X-XSRF-TOKEN'),
+  ).toBe('csrf-token')
+})
+
+it('restores an encoded solution path with CSRF protection', async () => {
+  const fetchMock = mockEmptyResponseWithCsrf()
+
+  await expect(restoreSolution('solution/id')).resolves.toBeUndefined()
+
+  expect(fetchMock).toHaveBeenLastCalledWith(
+    'http://localhost:8080/solutions/solution%2Fid/restore',
+    expect.objectContaining({
+      method: 'POST',
+      credentials: 'include',
+    }),
+  )
+  expect(
+    new Headers(fetchMock.mock.calls[1]?.[1]?.headers).get('X-XSRF-TOKEN'),
+  ).toBe('csrf-token')
+})
+
 function mockJsonResponse(
   body: unknown,
   { withCsrf = false }: { withCsrf?: boolean } = {},
@@ -243,6 +281,25 @@ function mockJsonResponse(
       }),
     )
   }
+
+  vi.stubGlobal('fetch', fetchMock)
+
+  return fetchMock
+}
+
+function mockEmptyResponseWithCsrf() {
+  const fetchMock = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          token: 'csrf-token',
+          headerName: 'X-XSRF-TOKEN',
+        }),
+        { headers: { 'content-type': 'application/json' } },
+      ),
+    )
+    .mockResolvedValueOnce(new Response(null, { status: 204 }))
 
   vi.stubGlobal('fetch', fetchMock)
 

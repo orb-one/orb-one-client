@@ -2,6 +2,7 @@ import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
 import { Heading } from '@astryxdesign/core/Heading'
+import { HStack } from '@astryxdesign/core/HStack'
 import { Link } from '@astryxdesign/core/Link'
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList'
 import { Section } from '@astryxdesign/core/Section'
@@ -9,10 +10,11 @@ import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { VStack } from '@astryxdesign/core/VStack'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
 
+import { SolutionDeleteAction } from '@/components/solutions/solution-delete-action'
 import { SolutionStatus } from '@/components/solutions/solution-status'
 import type { CurrentUserResponse } from '@/lib/api/auth'
 import { ApiError, AuthSessionExpiredError } from '@/lib/api/client'
@@ -26,7 +28,10 @@ import {
   formatSolutionMemoryUsage,
 } from '@/lib/solutions/solution-format'
 import type { SolutionDetail } from '@/lib/solutions/solution-model'
-import { solutionQueryOptions } from '@/lib/solutions/solution-queries'
+import {
+  solutionQueryKeys,
+  solutionQueryOptions,
+} from '@/lib/solutions/solution-queries'
 
 const SolutionCodeBlock = lazy(() =>
   import('@/components/solutions/solution-code-block').then(
@@ -140,6 +145,8 @@ function SolutionDetailContent({
 }) {
   const { locale, t } = useI18n()
   const copy = t.solutions.detail
+  const navigate = Route.useNavigate()
+  const queryClient = useQueryClient()
   const createdAt = formatSolutionDate(solution.createdAt, locale)
   const updatedAt = formatSolutionDate(solution.updatedAt, locale)
   const isCurrentUser = currentUser?.id === solution.userId
@@ -154,6 +161,18 @@ function SolutionDetailContent({
       ? `${currentUserNickname} (${copy.currentUserAuthor})`
       : fallbackAuthor
     : fallbackAuthor
+
+  /** 삭제 완료 후 목록으로 이동하고 더 이상 유효하지 않은 상세 cache를 제거한다. */
+  async function handleDeleted() {
+    try {
+      await navigate({ to: '/solutions' })
+    } finally {
+      queryClient.removeQueries({
+        queryKey: solutionQueryKeys.detail(solution.id),
+        exact: true,
+      })
+    }
+  }
 
   return (
     <VStack gap={6} width="100%">
@@ -179,12 +198,18 @@ function SolutionDetailContent({
           </Link>
         ) : null}
         {isCurrentUser ? (
-          <Button
-            label={copy.edit}
-            href={`/solutions/${solution.id}/edit`}
-            size="sm"
-            variant="secondary"
-          />
+          <HStack gap={2} wrap="wrap">
+            <Button
+              label={copy.edit}
+              href={`/solutions/${solution.id}/edit`}
+              size="sm"
+              variant="secondary"
+            />
+            <SolutionDeleteAction
+              solutionId={solution.id}
+              onDeleted={handleDeleted}
+            />
+          </HStack>
         ) : null}
       </VStack>
 

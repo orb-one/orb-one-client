@@ -7,8 +7,10 @@ import type {
 import { getCurrentMockUser } from '@/mocks/auth-session'
 import {
   createMockSolution,
+  deleteMockSolution,
   getMockSolution,
   getMockSolutionSummaries,
+  restoreMockSolution,
   updateMockSolution,
 } from '@/mocks/solution-data'
 
@@ -127,6 +129,70 @@ export const solutionHandlers = [
     }
 
     return HttpResponse.json(result.solution)
+  }),
+  http.delete('*/solutions/:solutionId', ({ params, request }) => {
+    const solutionId = getPathParameter(params.solutionId)
+
+    if (
+      !solutionId ||
+      isDocumentNavigation(request) ||
+      !isSolutionApiRequest(
+        request,
+        `/solutions/${encodeURIComponent(solutionId)}`,
+      )
+    ) {
+      return passthrough()
+    }
+
+    const currentUser = getCurrentMockUser()
+
+    if (!currentUser) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const result = deleteMockSolution(solutionId, currentUser.id)
+
+    if (!result.ok) {
+      return HttpResponse.json(
+        {
+          message:
+            result.status === 403 ? 'Solution forbidden' : 'Solution not found',
+        },
+        { status: result.status },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+  http.post('*/solutions/:solutionId/restore', ({ params, request }) => {
+    const solutionId = getPathParameter(params.solutionId)
+
+    if (
+      !solutionId ||
+      !isSolutionApiRequest(
+        request,
+        `/solutions/${encodeURIComponent(solutionId)}/restore`,
+      )
+    ) {
+      return passthrough()
+    }
+
+    const currentUser = getCurrentMockUser()
+
+    if (!currentUser) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const result = restoreMockSolution(solutionId, currentUser.id)
+
+    if (!result.ok) {
+      return HttpResponse.json(
+        { message: 'Solution not found' },
+        { status: result.status },
+      )
+    }
+
+    return new HttpResponse(null, { status: 204 })
   }),
 ]
 

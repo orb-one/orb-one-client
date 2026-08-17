@@ -52,9 +52,14 @@ const solutionProblemMetadata = new Map<
 const seededUserId = '00000000-0000-4000-8000-000000000001'
 
 let solutions = createSolutionFixtures()
+let deletedSolutions = new Map<
+  string,
+  { solution: SolutionDetailResponse; index: number; deletedAt: number }
+>()
 
 export function resetMockSolutions() {
   solutions = createSolutionFixtures()
+  deletedSolutions = new Map()
 }
 
 export function getMockSolutionSummaries(
@@ -137,6 +142,57 @@ export function updateMockSolution(
   )
 
   return { ok: true as const, solution: updated }
+}
+
+/** 서버와 같은 소유권 규칙으로 풀이를 목록에서 숨긴다. */
+export function deleteMockSolution(solutionId: string, deleterId: string) {
+  const index = solutions.findIndex(
+    (solution) => solution.solutionId === solutionId,
+  )
+  const solution = solutions[index]
+
+  if (index < 0 || !solution) {
+    return { ok: false as const, status: 404 as const }
+  }
+
+  if (solution.userId !== deleterId) {
+    return {
+      ok: false as const,
+      status: solution.isDraft === true ? (404 as const) : (403 as const),
+    }
+  }
+
+  deletedSolutions.set(solutionId, {
+    solution,
+    index,
+    deletedAt: Date.now(),
+  })
+  solutions = solutions.filter(
+    (current) => current.solutionId !== solution.solutionId,
+  )
+
+  return { ok: true as const }
+}
+
+/** 5분 이내에 작성자가 삭제한 풀이를 원래 목록 위치로 복구한다. */
+export function restoreMockSolution(solutionId: string, restorerId: string) {
+  const deleted = deletedSolutions.get(solutionId)
+  const isExpired =
+    deleted !== undefined && Date.now() - deleted.deletedAt >= 5 * 60 * 1000
+
+  if (deleted?.solution.userId !== restorerId || isExpired) {
+    return { ok: false as const, status: 404 as const }
+  }
+
+  const index = Math.min(deleted.index, solutions.length)
+  solutions = [
+    ...solutions.slice(0, index),
+    deleted.solution,
+    ...solutions.slice(index),
+  ]
+  deletedSolutions.delete(solutionId)
+
+  return { ok: true as const }
 }
 
 function toSolutionSummary(

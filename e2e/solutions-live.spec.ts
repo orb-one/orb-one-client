@@ -3,9 +3,9 @@ import { expect, test, type Page } from '@playwright/test'
 const isLiveApiEnabled = process.env.E2E_LIVE_API === 'true'
 const isMswE2eEnabled = process.env.E2E_ENABLE_MSW === 'true'
 
-test('updates a solution through the real API without exposing draft controls', async ({
+test('updates, deletes, and restores a solution through the real API', async ({
   page,
-}) => {
+}, testInfo) => {
   test.skip(
     !isLiveApiEnabled || isMswE2eEnabled,
     'Set E2E_LIVE_API=true and disable MSW to run against API_PROXY_TARGET.',
@@ -32,6 +32,7 @@ test('updates a solution through the real API without exposing draft controls', 
     }
 
     const createResponse = await page.request.post('/solutions', {
+      headers: await getCsrfHeaders(page),
       data: {
         problemId,
         language: 'PyPy3',
@@ -113,16 +114,107 @@ test('updates a solution through the real API without exposing draft controls', 
       timeElapsed: 67,
       description: '실제 서버 E2E 수정',
     })
+
+    await page.getByRole('button', { name: '풀이 삭제' }).click()
+
+    const deleteDialog = page.getByRole('alertdialog', {
+      name: '풀이를 삭제할까요?',
+    })
+
+    await expect(deleteDialog).toContainText(
+      '삭제 후 표시되는 실행 취소로 복구할 수 있습니다.',
+    )
+    await page.waitForTimeout(300)
+
+    const confirmationScreenshot = testInfo.outputPath(
+      'solution-delete-confirmation.png',
+    )
+    await page.screenshot({ path: confirmationScreenshot, fullPage: true })
+    await testInfo.attach('solution-delete-confirmation', {
+      path: confirmationScreenshot,
+      contentType: 'image/png',
+    })
+
+    const deleteResponsePromise = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname ===
+          `/solutions/${createdSolutionId}` &&
+        response.request().method() === 'DELETE',
+    )
+    const listResponsePromise = page.waitForResponse((response) => {
+      const requestUrl = new URL(response.url())
+
+      return (
+        requestUrl.pathname === '/solutions' &&
+        response.request().method() === 'GET'
+      )
+    })
+
+    await deleteDialog.getByRole('button', { name: '풀이 삭제' }).click()
+
+    expect((await deleteResponsePromise).status()).toBe(204)
+    await page.waitForURL((url) => url.pathname === '/solutions')
+    expect((await listResponsePromise).status()).toBe(200)
+    await expect(page.getByText('풀이를 삭제했습니다.')).toBeVisible()
+    await expect(
+      page.getByRole('link').filter({ hasText: problem.name }),
+    ).toHaveCount(0)
+    await page.waitForTimeout(300)
+
+    const undoScreenshot = testInfo.outputPath('solution-delete-undo.png')
+    await page.screenshot({ path: undoScreenshot, fullPage: true })
+    await testInfo.attach('solution-delete-undo', {
+      path: undoScreenshot,
+      contentType: 'image/png',
+    })
+
+    const restoreResponsePromise = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname ===
+          `/solutions/${createdSolutionId}/restore` &&
+        response.request().method() === 'POST',
+    )
+
+    await page.getByRole('button', { name: '실행 취소' }).click()
+
+    expect((await restoreResponsePromise).status()).toBe(204)
+    await expect(page.getByText('풀이를 복구했습니다.')).toBeVisible()
+    await expect(
+      page.getByRole('link').filter({ hasText: problem.name }),
+    ).toBeVisible()
+
+    const restoredResponse = await page.request.get(
+      `/solutions/${createdSolutionId}`,
+    )
+
+    expect(restoredResponse.status()).toBe(200)
   } finally {
     if (solutionId) {
       const deleteResponse = await page.request.delete(
         `/solutions/${solutionId}`,
+        { headers: await getCsrfHeaders(page) },
       )
 
       expect(deleteResponse.status()).toBe(204)
     }
   }
 })
+
+async function getCsrfHeaders(page: Page) {
+  const csrfResponse = await page.request.get('/auth/csrf')
+
+  expect(csrfResponse.status()).toBe(200)
+
+  const csrf = (await csrfResponse.json()) as {
+    token: string
+    headerName: string
+  }
+
+  expect(csrf.token).toBeTruthy()
+  expect(csrf.headerName).toBe('X-XSRF-TOKEN')
+
+  return { [csrf.headerName]: csrf.token }
+}
 
 async function login(page: Page, credentials: TestCredentials) {
   await page.goto('/login')

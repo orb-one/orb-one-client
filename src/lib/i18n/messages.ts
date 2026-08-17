@@ -159,6 +159,20 @@ export const messages = {
       detail: {
         backToList: '풀이 목록으로 돌아가기',
         edit: '풀이 수정',
+        delete: '풀이 삭제',
+        deleteTitle: '풀이를 삭제할까요?',
+        deleteDescription:
+          '풀이가 즉시 목록에서 숨겨집니다. 삭제 후 표시되는 실행 취소로 복구할 수 있습니다.',
+        deleteCancel: '취소',
+        deleteSuccess: '풀이를 삭제했습니다.',
+        deleteUndo: '실행 취소',
+        deleteForbidden: '이 풀이를 삭제할 권한이 없습니다.',
+        deleteNotFound: '이미 삭제되었거나 찾을 수 없는 풀이입니다.',
+        deleteError: '풀이를 삭제하지 못했습니다. 다시 시도해 주세요.',
+        restoreSuccess: '풀이를 복구했습니다.',
+        restoreRetry: '다시 시도',
+        restoreExpired: '복구 가능 시간이 지났거나 풀이를 찾을 수 없습니다.',
+        restoreError: '풀이를 복구하지 못했습니다.',
         eyebrow: '풀이 상세',
         loading: '풀이 상세를 불러오는 중',
         loadError: '풀이 상세를 불러오지 못했습니다.',
@@ -393,6 +407,22 @@ export const messages = {
       detail: {
         backToList: 'Back to solutions',
         edit: 'Edit solution',
+        delete: 'Delete solution',
+        deleteTitle: 'Delete this solution?',
+        deleteDescription:
+          'The solution will be hidden immediately. Use the undo action shown after deletion to restore it.',
+        deleteCancel: 'Cancel',
+        deleteSuccess: 'Solution deleted.',
+        deleteUndo: 'Undo',
+        deleteForbidden: 'You do not have permission to delete this solution.',
+        deleteNotFound:
+          'This solution was already deleted or could not be found.',
+        deleteError: 'Could not delete the solution. Please try again.',
+        restoreSuccess: 'Solution restored.',
+        restoreRetry: 'Try again',
+        restoreExpired:
+          'The restore period has expired or the solution could not be found.',
+        restoreError: 'Could not restore the solution.',
         eyebrow: 'Solution detail',
         loading: 'Loading solution detail',
         loadError: 'Could not load the solution.',

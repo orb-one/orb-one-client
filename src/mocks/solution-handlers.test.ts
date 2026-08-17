@@ -5,8 +5,10 @@ import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest'
 import { ApiError, apiClient } from '@/lib/api/client'
 import {
   createSolution,
+  deleteSolution,
   getSolution,
   getSolutions,
+  restoreSolution,
   updateSolution,
 } from '@/lib/api/solutions'
 import {
@@ -190,6 +192,48 @@ it('updates an authored solution and rejects a different author', async () => {
   await expect(updateSolution(solutionId, request)).rejects.toMatchObject({
     status: 403,
     message: 'Solution forbidden',
+  })
+})
+
+it('hides an authored solution on delete and restores it during the grace period', async () => {
+  const solutionId = '30000000-0000-4000-8000-000000000001'
+
+  signInMockUser({ email: 'seeded-user@example.com' })
+
+  await expect(deleteSolution(solutionId)).resolves.toBeUndefined()
+  await expect(getSolution(solutionId)).rejects.toMatchObject({ status: 404 })
+  await expect(getSolutions()).resolves.not.toEqual(
+    expect.arrayContaining([expect.objectContaining({ id: solutionId })]),
+  )
+
+  await expect(restoreSolution(solutionId)).resolves.toBeUndefined()
+  await expect(getSolution(solutionId)).resolves.toMatchObject({
+    id: solutionId,
+  })
+  await expect(getSolutions()).resolves.toEqual(
+    expect.arrayContaining([expect.objectContaining({ id: solutionId })]),
+  )
+})
+
+it('rejects deleting another author solution and conceals restore ownership', async () => {
+  const solutionId = '30000000-0000-4000-8000-000000000001'
+  const email = 'different-author@example.com'
+
+  rememberRegisteredUser({ email, nickname: 'different-author' })
+  signInMockUser({ email })
+
+  await expect(deleteSolution(solutionId)).rejects.toMatchObject({
+    status: 403,
+    message: 'Solution forbidden',
+  })
+
+  signInMockUser({ email: 'seeded-user@example.com' })
+  await deleteSolution(solutionId)
+  signInMockUser({ email })
+
+  await expect(restoreSolution(solutionId)).rejects.toMatchObject({
+    status: 404,
+    message: 'Solution not found',
   })
 })
 
