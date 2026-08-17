@@ -23,6 +23,7 @@ it('returns the current user when the session is valid', async () => {
   vi.mocked(getCurrentUser).mockResolvedValue(user)
 
   await expect(fetchCurrentUserQuery()).resolves.toEqual(user)
+  expect(getCurrentUser).toHaveBeenCalledWith(expect.any(AbortSignal))
 })
 
 it('treats 401 responses as a signed-out auth state', async () => {

@@ -48,6 +48,9 @@ export function logoutAccount() {
   })
 }
 
-export function getCurrentUser() {
-  return apiClient<CurrentUserResponse>('/users/me')
+export function getCurrentUser(signal?: AbortSignal) {
+  return apiClient<CurrentUserResponse>(
+    '/users/me',
+    signal ? { signal } : undefined,
+  )
 }

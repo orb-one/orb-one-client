@@ -80,11 +80,11 @@ function RootAuthNav() {
   const currentUser = currentUserQuery.data ?? null
 
   async function handleLogoutSuccess() {
+    await queryClient.cancelQueries({ queryKey: currentUserQueryKey })
     // 실제 로그아웃 성공 후 /users/me mock도 비로그인 상태로 맞춘다.
     await signOutMockUser()
     dismissLogoutErrorToast()
     queryClient.setQueryData(currentUserQueryKey, null)
-    void queryClient.invalidateQueries({ queryKey: currentUserQueryKey })
     void navigate({ to: '/' })
   }
 
