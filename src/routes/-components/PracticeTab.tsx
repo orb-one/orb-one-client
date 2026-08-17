@@ -1,11 +1,12 @@
 import { useState } from 'react'
 
 import { Button } from '@astryxdesign/core/Button'
+import { Card } from '@astryxdesign/core/Card'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Stack } from '@astryxdesign/core/Stack'
 import { Text } from '@astryxdesign/core/Text'
 import { Icon } from '@astryxdesign/core/Icon'
-import { Dumbbell } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 import { useGroupPractices } from '@/lib/api/practice'
 import { PracticeList } from '@/components/practice/PracticeList'
@@ -24,15 +25,22 @@ export function PracticeTab({ groupId }: PracticeTabProps) {
       <Stack gap={6} width="100%">
         <HStack width="100%" hAlign="end" gap={2}>
           <Button
-            label="새 연습 시작"
+            label="연습 삭제"
+            size="sm"
+            variant="secondary"
+            icon={<Icon icon={Trash2} size="sm" />}
+            onClick={() => alert('아직 지원되지 않는 기능입니다.')}
+          />
+          <Button
+            label="연습 생성"
             size="sm"
             variant="primary"
-            icon={<Icon icon={Dumbbell} size="sm" />}
+            icon={<Icon icon={Plus} size="sm" />}
             onClick={() => setIsModalOpen(true)}
           />
         </HStack>
 
-        <div className="border-border bg-surface overflow-hidden rounded-lg border">
+        <Card>
           {practicesLoading ? (
             <div className="text-secondary p-8 text-center">
               <Text>로딩 중...</Text>
@@ -40,7 +48,7 @@ export function PracticeTab({ groupId }: PracticeTabProps) {
           ) : (
             <PracticeList practices={practices ?? []} groupId={groupId} />
           )}
-        </div>
+        </Card>
       </Stack>
 
       <CreatePracticeModal

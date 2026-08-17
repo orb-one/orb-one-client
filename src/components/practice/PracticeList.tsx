@@ -1,5 +1,5 @@
 import { Button } from '@astryxdesign/core/Button'
-import { Table } from '@astryxdesign/core/Table'
+import { Table, pixel, proportional } from '@astryxdesign/core/Table'
 import { Text } from '@astryxdesign/core/Text'
 import { Link } from '@tanstack/react-router'
 import type { MockPractice } from '@/mocks/practice-data'
@@ -37,6 +37,7 @@ export function PracticeList({ practices, groupId }: PracticeListProps) {
         {
           key: 'id',
           header: '연습 ID',
+          width: proportional(1),
           renderCell: (p: MockPractice) => (
             <Text type="supporting" color="secondary">
               {p.practiceId}
@@ -46,6 +47,7 @@ export function PracticeList({ practices, groupId }: PracticeListProps) {
         {
           key: 'title',
           header: '제목',
+          width: proportional(2),
           renderCell: (p: MockPractice) => (
             <Link
               to="/groups/$groupId/practices/$practiceId"
@@ -59,6 +61,7 @@ export function PracticeList({ practices, groupId }: PracticeListProps) {
         {
           key: 'start',
           header: '시작일시',
+          width: proportional(1.5),
           renderCell: (p: MockPractice) => (
             <Text type="supporting">
               {new Date(p.startDate).toLocaleString()}
@@ -68,6 +71,7 @@ export function PracticeList({ practices, groupId }: PracticeListProps) {
         {
           key: 'end',
           header: '종료일시',
+          width: proportional(1.5),
           renderCell: (p: MockPractice) => (
             <Text type="supporting">
               {new Date(p.endDate).toLocaleString()}
@@ -77,6 +81,7 @@ export function PracticeList({ practices, groupId }: PracticeListProps) {
         {
           key: 'action',
           header: '수정',
+          width: pixel(80),
           renderCell: () => <Button size="sm" variant="ghost" label="수정" />,
         },
       ]}

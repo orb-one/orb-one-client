@@ -1,6 +1,6 @@
 import { Button } from '@astryxdesign/core/Button'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
-import { Field } from '@astryxdesign/core/Field'
+import { DateInput } from '@astryxdesign/core/DateInput'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
 import { Stack } from '@astryxdesign/core/Stack'
 import { TextInput } from '@astryxdesign/core/TextInput'
@@ -71,41 +71,33 @@ export function CreatePracticeModal({
       />
       <form onSubmit={handleSubmit} className="p-4">
         <FormLayout>
-          <Field label="연습 이름" inputID="title">
-            <TextInput
-              id="title"
-              label="연습 이름"
-              value={title}
-              onChange={setTitle}
-              placeholder="예: 1주차 DP 특훈"
-            />
-          </Field>
+          <TextInput
+            id="title"
+            label="연습 이름"
+            value={title}
+            onChange={setTitle}
+            placeholder="1주차"
+          />
           <Stack gap={4} direction="horizontal">
-            <Field label="시작 일시" inputID="startDate" className="flex-1">
-              <TextInput
-                id="startDate"
-                label="시작 일시"
-                value={startDate}
-                onChange={setStartDate}
-                placeholder="YYYY-MM-DDTHH:mm"
-              />
-            </Field>
-            <Field label="종료 일시" inputID="endDate" className="flex-1">
-              <TextInput
-                id="endDate"
-                label="종료 일시"
-                value={endDate}
-                onChange={setEndDate}
-                placeholder="YYYY-MM-DDTHH:mm"
-              />
-            </Field>
+            <DateInput
+              label="시작 일시"
+              value={startDate}
+              onChange={(val) => setStartDate(val || '')}
+              placeholder="YYYY-MM-DD"
+            />
+            <DateInput
+              label="종료 일시"
+              value={endDate}
+              onChange={(val) => setEndDate(val || '')}
+              placeholder="YYYY-MM-DD"
+            />
           </Stack>
         </FormLayout>
         <div className="mt-6 flex justify-end gap-2">
           <Button label="취소" variant="secondary" onClick={onClose} />
           <Button
             type="submit"
-            label="만들기"
+            label="연습 만들기"
             variant="primary"
             isLoading={createPractice.isPending}
           />
