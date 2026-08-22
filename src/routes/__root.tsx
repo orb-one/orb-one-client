@@ -124,21 +124,23 @@ function RootAuthNav() {
         <Link href="/solutions" isStandalone>
           {copy.solutions}
         </Link>
-        <HStack gap={1.5} vAlign="center" data-testid="current-user">
-          <Avatar
-            name={currentUser.nickname}
-            alt={copy.currentUser}
-            size="xsmall"
-          />
-          <Text
-            type="supporting"
-            color="primary"
-            maxLines={1}
-            className="max-w-24 sm:max-w-40"
-          >
-            {currentUser.nickname}
-          </Text>
-        </HStack>
+        <Link href="/mypage" label={copy.mypage} isStandalone>
+          <HStack gap={1.5} vAlign="center" data-testid="current-user">
+            <Avatar
+              name={currentUser.nickname}
+              alt={copy.currentUser}
+              size="xsmall"
+            />
+            <Text
+              type="supporting"
+              color="primary"
+              maxLines={1}
+              className="max-w-24 sm:max-w-40"
+            >
+              {currentUser.nickname}
+            </Text>
+          </HStack>
+        </Link>
         <IconButton
           label={logoutMutation.isPending ? copy.loggingOut : copy.logout}
           tooltip={logoutMutation.isPending ? copy.loggingOut : copy.logout}

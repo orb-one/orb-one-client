@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SolutionsRouteImport } from './routes/solutions'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as MypageRouteImport } from './routes/mypage'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as IndexRouteImport } from './routes/index'
@@ -28,6 +29,11 @@ const SolutionsRoute = SolutionsRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MypageRoute = MypageRouteImport.update({
+  id: '/mypage',
+  path: '/mypage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/groups': typeof GroupsRoute
   '/login': typeof LoginRoute
+  '/mypage': typeof MypageRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
   '/groups/$groupId': typeof GroupsGroupIdRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/groups': typeof GroupsRoute
   '/login': typeof LoginRoute
+  '/mypage': typeof MypageRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
   '/groups/$groupId': typeof GroupsGroupIdRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/groups': typeof GroupsRoute
   '/login': typeof LoginRoute
+  '/mypage': typeof MypageRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
   '/groups_/$groupId': typeof GroupsGroupIdRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/'
     | '/groups'
     | '/login'
+    | '/mypage'
     | '/register'
     | '/solutions'
     | '/groups/$groupId'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/'
     | '/groups'
     | '/login'
+    | '/mypage'
     | '/register'
     | '/solutions'
     | '/groups/$groupId'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/'
     | '/groups'
     | '/login'
+    | '/mypage'
     | '/register'
     | '/solutions'
     | '/groups_/$groupId'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GroupsRoute: typeof GroupsRoute
   LoginRoute: typeof LoginRoute
+  MypageRoute: typeof MypageRoute
   RegisterRoute: typeof RegisterRoute
   SolutionsRoute: typeof SolutionsRoute
   GroupsGroupIdRoute: typeof GroupsGroupIdRoute
@@ -175,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mypage': {
+      id: '/mypage'
+      path: '/mypage'
+      fullPath: '/mypage'
+      preLoaderRoute: typeof MypageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -240,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GroupsRoute: GroupsRoute,
   LoginRoute: LoginRoute,
+  MypageRoute: MypageRoute,
   RegisterRoute: RegisterRoute,
   SolutionsRoute: SolutionsRoute,
   GroupsGroupIdRoute: GroupsGroupIdRoute,

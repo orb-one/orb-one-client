@@ -15,6 +15,7 @@ export const messages = {
       loggingOut: '로그아웃 중',
       logoutError: '로그아웃에 실패했습니다. 다시 시도해 주세요.',
       currentUser: '현재 로그인한 사용자',
+      mypage: '마이페이지',
       loadingUser: '로그인 상태 확인 중',
     },
     auth: {
@@ -64,6 +65,16 @@ export const messages = {
         loginPrompt: '이미 계정이 있으신가요?',
         loginLink: '로그인',
       },
+    },
+    mypage: {
+      title: '마이페이지',
+      description: '로그인한 계정 정보를 확인할 수 있습니다.',
+      accountInformation: '계정 정보',
+      nicknameLabel: '닉네임',
+      emailLabel: '이메일',
+      loading: '계정 정보를 불러오는 중',
+      loadError: '계정 정보를 불러오지 못했습니다.',
+      retry: '다시 시도',
     },
     solutions: {
       authRequired: '저장된 풀이를 확인하려면 로그인해 주세요.',
@@ -265,6 +276,7 @@ export const messages = {
       loggingOut: 'Logging out',
       logoutError: 'Could not log out. Please try again.',
       currentUser: 'Current signed-in user',
+      mypage: 'Account',
       loadingUser: 'Checking sign-in status',
     },
     auth: {
@@ -314,6 +326,16 @@ export const messages = {
         loginPrompt: 'Already have an account?',
         loginLink: 'Log in',
       },
+    },
+    mypage: {
+      title: 'Account',
+      description: "Review the account you're signed in with.",
+      accountInformation: 'Account information',
+      nicknameLabel: 'Nickname',
+      emailLabel: 'Email',
+      loading: 'Loading account information',
+      loadError: 'Could not load your account information.',
+      retry: 'Retry',
     },
     solutions: {
       authRequired: 'Sign in to view your saved solutions.',
