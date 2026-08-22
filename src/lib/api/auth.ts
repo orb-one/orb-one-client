@@ -11,6 +11,10 @@ export interface RegisterRequest {
   nickname: string
 }
 
+export interface NicknameUpdateRequest {
+  nickname: string
+}
+
 export interface MessageResponse {
   message: string
 }
@@ -53,4 +57,11 @@ export function getCurrentUser(signal?: AbortSignal) {
     '/users/me',
     signal ? { signal } : undefined,
   )
+}
+
+export function updateCurrentUser(request: NicknameUpdateRequest) {
+  return apiClient<CurrentUserResponse>('/users/me', {
+    method: 'PATCH',
+    body: request,
+  })
 }

@@ -55,6 +55,20 @@ export function signOutMockUser() {
   currentUser = null
 }
 
+export function updateMockUserNickname(body: unknown) {
+  if (!currentUser || !isNicknameUpdateBody(body)) {
+    return null
+  }
+
+  currentUser = {
+    ...currentUser,
+    nickname: body.nickname,
+  }
+  usersByEmail.set(currentUser.email, currentUser)
+
+  return currentUser
+}
+
 export function failNextMockLogout() {
   shouldFailNextLogout = true
 }
@@ -77,6 +91,15 @@ function isRegisterBody(value: unknown): value is RegisterBody {
 
 function isLoginBody(value: unknown): value is LoginBody {
   return isRecord(value) && typeof value.email === 'string'
+}
+
+function isNicknameUpdateBody(value: unknown): value is { nickname: string } {
+  return (
+    isRecord(value) &&
+    typeof value.nickname === 'string' &&
+    value.nickname.trim().length > 0 &&
+    value.nickname.length <= 50
+  )
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

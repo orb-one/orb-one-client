@@ -4,6 +4,7 @@ import {
   consumeMockLogoutFailure,
   failNextMockLogout,
   getCurrentMockUser,
+  updateMockUserNickname,
 } from '@/mocks/auth-session'
 import { problemHandlers } from '@/mocks/problem-handlers'
 import { solutionHandlers } from '@/mocks/solution-handlers'
@@ -46,5 +47,26 @@ export const handlers = [
     }
 
     return HttpResponse.json(currentUser)
+  }),
+  http.patch('*/users/me', async ({ request }) => {
+    if (!getCurrentMockUser()) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const updatedUser = updateMockUserNickname(await request.json())
+
+    if (!updatedUser) {
+      return HttpResponse.json(
+        {
+          code: 'INVALID_FIELD',
+          message: '요청 값이 올바르지 않습니다.',
+          timestamp: new Date().toISOString(),
+          fieldErrors: [{ field: 'nickname', reason: 'INVALID_VALUE' }],
+        },
+        { status: 400 },
+      )
+    }
+
+    return HttpResponse.json(updatedUser)
   }),
 ]
