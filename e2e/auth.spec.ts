@@ -148,12 +148,59 @@ test('opens the protected my page from the signed-in navigation', async ({
   await page.waitForURL((url) => url.pathname === '/mypage')
   await expect(page.getByRole('heading', { name: '마이페이지' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '계정 정보' })).toBeVisible()
-  await expect(page.getByText('닉네임', { exact: true })).toBeVisible()
-  await expect(
-    page.getByRole('main').getByText('mypage-user', { exact: true }),
-  ).toBeVisible()
-  await expect(page.getByText('이메일', { exact: true })).toBeVisible()
-  await expect(page.getByText('mypage@example.com')).toBeVisible()
+  await expect(page.getByLabel('닉네임')).toHaveValue('mypage-user')
+  await expect(page.getByLabel('이메일')).toHaveValue('mypage@example.com')
+})
+
+test('updates the nickname across the my page and application header', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  const currentUser = {
+    id: 'mypage-user',
+    email: 'mypage@example.com',
+    nickname: 'before-update',
+  }
+  let nicknameUpdateRequest: unknown
+
+  await mockCsrfEndpoint(page)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    if (route.request().method() === 'PATCH') {
+      nicknameUpdateRequest = route.request().postDataJSON()
+      currentUser.nickname = (
+        nicknameUpdateRequest as { nickname: string }
+      ).nickname
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(currentUser),
+    })
+  })
+
+  await page.goto('/mypage')
+
+  await expect(page.getByLabel('이메일')).toHaveValue('mypage@example.com')
+  await page.getByLabel('닉네임').fill('after-update')
+  await page.getByRole('button', { name: '변경사항 저장' }).click()
+
+  await expect(page.getByText('닉네임을 변경했습니다.')).toBeVisible()
+  await expect(page.getByLabel('닉네임')).toHaveValue('after-update')
+  await expect(page.getByTestId('current-user')).toContainText('after-update')
+  expect(nicknameUpdateRequest).toEqual({ nickname: 'after-update' })
+
+  await page.setViewportSize({ width: 320, height: 667 })
+
+  await expect(page.getByLabel('이메일')).toBeVisible()
+  await expect(page.getByLabel('닉네임')).toBeVisible()
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(320)
 })
 
 test('redirects signed-out users away from the protected my page', async ({

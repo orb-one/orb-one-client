@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
-import { getCurrentUser } from '@/lib/api/auth'
+import { getCurrentUser, updateCurrentUser } from '@/lib/api/auth'
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import { currentUserQueryKey } from '@/lib/auth/auth-queries'
 
@@ -23,6 +23,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 vi.mock('@/lib/api/auth', () => ({
   getCurrentUser: vi.fn(),
+  updateCurrentUser: vi.fn(),
 }))
 
 import { MyPage } from '@/routes/mypage'
@@ -32,7 +33,7 @@ afterEach(() => {
   vi.resetAllMocks()
 })
 
-it('renders the signed-in account summary', () => {
+it('renders the signed-in account profile form', () => {
   renderMyPage({
     id: 'user-1',
     email: 'user@example.com',
@@ -41,10 +42,119 @@ it('renders the signed-in account summary', () => {
 
   expect(screen.getByRole('heading', { name: '마이페이지' })).toBeVisible()
   expect(screen.getByRole('heading', { name: '계정 정보' })).toBeVisible()
-  expect(screen.getByText('닉네임')).toBeVisible()
-  expect(screen.getByText('orb-user')).toBeVisible()
-  expect(screen.getByText('이메일')).toBeVisible()
-  expect(screen.getByText('user@example.com')).toBeVisible()
+  expect(screen.getByLabelText('이메일')).toHaveValue('user@example.com')
+  expect(screen.getByLabelText('이메일')).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
+  expect(screen.getByLabelText('닉네임')).toHaveValue('orb-user')
+  expect(screen.getByLabelText('닉네임')).toBeRequired()
+  expect(screen.queryByText('Required')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '변경사항 저장' })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
+})
+
+it('updates the nickname and shared current user cache', async () => {
+  vi.mocked(updateCurrentUser).mockResolvedValue({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'updated-user',
+  })
+  const queryClient = renderMyPage({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+
+  const nicknameInput = screen.getByLabelText('닉네임')
+  await userEvent.clear(nicknameInput)
+  await userEvent.type(nicknameInput, '  updated-user  ')
+  await userEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
+
+  expect(vi.mocked(updateCurrentUser).mock.calls[0]?.[0]).toEqual({
+    nickname: 'updated-user',
+  })
+  expect(await screen.findByText('닉네임을 변경했습니다.')).toBeVisible()
+  expect(
+    screen.queryByRole('button', { name: 'Dismiss' }),
+  ).not.toBeInTheDocument()
+  expect(nicknameInput).toHaveValue('updated-user')
+  expect(queryClient.getQueryData(currentUserQueryKey)).toEqual({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'updated-user',
+  })
+})
+
+it('validates an empty nickname and focuses the field', async () => {
+  renderMyPage({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+
+  const nicknameInput = screen.getByLabelText('닉네임')
+  await userEvent.clear(nicknameInput)
+  await userEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
+
+  expect(nicknameInput).toHaveAccessibleDescription(/닉네임을 입력해 주세요/)
+  await waitFor(() => expect(nicknameInput).toHaveFocus())
+  expect(updateCurrentUser).not.toHaveBeenCalled()
+})
+
+it('validates a nickname longer than the server limit', async () => {
+  renderMyPage({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+
+  const nicknameInput = screen.getByLabelText('닉네임')
+  await userEvent.clear(nicknameInput)
+  await userEvent.type(nicknameInput, 'a'.repeat(51))
+  await userEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
+
+  expect(nicknameInput).toHaveAccessibleDescription(
+    /닉네임은 50자 이하로 입력해 주세요/,
+  )
+  expect(updateCurrentUser).not.toHaveBeenCalled()
+})
+
+it('shows an error when saving the nickname fails', async () => {
+  vi.mocked(updateCurrentUser).mockRejectedValue(new Error('Save failed'))
+  renderMyPage({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+
+  const nicknameInput = screen.getByLabelText('닉네임')
+  await userEvent.clear(nicknameInput)
+  await userEvent.type(nicknameInput, 'updated-user')
+  await userEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    '닉네임을 변경하지 못했습니다. 다시 시도해 주세요.',
+  )
+})
+
+it('redirects when the session expires while saving', async () => {
+  vi.mocked(updateCurrentUser).mockRejectedValue(new AuthSessionExpiredError())
+  renderMyPage({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+
+  const nicknameInput = screen.getByLabelText('닉네임')
+  await userEvent.clear(nicknameInput)
+  await userEvent.type(nicknameInput, 'updated-user')
+  await userEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
+
+  expect(await screen.findByTestId('navigate')).toBeInTheDocument()
+  expect(navigate).toHaveBeenCalledWith({ to: '/login', replace: true })
 })
 
 it('announces while the current account is loading', () => {
@@ -93,7 +203,7 @@ it('shows an error state and retries the current account request', async () => {
 
   await userEvent.click(screen.getByRole('button', { name: '다시 시도' }))
 
-  expect(await screen.findByText('orb-user')).toBeVisible()
+  expect(await screen.findByDisplayValue('orb-user')).toBeVisible()
   expect(getCurrentUser).toHaveBeenCalledTimes(2)
 })
 
@@ -104,7 +214,9 @@ function renderMyPage(currentUser?: CurrentUser) {
     queryClient.setQueryData(currentUserQueryKey, currentUser)
   }
 
-  return renderWithClient(queryClient, <MyPage />)
+  renderWithClient(queryClient, <MyPage />)
+
+  return queryClient
 }
 
 function createQueryClient() {

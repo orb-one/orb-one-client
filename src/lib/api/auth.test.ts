@@ -5,6 +5,7 @@ let loginAccount: typeof import('@/lib/api/auth').loginAccount
 let logoutAccount: typeof import('@/lib/api/auth').logoutAccount
 let refreshSession: typeof import('@/lib/api/auth').refreshSession
 let registerAccount: typeof import('@/lib/api/auth').registerAccount
+let updateCurrentUser: typeof import('@/lib/api/auth').updateCurrentUser
 let AuthSessionExpiredError: typeof import('@/lib/api/client').AuthSessionExpiredError
 
 beforeEach(async () => {
@@ -17,6 +18,7 @@ beforeEach(async () => {
   logoutAccount = auth.logoutAccount
   refreshSession = auth.refreshSession
   registerAccount = auth.registerAccount
+  updateCurrentUser = auth.updateCurrentUser
   AuthSessionExpiredError = client.AuthSessionExpiredError
   vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
 })
@@ -157,6 +159,34 @@ it('gets the current user from the user API', async () => {
       credentials: 'include',
     }),
   )
+})
+
+it('patches the current user nickname with CSRF protection', async () => {
+  const request = { nickname: 'updated-user' }
+  const response = {
+    id: '550e8400-e29b-41d4-a716-446655440000',
+    email: 'user@example.com',
+    nickname: request.nickname,
+  }
+  const fetchMock = mockFetch(
+    csrfResponse(),
+    new Response(JSON.stringify(response), jsonResponseInit()),
+  )
+
+  await expect(updateCurrentUser(request)).resolves.toEqual(response)
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    'http://localhost:8080/users/me',
+    expect.objectContaining({
+      method: 'PATCH',
+      credentials: 'include',
+      body: JSON.stringify(request),
+    }),
+  )
+  expect(getRequestHeader(fetchMock, 2, 'Content-Type')).toBe(
+    'application/json',
+  )
+  expect(getRequestHeader(fetchMock, 2, 'X-XSRF-TOKEN')).toBe('csrf-token')
 })
 
 function jsonResponseInit(): ResponseInit {
