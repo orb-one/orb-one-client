@@ -69,4 +69,41 @@ export const handlers = [
 
     return HttpResponse.json(updatedUser)
   }),
+  http.patch('*/users/me/password', async ({ request }) => {
+    if (!getCurrentMockUser()) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+
+    if (!isPasswordChangeBody(body)) {
+      return HttpResponse.json(
+        {
+          code: 'INVALID_FIELD',
+          message: '요청 값이 올바르지 않습니다.',
+          timestamp: new Date().toISOString(),
+        },
+        { status: 400 },
+      )
+    }
+
+    return HttpResponse.json({ message: 'Password changed successfully' })
+  }),
 ]
+
+function isPasswordChangeBody(value: unknown): value is {
+  currentPassword: string
+  newPassword: string
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'currentPassword' in value &&
+    typeof value.currentPassword === 'string' &&
+    value.currentPassword.trim().length > 0 &&
+    'newPassword' in value &&
+    typeof value.newPassword === 'string' &&
+    value.newPassword.trim().length > 0 &&
+    value.newPassword.length >= 8
+  )
+}

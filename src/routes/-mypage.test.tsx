@@ -4,7 +4,12 @@ import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
-import { getCurrentUser, updateCurrentUser } from '@/lib/api/auth'
+import {
+  changeCurrentUserPassword,
+  getCurrentUser,
+  logoutAccount,
+  updateCurrentUser,
+} from '@/lib/api/auth'
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import { currentUserQueryKey } from '@/lib/auth/auth-queries'
 
@@ -13,8 +18,10 @@ const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }))
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute:
     () =>
-    <TOptions extends object>(options: TOptions) =>
-      options,
+    <TOptions extends object>(options: TOptions) => ({
+      ...options,
+      useNavigate: () => navigate,
+    }),
   Navigate: (props: { replace?: boolean; to: string }) => {
     navigate(props)
     return <span data-testid="navigate" />
@@ -22,7 +29,9 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 
 vi.mock('@/lib/api/auth', () => ({
+  changeCurrentUserPassword: vi.fn(),
   getCurrentUser: vi.fn(),
+  logoutAccount: vi.fn(),
   updateCurrentUser: vi.fn(),
 }))
 
@@ -157,6 +166,31 @@ it('redirects when the session expires while saving', async () => {
   expect(navigate).toHaveBeenCalledWith({ to: '/login', replace: true })
 })
 
+it('signs out and redirects after changing the password', async () => {
+  vi.mocked(changeCurrentUserPassword).mockResolvedValue({
+    message: 'Password changed successfully',
+  })
+  vi.mocked(logoutAccount).mockResolvedValue({ message: 'Logout successful' })
+  const queryClient = renderMyPage({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+
+  await fillPasswordChangeForm()
+  await userEvent.click(screen.getByRole('button', { name: '비밀번호 변경' }))
+
+  await waitFor(() => {
+    expect(logoutAccount).toHaveBeenCalledOnce()
+  })
+  expect(queryClient.getQueryData(currentUserQueryKey)).toBeNull()
+  expect(navigate).toHaveBeenCalledWith({
+    to: '/login',
+    replace: true,
+    search: { passwordChanged: true },
+  })
+})
+
 it('announces while the current account is loading', () => {
   vi.mocked(getCurrentUser).mockImplementation(
     () => new Promise(() => undefined),
@@ -217,6 +251,18 @@ function renderMyPage(currentUser?: CurrentUser) {
   renderWithClient(queryClient, <MyPage />)
 
   return queryClient
+}
+
+async function fillPasswordChangeForm() {
+  await userEvent.type(
+    screen.getByLabelText('현재 비밀번호'),
+    'old-password123!',
+  )
+  await userEvent.type(screen.getByLabelText('새 비밀번호'), 'new-password123!')
+  await userEvent.type(
+    screen.getByLabelText('새 비밀번호 확인'),
+    'new-password123!',
+  )
 }
 
 function createQueryClient() {

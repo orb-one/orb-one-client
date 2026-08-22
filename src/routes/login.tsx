@@ -24,7 +24,15 @@ import {
 import { currentUserQueryKey } from '@/lib/auth/auth-queries'
 import { useI18n } from '@/lib/i18n/use-translations'
 
+interface LoginSearch {
+  passwordChanged?: boolean
+}
+
 export const Route = createFileRoute('/login')({
+  validateSearch: (search: Record<string, unknown>): LoginSearch =>
+    search.passwordChanged === true || search.passwordChanged === 'true'
+      ? { passwordChanged: true }
+      : {},
   component: LoginPage,
 })
 
@@ -33,6 +41,8 @@ type FormSubmitHandler = NonNullable<ComponentProps<'form'>['onSubmit']>
 export function LoginPage() {
   const { locale, t } = useI18n()
   const copy = t.auth.login
+  const mypageCopy = t.mypage
+  const { passwordChanged } = Route.useSearch()
   const navigate = Route.useNavigate()
   const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
@@ -140,6 +150,13 @@ export function LoginPage() {
             {/* 브라우저 기본 validation UI 대신 i18n 가능한 검증 결과만 노출 */}
             <form noValidate onSubmit={handleSubmit}>
               <VStack gap={4} hAlign="stretch">
+                {passwordChanged ? (
+                  <Banner
+                    status="success"
+                    title={mypageCopy.passwordChangeSuccess}
+                  />
+                ) : null}
+
                 {mutationError ? (
                   <Banner
                     status="error"
