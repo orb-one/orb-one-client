@@ -69,6 +69,9 @@ it('renders the signed-out application shell with accessible navigation', () => 
   expect(
     within(navigation).queryByRole('link', { name: '풀이' }),
   ).not.toBeInTheDocument()
+  expect(
+    within(navigation).queryByRole('link', { name: '마이페이지' }),
+  ).not.toBeInTheDocument()
   expect(screen.getByRole('main')).toContainElement(
     screen.getByText('Route content'),
   )
@@ -85,6 +88,10 @@ it('renders the signed-in user and logout action in the application shell', () =
     screen.getByRole('img', { name: '현재 로그인한 사용자' }),
   ).toBeVisible()
   expect(screen.getByTestId('current-user')).toHaveTextContent('orb-user')
+  expect(screen.getByRole('link', { name: '마이페이지' })).toHaveAttribute(
+    'href',
+    '/mypage',
+  )
   expect(screen.getByRole('link', { name: '풀이' })).toHaveAttribute(
     'href',
     '/solutions',

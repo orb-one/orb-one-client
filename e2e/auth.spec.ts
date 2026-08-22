@@ -122,6 +122,70 @@ test('keeps the signed-in application navigation usable across viewports', async
   ).toBeLessThanOrEqual(320)
 })
 
+test('opens the protected my page from the signed-in navigation', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  await page.route(apiUrl('/users/me'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'mypage-user',
+        email: 'mypage@example.com',
+        nickname: 'mypage-user',
+      }),
+    })
+  })
+
+  await page.goto('/')
+  await page.getByRole('link', { name: '마이페이지' }).click()
+
+  await page.waitForURL((url) => url.pathname === '/mypage')
+  await expect(page.getByRole('heading', { name: '마이페이지' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '계정 정보' })).toBeVisible()
+  await expect(page.getByText('닉네임', { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('main').getByText('mypage-user', { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText('이메일', { exact: true })).toBeVisible()
+  await expect(page.getByText('mypage@example.com')).toBeVisible()
+})
+
+test('redirects signed-out users away from the protected my page', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control auth requests through the service worker.',
+  )
+
+  await mockCsrfEndpoint(page)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Unauthorized' }),
+    })
+  })
+  await page.route(apiUrl('/auth/refresh'), async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Unauthorized' }),
+    })
+  })
+
+  await page.goto('/mypage')
+
+  await page.waitForURL((url) => url.pathname === '/login')
+  await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible()
+})
+
 test('refreshes expired current user requests before showing signed-in UI', async ({
   page,
 }) => {
