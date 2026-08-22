@@ -85,6 +85,29 @@ export const messages = {
       noChanges: '변경된 닉네임이 없습니다.',
       saveSuccess: '닉네임을 변경했습니다.',
       saveError: '닉네임을 변경하지 못했습니다. 다시 시도해 주세요.',
+      passwordInformation: '비밀번호 변경',
+      passwordDescription:
+        '현재 비밀번호를 확인한 뒤 사용할 새 비밀번호를 입력하세요. 변경을 완료하면 자동으로 로그아웃됩니다.',
+      currentPasswordLabel: '현재 비밀번호',
+      currentPasswordRequired: '현재 비밀번호를 입력해 주세요.',
+      currentPasswordIncorrect: '현재 비밀번호가 올바르지 않습니다.',
+      newPasswordLabel: '새 비밀번호',
+      newPasswordDescription: '8자 이상 입력해 주세요.',
+      newPasswordRequired: '새 비밀번호를 입력해 주세요.',
+      newPasswordTooShort: '새 비밀번호는 8자 이상 입력해 주세요.',
+      newPasswordConfirmLabel: '새 비밀번호 확인',
+      newPasswordConfirmRequired: '새 비밀번호를 한 번 더 입력해 주세요.',
+      passwordMismatch: '새 비밀번호가 일치하지 않습니다.',
+      passwordChangeSubmit: '비밀번호 변경',
+      passwordChanging: '변경 중',
+      passwordChangeSigningOut: '로그아웃 중',
+      passwordChangeSuccess:
+        '비밀번호를 변경했습니다. 새 비밀번호로 다시 로그인해 주세요.',
+      passwordChangeError:
+        '비밀번호를 변경하지 못했습니다. 다시 시도해 주세요.',
+      passwordChangedLogoutError:
+        '비밀번호는 변경했지만 로그아웃하지 못했습니다. 로그아웃을 다시 시도해 주세요.',
+      passwordChangeLogoutRetry: '로그아웃 다시 시도',
     },
     solutions: {
       authRequired: '저장된 풀이를 확인하려면 로그인해 주세요.',
@@ -356,6 +379,28 @@ export const messages = {
       noChanges: 'Your nickname has not changed.',
       saveSuccess: 'Your nickname has been updated.',
       saveError: 'Could not update your nickname. Please try again.',
+      passwordInformation: 'Change password',
+      passwordDescription:
+        'Confirm your current password, then enter a new one. You’ll be signed out after the change.',
+      currentPasswordLabel: 'Current password',
+      currentPasswordRequired: 'Enter your current password.',
+      currentPasswordIncorrect: 'Your current password is incorrect.',
+      newPasswordLabel: 'New password',
+      newPasswordDescription: 'Use at least 8 characters.',
+      newPasswordRequired: 'Enter a new password.',
+      newPasswordTooShort: 'Enter a new password with at least 8 characters.',
+      newPasswordConfirmLabel: 'Confirm new password',
+      newPasswordConfirmRequired: 'Enter your new password again.',
+      passwordMismatch: 'New passwords do not match.',
+      passwordChangeSubmit: 'Change password',
+      passwordChanging: 'Changing password',
+      passwordChangeSigningOut: 'Signing out',
+      passwordChangeSuccess:
+        'Your password has been changed. Sign in again with your new password.',
+      passwordChangeError: 'Could not change your password. Please try again.',
+      passwordChangedLogoutError:
+        'Your password was changed, but sign-out failed. Try signing out again.',
+      passwordChangeLogoutRetry: 'Retry sign-out',
     },
     solutions: {
       authRequired: 'Sign in to view your saved solutions.',

@@ -148,6 +148,9 @@ test('opens the protected my page from the signed-in navigation', async ({
   await page.waitForURL((url) => url.pathname === '/mypage')
   await expect(page.getByRole('heading', { name: '마이페이지' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '계정 정보' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '비밀번호 변경' }),
+  ).toBeVisible()
   await expect(page.getByLabel('닉네임')).toHaveValue('mypage-user')
   await expect(page.getByLabel('이메일')).toHaveValue('mypage@example.com')
 })
@@ -198,9 +201,77 @@ test('updates the nickname across the my page and application header', async ({
 
   await expect(page.getByLabel('이메일')).toBeVisible()
   await expect(page.getByLabel('닉네임')).toBeVisible()
+  await expect(page.getByLabel('현재 비밀번호')).toBeVisible()
+  await expect(page.getByLabel('새 비밀번호', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('새 비밀번호 확인')).toBeVisible()
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(320)
+})
+
+test('changes the password and signs the user out', async ({ page }) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control auth requests through the service worker.',
+  )
+
+  let passwordChangeRequest: unknown
+
+  await mockCsrfEndpoint(page)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'password-user',
+        email: 'password@example.com',
+        nickname: 'password-user',
+      }),
+    })
+  })
+  await page.route(apiUrl('/users/me/password'), async (route) => {
+    passwordChangeRequest = route.request().postDataJSON()
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Password changed successfully' }),
+    })
+  })
+  await page.route(apiUrl('/auth/logout'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Logout successful' }),
+    })
+  })
+
+  await page.goto('/mypage')
+  await expect(
+    page.getByText(
+      '현재 비밀번호를 확인한 뒤 사용할 새 비밀번호를 입력하세요. 변경을 완료하면 자동으로 로그아웃됩니다.',
+    ),
+  ).toBeVisible()
+  await page.getByLabel('현재 비밀번호').fill('old-password123!')
+  await page.getByLabel('새 비밀번호', { exact: true }).fill('new-password123!')
+  await page.getByLabel('새 비밀번호 확인').fill('new-password123!')
+  await page.getByRole('button', { name: '비밀번호 변경' }).click()
+
+  await page.waitForURL(
+    (url) =>
+      url.pathname === '/login' && url.searchParams.has('passwordChanged'),
+  )
+  await expect(
+    page.getByText(
+      '비밀번호를 변경했습니다. 새 비밀번호로 다시 로그인해 주세요.',
+    ),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: '로그인', exact: true }),
+  ).toBeVisible()
+  expect(passwordChangeRequest).toEqual({
+    currentPassword: 'old-password123!',
+    newPassword: 'new-password123!',
+  })
 })
 
 test('redirects signed-out users away from the protected my page', async ({

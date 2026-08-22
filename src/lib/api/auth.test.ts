@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 let getCurrentUser: typeof import('@/lib/api/auth').getCurrentUser
+let changeCurrentUserPassword: typeof import('@/lib/api/auth').changeCurrentUserPassword
 let loginAccount: typeof import('@/lib/api/auth').loginAccount
 let logoutAccount: typeof import('@/lib/api/auth').logoutAccount
 let refreshSession: typeof import('@/lib/api/auth').refreshSession
@@ -14,6 +15,7 @@ beforeEach(async () => {
   const client = await import('@/lib/api/client')
 
   getCurrentUser = auth.getCurrentUser
+  changeCurrentUserPassword = auth.changeCurrentUserPassword
   loginAccount = auth.loginAccount
   logoutAccount = auth.logoutAccount
   refreshSession = auth.refreshSession
@@ -177,6 +179,33 @@ it('patches the current user nickname with CSRF protection', async () => {
 
   expect(fetchMock).toHaveBeenCalledWith(
     'http://localhost:8080/users/me',
+    expect.objectContaining({
+      method: 'PATCH',
+      credentials: 'include',
+      body: JSON.stringify(request),
+    }),
+  )
+  expect(getRequestHeader(fetchMock, 2, 'Content-Type')).toBe(
+    'application/json',
+  )
+  expect(getRequestHeader(fetchMock, 2, 'X-XSRF-TOKEN')).toBe('csrf-token')
+})
+
+it('patches the current user password with CSRF protection', async () => {
+  const request = {
+    currentPassword: 'old-password123!',
+    newPassword: 'new-password123!',
+  }
+  const response = { message: 'Password changed successfully' }
+  const fetchMock = mockFetch(
+    csrfResponse(),
+    new Response(JSON.stringify(response), jsonResponseInit()),
+  )
+
+  await expect(changeCurrentUserPassword(request)).resolves.toEqual(response)
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    'http://localhost:8080/users/me/password',
     expect.objectContaining({
       method: 'PATCH',
       credentials: 'include',

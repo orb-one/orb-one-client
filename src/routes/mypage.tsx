@@ -19,7 +19,11 @@ import {
   type PropsWithChildren,
 } from 'react'
 
-import { updateCurrentUser, type CurrentUserResponse } from '@/lib/api/auth'
+import {
+  logoutAccount,
+  updateCurrentUser,
+  type CurrentUserResponse,
+} from '@/lib/api/auth'
 import { ApiError, AuthSessionExpiredError } from '@/lib/api/client'
 import {
   currentUserQueryKey,
@@ -30,6 +34,8 @@ import {
   type ProfileFormError,
 } from '@/lib/auth/profile-validation'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { signOutMockUser } from '@/lib/auth/mock-auth-session'
+import { PasswordChangeForm } from '@/routes/-password-change-form'
 
 export const Route = createFileRoute('/mypage')({
   component: MyPage,
@@ -38,7 +44,32 @@ export const Route = createFileRoute('/mypage')({
 export function MyPage() {
   const t = useTranslations()
   const copy = t.mypage
+  const navigate = Route.useNavigate()
+  const queryClient = useQueryClient()
   const currentUserQuery = useQuery(currentUserQueryOptions())
+
+  async function handlePasswordChanged() {
+    try {
+      await logoutAccount()
+    } catch (error) {
+      if (!(error instanceof AuthSessionExpiredError)) {
+        throw error
+      }
+    }
+
+    await queryClient.cancelQueries({ queryKey: currentUserQueryKey })
+    await signOutMockUser()
+    queryClient.setQueryData(currentUserQueryKey, null)
+    void navigate({
+      to: '/login',
+      replace: true,
+      search: { passwordChanged: true },
+    })
+  }
+
+  function handleSessionExpired() {
+    queryClient.setQueryData(currentUserQueryKey, null)
+  }
 
   if (currentUserQuery.isPending) {
     return (
@@ -84,6 +115,10 @@ export function MyPage() {
   return (
     <MyPageFrame>
       <ProfileForm currentUser={currentUserQuery.data} />
+      <PasswordChangeForm
+        onPasswordChanged={handlePasswordChanged}
+        onSessionExpired={handleSessionExpired}
+      />
     </MyPageFrame>
   )
 }
