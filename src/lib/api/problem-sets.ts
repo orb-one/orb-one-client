@@ -38,6 +38,7 @@ export interface ProblemCreateItemDto {
   externalProblemId: string
   name: string
   url: string
+  difficulty: string
 }
 
 // 5) [문제집 생성 요청 본문 DTO] (POST /groups/{groupId}/problem-sets)
@@ -54,6 +55,19 @@ export interface ProblemSetCreateResponse {
   problems: ProblemResponse[]
   createdBy: string
   createdAt: string
+}
+
+// 7) [문제집 내 문제 추가 요청 본문 DTO] (POST /groups/{groupId}/problem-sets/{problemSetId}/problems)
+export interface AddProblemsRequest {
+  problems: ProblemCreateItemDto[]
+}
+
+// 8) [문제집 내 문제 추가 응답 본문 DTO] (POST /groups/{groupId}/problem-sets/{problemSetId}/problems)
+export interface AddProblemsResponse {
+  problemSetId: string
+  groupId: string
+  problems: ProblemResponse[]
+  updatedAt: string
 }
 
 // 2. 도메인 모델
@@ -94,6 +108,7 @@ export interface ProblemFormItem {
   externalProblemId: string
   name: string
   url: string
+  difficulty: string
 }
 
 // 5) 도메인 계층 문제 엔티티
@@ -169,11 +184,27 @@ export function toProblemSetCreateRequest(
       externalProblemId: p.externalProblemId.trim(),
       name: p.name.trim(),
       url: p.url.trim(),
+      difficulty: p.difficulty.trim(),
     })),
   }
 }
 
-// 5) 문제집 생성 응답 DTO -> 생성 완료 도메인 모델 변환
+// 5) 폼 입력 도메인 상태 -> 문제집 내 문제 추가 요청 DTO
+export function toAddProblemsRequest(
+  problems: ProblemFormItem[],
+): AddProblemsRequest {
+  return {
+    problems: problems.map((p) => ({
+      provider: p.provider.trim(),
+      externalProblemId: p.externalProblemId.trim(),
+      name: p.name.trim(),
+      url: p.url.trim(),
+      difficulty: p.difficulty.trim(),
+    })),
+  }
+}
+
+// 6) 문제집 생성 응답 DTO -> 생성 완료 도메인 모델 변환
 export function toCreatedProblemSetDomain(
   dto: ProblemSetCreateResponse,
 ): CreatedProblemSet {
@@ -196,7 +227,7 @@ export function toCreatedProblemSetDomain(
 
 // 4. API 요청 함수
 
-// 1) 특정 그룹의 문제집 전체 목록을 조회한다. (GET /groups/{groupId}/problem-sets)
+// 1) 그룹의 문제집 전체 목록을 조회한다. (GET /groups/{groupId}/problem-sets)
 export async function getProblemSets(groupId: string): Promise<ProblemSet[]> {
   const encodedGroupId = encodeURIComponent(groupId)
   const response = await apiClient<ProblemSetResponse[]>(
@@ -206,7 +237,7 @@ export async function getProblemSets(groupId: string): Promise<ProblemSet[]> {
   return response.map(mapProblemSet)
 }
 
-// 2) 특정 문제집의 상세 정보 및 포함된 문제 목록을 조회한다. (GET /groups/{groupId}/problem-sets/{problemSetId})
+// 2) 문제집의 상세 정보 및 포함된 문제 목록을 조회한다. (GET /groups/{groupId}/problem-sets/{problemSetId})
 export async function getProblemSetDetail(
   groupId: string,
   problemSetId: string,
@@ -221,7 +252,7 @@ export async function getProblemSetDetail(
   return mapProblemSetDetail(response)
 }
 
-// 3) 특정 그룹 내에 새 문제집 생성을 요청한다. (POST /groups/{groupId}/problem-sets)
+// 3) 그룹 내에 새 문제집 생성을 요청한다. (POST /groups/{groupId}/problem-sets)
 export async function createProblemSet(
   groupId: string,
   data: ProblemSetCreateRequest,
@@ -230,6 +261,63 @@ export async function createProblemSet(
 
   const response = await apiClient<ProblemSetCreateResponse>(
     `/groups/${encodedGroupId}/problem-sets`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: data,
+    },
+  )
+
+  return response
+}
+
+// 4) 그룹 문제집을 삭제한다. (DELETE /groups/{groupId}/problem-sets/{problemSetId})
+export async function deleteProblemSet(
+  groupId: string,
+  problemSetId: string,
+): Promise<void> {
+  const encodedGroupId = encodeURIComponent(groupId)
+  const encodedProblemSetId = encodeURIComponent(problemSetId)
+
+  await apiClient(
+    `/groups/${encodedGroupId}/problem-sets/${encodedProblemSetId}`,
+    {
+      method: 'DELETE',
+    },
+  )
+}
+
+// 5) 문제집에서 문제를 삭제한다. (DELETE /groups/{groupId}/problem-sets/{problemSetId}/problems/{problemId})
+export async function deleteProblemFromProblemSet(
+  groupId: string,
+  problemSetId: string,
+  problemId: string,
+): Promise<void> {
+  const encodedGroupId = encodeURIComponent(groupId)
+  const encodedProblemSetId = encodeURIComponent(problemSetId)
+  const encodedProblemId = encodeURIComponent(problemId)
+
+  await apiClient(
+    `/groups/${encodedGroupId}/problem-sets/${encodedProblemSetId}/problems/${encodedProblemId}`,
+    {
+      method: 'DELETE',
+    },
+  )
+}
+
+// 6) 문제집에 새 문제들을 추가한다. (POST /groups/{groupId}/problem-sets/{problemSetId}/problems)
+export async function addProblemsToProblemSet(
+  groupId: string,
+  problemSetId: string,
+  data: AddProblemsRequest,
+): Promise<AddProblemsResponse> {
+  const encodedGroupId = encodeURIComponent(groupId)
+  const encodedProblemSetId = encodeURIComponent(problemSetId)
+
+  const response = await apiClient<AddProblemsResponse>(
+    `/groups/${encodedGroupId}/problem-sets/${encodedProblemSetId}/problems`,
     {
       method: 'POST',
       headers: {
