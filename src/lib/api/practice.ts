@@ -95,11 +95,11 @@ export function useCreatePractice(groupId: string) {
       // Map domain format to DTO before sending
       const payload = {
         title: data.title,
-        start_date: data.startDate,
-        end_date: data.endDate,
+        startDate: `${data.startDate}T00:00:00`,
+        endDate: `${data.endDate}T23:59:59`,
         problems: data.problems.map((p) => ({
           provider: p.provider,
-          external_problem_id: p.externalProblemId,
+          externalProblemId: p.externalProblemId,
           name: p.name,
           url: p.url,
         })),
@@ -151,8 +151,8 @@ export function useUpdatePractice(groupId: string, practiceId: string) {
     mutationFn: async (data: UpdatePracticeRequest) => {
       const payload: Record<string, string> = {}
       if (data.title) payload.title = data.title
-      if (data.startDate) payload.start_date = data.startDate
-      if (data.endDate) payload.end_date = data.endDate
+      if (data.startDate) payload.startDate = `${data.startDate}T00:00:00`
+      if (data.endDate) payload.endDate = `${data.endDate}T23:59:59`
 
       const response = await apiClient<PracticeResponse>(
         `/groups/${groupId}/practices/${practiceId}`,
@@ -188,7 +188,7 @@ export function useAddPracticeProblem(groupId: string, practiceId: string) {
     mutationFn: async (data: AddPracticeProblemRequest) => {
       const payload = {
         provider: data.provider,
-        external_problem_id: data.externalProblemId,
+        externalProblemId: data.externalProblemId,
         name: data.name,
         url: data.url,
       }
