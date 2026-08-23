@@ -1,6 +1,5 @@
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
-import { EmptyState } from '@astryxdesign/core/EmptyState'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
@@ -16,6 +15,7 @@ import { getGroup } from '@/lib/api/groups'
 
 import { MemberTab } from './-components/MemberTab'
 import { ProblemSetTab } from './-components/ProblemSetTab'
+import { PracticeTab } from './-components/PracticeTab'
 
 export const Route = createFileRoute('/groups_/$groupId')({
   component: GroupDetailPage,
@@ -115,25 +115,7 @@ export function GroupDetailPage() {
               )}
 
               {/* [탭 2] 연습 탭 */}
-              {activeTab === 'practice' && (
-                <VStack width="100%" gap={6}>
-                  <HStack width="100%" hAlign="end" gap={2}>
-                    <Button
-                      label="새 연습 시작"
-                      size="sm"
-                      variant="primary"
-                      icon={<Icon icon={Dumbbell} size="sm" />}
-                    />
-                  </HStack>
-
-                  <EmptyState
-                    title="진행 중인 연습이 없습니다."
-                    description="그룹 멤버들과 함께 풀 연습 세션을 시작해 보세요."
-                    icon={<Icon icon={Dumbbell} size="lg" color="secondary" />}
-                    headingLevel={2}
-                  />
-                </VStack>
-              )}
+              {activeTab === 'practice' && <PracticeTab groupId={groupId} />}
 
               {/* [탭 3] 멤버 탭 */}
               {activeTab === 'members' && <MemberTab groupId={groupId} />}

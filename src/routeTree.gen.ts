@@ -20,6 +20,7 @@ import { Route as SolutionsSolutionIdRouteImport } from './routes/solutions_.$so
 import { Route as GroupsGroupIdRouteImport } from './routes/groups_.$groupId'
 import { Route as SolutionsSolutionIdEditRouteImport } from './routes/solutions_.$solutionId_.edit'
 import { Route as GroupsGroupIdProblemSetsProblemSetIdRouteImport } from './routes/groups_.$groupId_.problem-sets.$problemSetId'
+import { Route as GroupsGroupIdPracticesPracticeIdRouteImport } from './routes/groups_.$groupId_.practices_.$practiceId'
 
 const SolutionsRoute = SolutionsRouteImport.update({
   id: '/solutions',
@@ -77,6 +78,12 @@ const GroupsGroupIdProblemSetsProblemSetIdRoute =
     path: '/groups/$groupId/problem-sets/$problemSetId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const GroupsGroupIdPracticesPracticeIdRoute =
+  GroupsGroupIdPracticesPracticeIdRouteImport.update({
+    id: '/groups_/$groupId_/practices_/$practiceId',
+    path: '/groups/$groupId/practices/$practiceId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
   '/solutions/$solutionId/edit': typeof SolutionsSolutionIdEditRoute
+  '/groups/$groupId/practices/$practiceId': typeof GroupsGroupIdPracticesPracticeIdRoute
   '/groups/$groupId/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRoutesByTo {
@@ -102,6 +110,7 @@ export interface FileRoutesByTo {
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
   '/solutions/$solutionId/edit': typeof SolutionsSolutionIdEditRoute
+  '/groups/$groupId/practices/$practiceId': typeof GroupsGroupIdPracticesPracticeIdRoute
   '/groups/$groupId/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRoutesById {
@@ -116,6 +125,7 @@ export interface FileRoutesById {
   '/solutions_/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions_/new': typeof SolutionsNewRoute
   '/solutions_/$solutionId_/edit': typeof SolutionsSolutionIdEditRoute
+  '/groups_/$groupId_/practices_/$practiceId': typeof GroupsGroupIdPracticesPracticeIdRoute
   '/groups_/$groupId_/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRouteTypes {
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/solutions/$solutionId'
     | '/solutions/new'
     | '/solutions/$solutionId/edit'
+    | '/groups/$groupId/practices/$practiceId'
     | '/groups/$groupId/problem-sets/$problemSetId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/solutions/$solutionId'
     | '/solutions/new'
     | '/solutions/$solutionId/edit'
+    | '/groups/$groupId/practices/$practiceId'
     | '/groups/$groupId/problem-sets/$problemSetId'
   id:
     | '__root__'
@@ -157,6 +169,7 @@ export interface FileRouteTypes {
     | '/solutions_/$solutionId'
     | '/solutions_/new'
     | '/solutions_/$solutionId_/edit'
+    | '/groups_/$groupId_/practices_/$practiceId'
     | '/groups_/$groupId_/problem-sets/$problemSetId'
   fileRoutesById: FileRoutesById
 }
@@ -171,6 +184,7 @@ export interface RootRouteChildren {
   SolutionsSolutionIdRoute: typeof SolutionsSolutionIdRoute
   SolutionsNewRoute: typeof SolutionsNewRoute
   SolutionsSolutionIdEditRoute: typeof SolutionsSolutionIdEditRoute
+  GroupsGroupIdPracticesPracticeIdRoute: typeof GroupsGroupIdPracticesPracticeIdRoute
   GroupsGroupIdProblemSetsProblemSetIdRoute: typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 
@@ -253,6 +267,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroupsGroupIdProblemSetsProblemSetIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups_/$groupId_/practices_/$practiceId': {
+      id: '/groups_/$groupId_/practices_/$practiceId'
+      path: '/groups/$groupId/practices/$practiceId'
+      fullPath: '/groups/$groupId/practices/$practiceId'
+      preLoaderRoute: typeof GroupsGroupIdPracticesPracticeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -267,6 +288,7 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsSolutionIdRoute: SolutionsSolutionIdRoute,
   SolutionsNewRoute: SolutionsNewRoute,
   SolutionsSolutionIdEditRoute: SolutionsSolutionIdEditRoute,
+  GroupsGroupIdPracticesPracticeIdRoute: GroupsGroupIdPracticesPracticeIdRoute,
   GroupsGroupIdProblemSetsProblemSetIdRoute:
     GroupsGroupIdProblemSetsProblemSetIdRoute,
 }
