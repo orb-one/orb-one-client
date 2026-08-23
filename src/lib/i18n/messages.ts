@@ -10,6 +10,7 @@ export const messages = {
     navigation: {
       mainLabel: '주요 탐색',
       login: '로그인',
+      groups: '그룹',
       solutions: '풀이',
       logout: '로그아웃',
       loggingOut: '로그아웃 중',
@@ -304,6 +305,7 @@ export const messages = {
     navigation: {
       mainLabel: 'Main navigation',
       login: 'Login',
+      groups: 'Groups',
       solutions: 'Solutions',
       logout: 'Log out',
       loggingOut: 'Logging out',

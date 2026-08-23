@@ -121,6 +121,9 @@ function RootAuthNav() {
   if (currentUser) {
     return (
       <HStack gap={2} vAlign="center">
+        <Link href="/groups" isStandalone>
+          {copy.groups}
+        </Link>
         <Link href="/solutions" isStandalone>
           {copy.solutions}
         </Link>
