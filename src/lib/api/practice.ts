@@ -95,8 +95,14 @@ export function useCreatePractice(groupId: string) {
       // Map domain format to DTO before sending
       const payload = {
         title: data.title,
-        start_date: data.startDate,
-        end_date: data.endDate,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        problems: data.problems.map((p) => ({
+          provider: p.provider,
+          externalProblemId: p.externalProblemId,
+          name: p.name,
+          url: p.url,
+        })),
       }
 
       const response = await apiClient<PracticeResponse>(
