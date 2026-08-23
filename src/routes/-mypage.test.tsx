@@ -20,6 +20,7 @@ import {
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import { currentUserQueryKey } from '@/lib/auth/auth-queries'
 import { signOutMockUser } from '@/lib/auth/mock-auth-session'
+import { useAppStore } from '@/stores/use-app-store'
 
 const { navigate, showToast } = vi.hoisted(() => ({
   navigate: vi.fn(),
@@ -60,6 +61,7 @@ import { MyPage } from '@/routes/mypage'
 afterEach(() => {
   cleanup()
   vi.resetAllMocks()
+  useAppStore.getState().setLocale('ko')
 })
 
 it('renders the signed-in account profile form', () => {
@@ -115,6 +117,65 @@ it('updates the nickname and shared current user cache', async () => {
     email: 'user@example.com',
     nickname: 'updated-user',
   })
+})
+
+it('updates the nickname with the keyboard in form order', async () => {
+  vi.mocked(updateCurrentUser).mockResolvedValue({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'keyboard-user',
+  })
+  const user = userEvent.setup()
+
+  renderMyPage({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+
+  const nicknameInput = screen.getByLabelText('닉네임')
+  const saveButton = screen.getByRole('button', { name: '변경사항 저장' })
+
+  nicknameInput.focus()
+  await user.clear(nicknameInput)
+  await user.type(nicknameInput, 'keyboard-user')
+  await user.tab()
+
+  expect(saveButton).toHaveFocus()
+
+  await user.keyboard('{Enter}')
+
+  expect(await screen.findByText('닉네임을 변경했습니다.')).toBeVisible()
+  expect(vi.mocked(updateCurrentUser).mock.calls[0]?.[0]).toEqual({
+    nickname: 'keyboard-user',
+  })
+})
+
+it('renders the complete my page flow in English', () => {
+  useAppStore.getState().setLocale('en')
+
+  renderMyPage({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+
+  expect(
+    screen.getByRole('heading', { name: 'Account', level: 1 }),
+  ).toBeVisible()
+  expect(
+    screen.getByRole('heading', { name: 'Account information' }),
+  ).toBeVisible()
+  expect(screen.getByLabelText('Email')).toHaveValue('user@example.com')
+  expect(screen.getByLabelText('Nickname')).toHaveValue('orb-user')
+  expect(screen.getByRole('button', { name: 'Save changes' })).toBeVisible()
+  expect(screen.getByRole('heading', { name: 'Change password' })).toBeVisible()
+  expect(screen.getByLabelText('Current password')).toBeVisible()
+  expect(screen.getByLabelText('New password')).toBeVisible()
+  expect(screen.getByLabelText('Confirm new password')).toBeVisible()
+  expect(screen.getByRole('button', { name: 'Change password' })).toBeVisible()
+  expect(screen.getByRole('heading', { name: 'Delete account' })).toBeVisible()
+  expect(screen.getByRole('button', { name: 'Delete account' })).toBeVisible()
 })
 
 it('validates an empty nickname and focuses the field', async () => {

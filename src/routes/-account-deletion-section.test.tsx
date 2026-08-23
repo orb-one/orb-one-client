@@ -64,6 +64,43 @@ it('requires the exact confirmation phrase before enabling deletion', async () =
   expect(deleteCurrentUser).not.toHaveBeenCalled()
 })
 
+it('reaches dialog actions by keyboard and restores focus on close', async () => {
+  const user = userEvent.setup()
+
+  renderSection()
+
+  const openDialogButton = screen.getByRole('button', { name: '회원탈퇴' })
+
+  openDialogButton.focus()
+  await user.keyboard('{Enter}')
+
+  const dialog = screen.getByRole('dialog')
+  const confirmationInput = within(dialog).getByRole('textbox', {
+    name: '확인 문구',
+  })
+  const cancelButton = within(dialog).getByRole('button', { name: '취소' })
+  const deleteButton = within(dialog).getByRole('button', {
+    name: '회원탈퇴',
+  })
+
+  confirmationInput.focus()
+  expect(confirmationInput).toHaveFocus()
+
+  await user.type(confirmationInput, '탈퇴에 동의합니다')
+  await user.tab()
+  expect(cancelButton).toHaveFocus()
+  await user.tab()
+  expect(deleteButton).toHaveFocus()
+
+  await user.keyboard('{Escape}')
+
+  await waitFor(() => {
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+  expect(openDialogButton).toHaveFocus()
+  expect(deleteCurrentUser).not.toHaveBeenCalled()
+})
+
 it('deletes the account only after consent and reports success', async () => {
   vi.mocked(deleteCurrentUser).mockResolvedValue(undefined)
   const onDeleted = vi.fn()
