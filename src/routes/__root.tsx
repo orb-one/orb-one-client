@@ -80,11 +80,11 @@ function RootAuthNav() {
   const currentUser = currentUserQuery.data ?? null
 
   async function handleLogoutSuccess() {
+    await queryClient.cancelQueries({ queryKey: currentUserQueryKey })
     // 실제 로그아웃 성공 후 /users/me mock도 비로그인 상태로 맞춘다.
     await signOutMockUser()
     dismissLogoutErrorToast()
     queryClient.setQueryData(currentUserQueryKey, null)
-    void queryClient.invalidateQueries({ queryKey: currentUserQueryKey })
     void navigate({ to: '/' })
   }
 
@@ -121,24 +121,29 @@ function RootAuthNav() {
   if (currentUser) {
     return (
       <HStack gap={2} vAlign="center">
+        <Link href="/groups" isStandalone>
+          {copy.groups}
+        </Link>
         <Link href="/solutions" isStandalone>
           {copy.solutions}
         </Link>
-        <HStack gap={1.5} vAlign="center" data-testid="current-user">
-          <Avatar
-            name={currentUser.nickname}
-            alt={copy.currentUser}
-            size="xsmall"
-          />
-          <Text
-            type="supporting"
-            color="primary"
-            maxLines={1}
-            className="max-w-24 sm:max-w-40"
-          >
-            {currentUser.nickname}
-          </Text>
-        </HStack>
+        <Link href="/mypage" label={copy.mypage} isStandalone>
+          <HStack gap={1.5} vAlign="center" data-testid="current-user">
+            <Avatar
+              name={currentUser.nickname}
+              alt={copy.currentUser}
+              size="xsmall"
+            />
+            <Text
+              type="supporting"
+              color="primary"
+              maxLines={1}
+              className="max-w-24 sm:max-w-40"
+            >
+              {currentUser.nickname}
+            </Text>
+          </HStack>
+        </Link>
         <IconButton
           label={logoutMutation.isPending ? copy.loggingOut : copy.logout}
           tooltip={logoutMutation.isPending ? copy.loggingOut : copy.logout}

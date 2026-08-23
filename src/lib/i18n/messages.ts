@@ -10,11 +10,13 @@ export const messages = {
     navigation: {
       mainLabel: '주요 탐색',
       login: '로그인',
+      groups: '그룹',
       solutions: '풀이',
       logout: '로그아웃',
       loggingOut: '로그아웃 중',
       logoutError: '로그아웃에 실패했습니다. 다시 시도해 주세요.',
       currentUser: '현재 로그인한 사용자',
+      mypage: '마이페이지',
       loadingUser: '로그인 상태 확인 중',
     },
     auth: {
@@ -64,6 +66,67 @@ export const messages = {
         loginPrompt: '이미 계정이 있으신가요?',
         loginLink: '로그인',
       },
+    },
+    mypage: {
+      title: '마이페이지',
+      description: '계정 정보를 확인하고 프로필을 관리할 수 있습니다.',
+      accountInformation: '계정 정보',
+      accountDescription: '이메일을 확인하고 표시할 닉네임을 변경하세요.',
+      nicknameLabel: '닉네임',
+      nicknameDescription: '50자 이하로 입력해 주세요.',
+      nicknameRequired: '닉네임을 입력해 주세요.',
+      nicknameTooLong: '닉네임은 50자 이하로 입력해 주세요.',
+      emailLabel: '이메일',
+      emailReadOnly: '이메일은 변경할 수 없습니다.',
+      loading: '계정 정보를 불러오는 중',
+      loadError: '계정 정보를 불러오지 못했습니다.',
+      retry: '다시 시도',
+      save: '변경사항 저장',
+      saving: '저장 중',
+      noChanges: '변경된 닉네임이 없습니다.',
+      saveSuccess: '닉네임을 변경했습니다.',
+      saveError: '닉네임을 변경하지 못했습니다. 다시 시도해 주세요.',
+      passwordInformation: '비밀번호 변경',
+      passwordDescription:
+        '현재 비밀번호를 확인한 뒤 사용할 새 비밀번호를 입력하세요. 변경을 완료하면 자동으로 로그아웃됩니다.',
+      currentPasswordLabel: '현재 비밀번호',
+      currentPasswordRequired: '현재 비밀번호를 입력해 주세요.',
+      currentPasswordIncorrect: '현재 비밀번호가 올바르지 않습니다.',
+      newPasswordLabel: '새 비밀번호',
+      newPasswordDescription: '8자 이상 입력해 주세요.',
+      newPasswordRequired: '새 비밀번호를 입력해 주세요.',
+      newPasswordTooShort: '새 비밀번호는 8자 이상 입력해 주세요.',
+      newPasswordConfirmLabel: '새 비밀번호 확인',
+      newPasswordConfirmRequired: '새 비밀번호를 한 번 더 입력해 주세요.',
+      passwordMismatch: '새 비밀번호가 일치하지 않습니다.',
+      passwordChangeSubmit: '비밀번호 변경',
+      passwordChanging: '변경 중',
+      passwordChangeSigningOut: '로그아웃 중',
+      passwordChangeSuccess:
+        '비밀번호를 변경했습니다. 새 비밀번호로 다시 로그인해 주세요.',
+      passwordChangeError:
+        '비밀번호를 변경하지 못했습니다. 다시 시도해 주세요.',
+      passwordChangedLogoutError:
+        '비밀번호는 변경했지만 로그아웃하지 못했습니다. 로그아웃을 다시 시도해 주세요.',
+      passwordChangeLogoutRetry: '로그아웃 다시 시도',
+      accountDeletionTitle: '회원탈퇴',
+      accountDeletionDescription:
+        '계정과 저장한 풀이를 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.',
+      accountDeletionSubmit: '회원탈퇴',
+      accountDeletionConfirmTitle: '정말 회원탈퇴할까요?',
+      accountDeletionConfirmDescription:
+        '계정과 저장한 풀이가 영구 삭제되며 복구할 수 없습니다. 탈퇴 후 자동으로 로그아웃됩니다. 소유한 그룹이 있다면 먼저 소유권을 이전하거나 그룹을 폐쇄해야 합니다.',
+      accountDeletionConfirmationLabel: '확인 문구',
+      accountDeletionConfirmationDescription:
+        '계속하려면 아래에 “탈퇴에 동의합니다”를 정확히 입력해 주세요.',
+      accountDeletionConsent: '탈퇴에 동의합니다',
+      accountDeletionCancel: '취소',
+      accountDeletionSuccess: '회원탈퇴가 완료되었습니다.',
+      accountDeletionGroupOwnerError: '소유한 그룹이 있어 탈퇴할 수 없습니다.',
+      accountDeletionGroupOwnerGuidance:
+        '그룹 소유권을 이전하거나 그룹을 폐쇄한 뒤 다시 시도해 주세요.',
+      accountDeletionError:
+        '회원탈퇴를 완료하지 못했습니다. 다시 시도해 주세요.',
     },
     solutions: {
       authRequired: '저장된 풀이를 확인하려면 로그인해 주세요.',
@@ -159,6 +222,20 @@ export const messages = {
       detail: {
         backToList: '풀이 목록으로 돌아가기',
         edit: '풀이 수정',
+        delete: '풀이 삭제',
+        deleteTitle: '풀이를 삭제할까요?',
+        deleteDescription:
+          '풀이가 즉시 목록에서 숨겨집니다. 삭제 후 표시되는 실행 취소로 복구할 수 있습니다.',
+        deleteCancel: '취소',
+        deleteSuccess: '풀이를 삭제했습니다.',
+        deleteUndo: '실행 취소',
+        deleteForbidden: '이 풀이를 삭제할 권한이 없습니다.',
+        deleteNotFound: '이미 삭제되었거나 찾을 수 없는 풀이입니다.',
+        deleteError: '풀이를 삭제하지 못했습니다. 다시 시도해 주세요.',
+        restoreSuccess: '풀이를 복구했습니다.',
+        restoreRetry: '다시 시도',
+        restoreExpired: '복구 가능 시간이 지났거나 풀이를 찾을 수 없습니다.',
+        restoreError: '풀이를 복구하지 못했습니다.',
         eyebrow: '풀이 상세',
         loading: '풀이 상세를 불러오는 중',
         loadError: '풀이 상세를 불러오지 못했습니다.',
@@ -214,6 +291,10 @@ export const messages = {
         genericError: '풀이를 수정하지 못했습니다. 다시 시도해 주세요.',
         languageRequired: '프로그래밍 언어를 선택해 주세요.',
         codeRequired: '소스 코드를 입력해 주세요.',
+        memoryUsageInvalid:
+          '메모리 사용량은 -2,147,483,648부터 2,147,483,647 사이의 정수로 입력해 주세요.',
+        timeElapsedInvalid:
+          '실행 시간은 -2,147,483,648부터 2,147,483,647 사이의 정수로 입력해 주세요.',
       },
     },
     groups: {
@@ -242,11 +323,13 @@ export const messages = {
     navigation: {
       mainLabel: 'Main navigation',
       login: 'Login',
+      groups: 'Groups',
       solutions: 'Solutions',
       logout: 'Log out',
       loggingOut: 'Logging out',
       logoutError: 'Could not log out. Please try again.',
       currentUser: 'Current signed-in user',
+      mypage: 'Account',
       loadingUser: 'Checking sign-in status',
     },
     auth: {
@@ -296,6 +379,66 @@ export const messages = {
         loginPrompt: 'Already have an account?',
         loginLink: 'Log in',
       },
+    },
+    mypage: {
+      title: 'Account',
+      description: 'Review your account information and manage your profile.',
+      accountInformation: 'Account information',
+      accountDescription: 'Review your email and update your display nickname.',
+      nicknameLabel: 'Nickname',
+      nicknameDescription: 'Use 50 characters or fewer.',
+      nicknameRequired: 'Enter your nickname.',
+      nicknameTooLong: 'Enter a nickname with 50 characters or fewer.',
+      emailLabel: 'Email',
+      emailReadOnly: 'Your email cannot be changed.',
+      loading: 'Loading account information',
+      loadError: 'Could not load your account information.',
+      retry: 'Retry',
+      save: 'Save changes',
+      saving: 'Saving',
+      noChanges: 'Your nickname has not changed.',
+      saveSuccess: 'Your nickname has been updated.',
+      saveError: 'Could not update your nickname. Please try again.',
+      passwordInformation: 'Change password',
+      passwordDescription:
+        'Confirm your current password, then enter a new one. You’ll be signed out after the change.',
+      currentPasswordLabel: 'Current password',
+      currentPasswordRequired: 'Enter your current password.',
+      currentPasswordIncorrect: 'Your current password is incorrect.',
+      newPasswordLabel: 'New password',
+      newPasswordDescription: 'Use at least 8 characters.',
+      newPasswordRequired: 'Enter a new password.',
+      newPasswordTooShort: 'Enter a new password with at least 8 characters.',
+      newPasswordConfirmLabel: 'Confirm new password',
+      newPasswordConfirmRequired: 'Enter your new password again.',
+      passwordMismatch: 'New passwords do not match.',
+      passwordChangeSubmit: 'Change password',
+      passwordChanging: 'Changing password',
+      passwordChangeSigningOut: 'Signing out',
+      passwordChangeSuccess:
+        'Your password has been changed. Sign in again with your new password.',
+      passwordChangeError: 'Could not change your password. Please try again.',
+      passwordChangedLogoutError:
+        'Your password was changed, but sign-out failed. Try signing out again.',
+      passwordChangeLogoutRetry: 'Retry sign-out',
+      accountDeletionTitle: 'Delete account',
+      accountDeletionDescription:
+        'Permanently delete your account and saved solutions. This action cannot be undone.',
+      accountDeletionSubmit: 'Delete account',
+      accountDeletionConfirmTitle: 'Delete your account?',
+      accountDeletionConfirmDescription:
+        'Your account and saved solutions will be permanently deleted and cannot be restored. You will be signed out after deletion. Transfer ownership or close any groups you own first.',
+      accountDeletionConfirmationLabel: 'Confirmation phrase',
+      accountDeletionConfirmationDescription:
+        'To continue, enter “I agree to delete my account” exactly as shown.',
+      accountDeletionConsent: 'I agree to delete my account',
+      accountDeletionCancel: 'Cancel',
+      accountDeletionSuccess: 'Your account has been deleted.',
+      accountDeletionGroupOwnerError:
+        'You cannot delete your account while you own a group.',
+      accountDeletionGroupOwnerGuidance:
+        'Transfer ownership or close the group, then try again.',
+      accountDeletionError: 'Could not delete your account. Please try again.',
     },
     solutions: {
       authRequired: 'Sign in to view your saved solutions.',
@@ -393,6 +536,22 @@ export const messages = {
       detail: {
         backToList: 'Back to solutions',
         edit: 'Edit solution',
+        delete: 'Delete solution',
+        deleteTitle: 'Delete this solution?',
+        deleteDescription:
+          'The solution will be hidden immediately. Use the undo action shown after deletion to restore it.',
+        deleteCancel: 'Cancel',
+        deleteSuccess: 'Solution deleted.',
+        deleteUndo: 'Undo',
+        deleteForbidden: 'You do not have permission to delete this solution.',
+        deleteNotFound:
+          'This solution was already deleted or could not be found.',
+        deleteError: 'Could not delete the solution. Please try again.',
+        restoreSuccess: 'Solution restored.',
+        restoreRetry: 'Try again',
+        restoreExpired:
+          'The restore period has expired or the solution could not be found.',
+        restoreError: 'Could not restore the solution.',
         eyebrow: 'Solution detail',
         loading: 'Loading solution detail',
         loadError: 'Could not load the solution.',
@@ -448,6 +607,10 @@ export const messages = {
         genericError: 'Could not update the solution. Please try again.',
         languageRequired: 'Choose a programming language.',
         codeRequired: 'Enter source code.',
+        memoryUsageInvalid:
+          'Enter memory usage as an integer from -2,147,483,648 to 2,147,483,647.',
+        timeElapsedInvalid:
+          'Enter execution time as an integer from -2,147,483,648 to 2,147,483,647.',
       },
     },
     groups: {
@@ -479,6 +642,8 @@ export const authErrorTranslations = {
     INVALID_CREDENTIALS: 'The email or password is incorrect.',
     INVALID_REFRESH_TOKEN: 'Please sign in again.',
     DUPLICATE_EMAIL: 'An account already exists for this email.',
+    USER_OWNS_GROUP:
+      'Transfer ownership or close your groups before deleting your account.',
   },
 } as const satisfies Record<
   Exclude<Locale, typeof defaultLocale>,

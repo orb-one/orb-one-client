@@ -306,6 +306,10 @@ test('edits fields and preserves an author solution language alias', async ({
   ).toHaveText('PyPy3')
   await description.fill('수정된 풀이 설명')
   await expect(page.getByRole('checkbox', { name: /임시 저장/ })).toHaveCount(0)
+  await page
+    .getByRole('spinbutton', { name: /메모리 사용량/ })
+    .fill('-2147483648')
+  await page.getByRole('spinbutton', { name: /실행 시간/ }).fill('2147483647')
   await page.getByRole('button', { name: '변경사항 저장' }).click()
 
   await page.waitForURL(
@@ -317,10 +321,52 @@ test('edits fields and preserves an author solution language alias', async ({
     description: '수정된 풀이 설명',
     isSolved: true,
     isDraft: false,
-    memoryUsage: 14_128,
-    timeElapsed: 104,
+    memoryUsage: -2_147_483_648,
+    timeElapsed: 2_147_483_647,
   })
   await expect(page.getByText('수정된 풀이 설명')).toBeVisible()
+})
+
+test('deletes an authored solution and restores it from the undo toast', async ({
+  page,
+}) => {
+  await mockCurrentUser(page)
+  await mockSolutionApi(page)
+
+  await page.goto(`/solutions/${seededSolution.solutionId}`)
+  await page.getByRole('button', { name: '풀이 삭제' }).click()
+
+  const dialog = page.getByRole('alertdialog', {
+    name: '풀이를 삭제할까요?',
+  })
+  await expect(dialog).toContainText('실행 취소로 복구할 수 있습니다.')
+
+  const deleteResponsePromise = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname ===
+        `/solutions/${seededSolution.solutionId}` &&
+      response.request().method() === 'DELETE',
+  )
+
+  await dialog.getByRole('button', { name: '풀이 삭제' }).click()
+
+  expect((await deleteResponsePromise).status()).toBe(204)
+  await page.waitForURL((url) => url.pathname === '/solutions')
+  await expect(page.getByText('풀이를 삭제했습니다.')).toBeVisible()
+  await expect(page.getByRole('link', { name: /A\+B/ })).toHaveCount(0)
+
+  const restoreResponsePromise = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname ===
+        `/solutions/${seededSolution.solutionId}/restore` &&
+      response.request().method() === 'POST',
+  )
+
+  await page.getByRole('button', { name: '실행 취소' }).click()
+
+  expect((await restoreResponsePromise).status()).toBe(204)
+  await expect(page.getByText('풀이를 복구했습니다.')).toBeVisible()
+  await expect(page.getByRole('link', { name: /A\+B/ })).toBeVisible()
 })
 
 async function mockCurrentUser(page: Page) {
@@ -343,6 +389,14 @@ async function mockSolutionApi(
   let createRequest: CreateSolutionRequest | null = null
   let updateRequest: UpdateSolutionRequest | null = null
   let listProblemId: string | null = null
+  let isSeededSolutionDeleted = false
+
+  await page.route(apiUrl('/auth/csrf'), async (route) => {
+    await fulfillJson(route, {
+      token: 'e2e-csrf-token',
+      headerName: 'X-XSRF-TOKEN',
+    })
+  })
 
   await page.route(`${apiUrl('/problems')}/*`, async (route) => {
     if (route.request().isNavigationRequest()) {
@@ -414,7 +468,7 @@ async function mockSolutionApi(
       listProblemId = new URL(request.url()).searchParams.get('problemId')
       await fulfillJson(route, {
         solutions: [
-          updatedSeededSolution,
+          ...(!isSeededSolutionDeleted ? [updatedSeededSolution] : []),
           ...(createdSolution ? [createdSolution] : []),
         ]
           .filter(
@@ -428,6 +482,7 @@ async function mockSolutionApi(
     }
 
     if (request.method() === 'POST') {
+      expect(request.headers()['x-xsrf-token']).toBe('e2e-csrf-token')
       createRequest = request.postDataJSON() as CreateSolutionRequest
       createdSolution = {
         solutionId: createdSolutionId,
@@ -451,17 +506,20 @@ async function mockSolutionApi(
     await route.fallback()
   })
 
-  await page.route(`${apiUrl('/solutions')}/*`, async (route) => {
+  await page.route(`${apiUrl('/solutions')}/**`, async (route) => {
     if (route.request().isNavigationRequest()) {
       await route.fallback()
       return
     }
 
+    const pathnameParts = new URL(route.request().url()).pathname.split('/')
+    const isRestoreRequest = pathnameParts.at(-1) === 'restore'
     const solutionId = decodeURIComponent(
-      new URL(route.request().url()).pathname.split('/').at(-1) ?? '',
+      pathnameParts.at(isRestoreRequest ? -2 : -1) ?? '',
     )
 
     if (route.request().method() === 'PUT') {
+      expect(route.request().headers()['x-xsrf-token']).toBe('e2e-csrf-token')
       updateRequest = route.request().postDataJSON() as UpdateSolutionRequest
 
       if (solutionId !== initialSeededSolution.solutionId) {
@@ -478,8 +536,41 @@ async function mockSolutionApi(
       return
     }
 
+    if (route.request().method() === 'DELETE') {
+      expect(route.request().headers()['x-xsrf-token']).toBe('e2e-csrf-token')
+
+      if (
+        solutionId !== initialSeededSolution.solutionId ||
+        isSeededSolutionDeleted
+      ) {
+        await fulfillJson(route, { message: 'Solution not found' }, 404)
+        return
+      }
+
+      isSeededSolutionDeleted = true
+      await fulfillEmpty(route, 204)
+      return
+    }
+
+    if (route.request().method() === 'POST' && isRestoreRequest) {
+      expect(route.request().headers()['x-xsrf-token']).toBe('e2e-csrf-token')
+
+      if (
+        solutionId !== initialSeededSolution.solutionId ||
+        !isSeededSolutionDeleted
+      ) {
+        await fulfillJson(route, { message: 'Solution not found' }, 404)
+        return
+      }
+
+      isSeededSolutionDeleted = false
+      await fulfillEmpty(route, 204)
+      return
+    }
+
     const solution =
-      solutionId === initialSeededSolution.solutionId
+      solutionId === initialSeededSolution.solutionId &&
+      !isSeededSolutionDeleted
         ? updatedSeededSolution
         : solutionId === createdSolutionId
           ? createdSolution
@@ -570,6 +661,10 @@ async function fulfillJson(route: Route, body: unknown, status = 200) {
     contentType: 'application/json',
     body: JSON.stringify(body),
   })
+}
+
+async function fulfillEmpty(route: Route, status: number) {
+  await route.fulfill({ status, body: '' })
 }
 
 function apiUrl(path: string) {

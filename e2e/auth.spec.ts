@@ -122,6 +122,388 @@ test('keeps the signed-in application navigation usable across viewports', async
   ).toBeLessThanOrEqual(320)
 })
 
+test('opens the protected my page from the signed-in navigation', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  await page.route(apiUrl('/users/me'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'mypage-user',
+        email: 'mypage@example.com',
+        nickname: 'mypage-user',
+      }),
+    })
+  })
+
+  await page.goto('/')
+  await page.getByRole('link', { name: '마이페이지' }).click()
+
+  await page.waitForURL((url) => url.pathname === '/mypage')
+  await expect(page.getByRole('heading', { name: '마이페이지' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '계정 정보' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '비밀번호 변경' }),
+  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: '회원탈퇴' })).toBeVisible()
+  await expect(page.getByLabel('닉네임')).toHaveValue('mypage-user')
+  await expect(page.getByLabel('이메일')).toHaveValue('mypage@example.com')
+})
+
+test('keeps focus inside the account deletion dialog and restores it on close', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  await page.route(apiUrl('/users/me'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'keyboard-user',
+        email: 'keyboard@example.com',
+        nickname: 'keyboard-user',
+      }),
+    })
+  })
+
+  await page.goto('/mypage')
+
+  const openDialogButton = page.getByRole('button', { name: '회원탈퇴' })
+
+  await openDialogButton.focus()
+  await page.keyboard.press('Enter')
+
+  const dialog = page.getByRole('dialog', { name: '정말 회원탈퇴할까요?' })
+  const dialogHeading = dialog.getByRole('heading', {
+    name: '정말 회원탈퇴할까요?',
+  })
+  const confirmationInput = dialog.getByRole('textbox', { name: '확인 문구' })
+  const cancelButton = dialog.getByRole('button', { name: '취소' })
+  const deleteButton = dialog.getByRole('button', { name: '회원탈퇴' })
+
+  await expect(dialogHeading).toBeFocused()
+
+  await page.keyboard.press('Tab')
+  await expect(confirmationInput).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(cancelButton).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(confirmationInput).toBeFocused()
+
+  await confirmationInput.fill('탈퇴에 동의합니다')
+  await page.keyboard.press('Tab')
+  await expect(cancelButton).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(deleteButton).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(confirmationInput).toBeFocused()
+
+  await page.keyboard.press('Escape')
+
+  await expect(dialog).not.toBeVisible()
+  await expect(openDialogButton).toBeFocused()
+})
+
+test('updates the nickname across the my page and application header', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  const currentUser = {
+    id: 'mypage-user',
+    email: 'mypage@example.com',
+    nickname: 'before-update',
+  }
+  let nicknameUpdateRequest: unknown
+
+  await mockCsrfEndpoint(page)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    if (route.request().method() === 'PATCH') {
+      nicknameUpdateRequest = route.request().postDataJSON()
+      currentUser.nickname = (
+        nicknameUpdateRequest as { nickname: string }
+      ).nickname
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(currentUser),
+    })
+  })
+
+  await page.goto('/mypage')
+
+  await expect(page.getByLabel('이메일')).toHaveValue('mypage@example.com')
+  await page.getByLabel('닉네임').fill('after-update')
+  await page.getByRole('button', { name: '변경사항 저장' }).click()
+
+  await expect(page.getByText('닉네임을 변경했습니다.')).toBeVisible()
+  await expect(page.getByLabel('닉네임')).toHaveValue('after-update')
+  await expect(page.getByTestId('current-user')).toContainText('after-update')
+  expect(nicknameUpdateRequest).toEqual({ nickname: 'after-update' })
+
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(1280)
+
+  await page.setViewportSize({ width: 320, height: 667 })
+
+  await expect(page.getByLabel('이메일')).toBeVisible()
+  await expect(page.getByLabel('닉네임')).toBeVisible()
+  await expect(page.getByLabel('현재 비밀번호')).toBeVisible()
+  await expect(page.getByLabel('새 비밀번호', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('새 비밀번호 확인')).toBeVisible()
+  const accountDeletionButton = page.getByRole('button', { name: '회원탈퇴' })
+
+  await expect(accountDeletionButton).toBeVisible()
+  await accountDeletionButton.click()
+
+  const deletionDialog = page.getByRole('dialog')
+
+  await expect(deletionDialog).toBeInViewport()
+  await expect(
+    deletionDialog.getByRole('textbox', { name: '확인 문구' }),
+  ).toBeInViewport()
+  await expect(
+    deletionDialog.getByRole('button', { name: '회원탈퇴' }),
+  ).toBeInViewport()
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(320)
+
+  await deletionDialog.getByRole('button', { name: '취소' }).click()
+})
+
+test('changes the password and signs the user out', async ({ page }) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control auth requests through the service worker.',
+  )
+
+  let passwordChangeRequest: unknown
+
+  await mockCsrfEndpoint(page)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'password-user',
+        email: 'password@example.com',
+        nickname: 'password-user',
+      }),
+    })
+  })
+  await page.route(apiUrl('/users/me/password'), async (route) => {
+    passwordChangeRequest = route.request().postDataJSON()
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Password changed successfully' }),
+    })
+  })
+  await page.route(apiUrl('/auth/logout'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Logout successful' }),
+    })
+  })
+
+  await page.goto('/mypage')
+  await expect(
+    page.getByText(
+      '현재 비밀번호를 확인한 뒤 사용할 새 비밀번호를 입력하세요. 변경을 완료하면 자동으로 로그아웃됩니다.',
+    ),
+  ).toBeVisible()
+  await page.getByLabel('현재 비밀번호').fill('old-password123!')
+  await page.getByLabel('새 비밀번호', { exact: true }).fill('new-password123!')
+  await page.getByLabel('새 비밀번호 확인').fill('new-password123!')
+  await page.getByRole('button', { name: '비밀번호 변경' }).click()
+
+  await page.waitForURL(
+    (url) =>
+      url.pathname === '/login' && url.searchParams.has('passwordChanged'),
+  )
+  await expect(
+    page.getByText(
+      '비밀번호를 변경했습니다. 새 비밀번호로 다시 로그인해 주세요.',
+    ),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: '로그인', exact: true }),
+  ).toBeVisible()
+  expect(passwordChangeRequest).toEqual({
+    currentPassword: 'old-password123!',
+    newPassword: 'new-password123!',
+  })
+})
+
+test('deletes the account only after explicit consent', async ({ page }) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  let deletionRequestCount = 0
+
+  await mockCsrfEndpoint(page)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    if (route.request().method() === 'DELETE') {
+      deletionRequestCount += 1
+      await route.fulfill({ status: 204 })
+      return
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'delete-user',
+        email: 'delete@example.com',
+        nickname: 'delete-user',
+      }),
+    })
+  })
+
+  await page.goto('/mypage')
+  await page.getByRole('button', { name: '회원탈퇴' }).click()
+
+  const deletionDialog = page.getByRole('dialog')
+  const confirmDeletionButton = deletionDialog.getByRole('button', {
+    name: '회원탈퇴',
+  })
+
+  await expect(deletionDialog).toContainText(
+    '계정과 저장한 풀이가 영구 삭제되며',
+  )
+  await expect(confirmDeletionButton).toBeDisabled()
+  expect(deletionRequestCount).toBe(0)
+
+  await deletionDialog
+    .getByRole('textbox', { name: '확인 문구' })
+    .fill('탈퇴에 동의합니다 ')
+  await expect(confirmDeletionButton).toBeDisabled()
+
+  await deletionDialog
+    .getByRole('textbox', { name: '확인 문구' })
+    .fill('탈퇴에 동의합니다')
+  await expect(confirmDeletionButton).toBeEnabled()
+
+  const deletionResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url() === apiUrl('/users/me') &&
+      response.request().method() === 'DELETE',
+  )
+
+  await confirmDeletionButton.click()
+
+  const deletionResponse = await deletionResponsePromise
+
+  expect(deletionResponse.status()).toBe(204)
+  expect(deletionRequestCount).toBe(1)
+  await page.waitForURL((url) => url.pathname === '/')
+  await expect(page.getByText('회원탈퇴가 완료되었습니다.')).toBeVisible()
+  await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
+})
+
+test('explains group ownership conflicts without signing the user out', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  await mockCsrfEndpoint(page)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    if (route.request().method() === 'DELETE') {
+      await route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'USER_OWNS_GROUP',
+          message: 'User owns a group',
+          timestamp: '2026-08-23T00:00:00Z',
+        }),
+      })
+      return
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'group-owner',
+        email: 'owner@example.com',
+        nickname: 'group-owner',
+      }),
+    })
+  })
+
+  await page.goto('/mypage')
+  await page.getByRole('button', { name: '회원탈퇴' }).click()
+  const deletionDialog = page.getByRole('dialog')
+
+  await deletionDialog
+    .getByRole('textbox', { name: '확인 문구' })
+    .fill('탈퇴에 동의합니다')
+  await deletionDialog.getByRole('button', { name: '회원탈퇴' }).click()
+
+  await expect(page.getByRole('alert')).toContainText(
+    '소유한 그룹이 있어 탈퇴할 수 없습니다.',
+  )
+  await expect(page.getByRole('alert')).toContainText(
+    '그룹 소유권을 이전하거나 그룹을 폐쇄한 뒤 다시 시도해 주세요.',
+  )
+  await expect(page).toHaveURL(/\/mypage$/)
+  await expect(page.getByTestId('current-user')).toContainText('group-owner')
+})
+
+test('redirects signed-out users away from the protected my page', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control auth requests through the service worker.',
+  )
+
+  await mockCsrfEndpoint(page)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Unauthorized' }),
+    })
+  })
+  await page.route(apiUrl('/auth/refresh'), async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Unauthorized' }),
+    })
+  })
+
+  await page.goto('/mypage')
+
+  await page.waitForURL((url) => url.pathname === '/login')
+  await expect(page.getByRole('heading', { name: '로그인' })).toBeVisible()
+})
+
 test('refreshes expired current user requests before showing signed-in UI', async ({
   page,
 }) => {
@@ -132,11 +514,13 @@ test('refreshes expired current user requests before showing signed-in UI', asyn
 
   const account = createRandomAccount()
   let currentUserRequestCount = 0
+  let hasRefreshed = false
 
+  await mockCsrfEndpoint(page)
   await page.route(apiUrl('/users/me'), async (route) => {
     currentUserRequestCount += 1
 
-    if (currentUserRequestCount === 1) {
+    if (!hasRefreshed) {
       await route.fulfill({
         status: 401,
         contentType: 'application/json',
@@ -156,6 +540,8 @@ test('refreshes expired current user requests before showing signed-in UI', asyn
     })
   })
   await page.route(apiUrl('/auth/refresh'), async (route) => {
+    expect(route.request().headers()['x-xsrf-token']).toBe('e2e-csrf-token')
+    hasRefreshed = true
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -175,7 +561,70 @@ test('refreshes expired current user requests before showing signed-in UI', asyn
 
   expect(refreshResponse.status()).toBe(200)
   await expect(page.getByTestId('current-user')).toContainText(account.nickname)
-  expect(currentUserRequestCount).toBe(2)
+  expect(currentUserRequestCount).toBeGreaterThanOrEqual(2)
+})
+
+test('does not repeat auth requests after the signed-out state becomes stale', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control auth requests through the service worker.',
+  )
+
+  const initialTime = new Date('2026-08-17T00:00:00Z').getTime()
+  const requestCounts = {
+    currentUser: 0,
+    csrf: 0,
+    refresh: 0,
+  }
+
+  await page.clock.setFixedTime(initialTime)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    requestCounts.currentUser += 1
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Unauthorized' }),
+    })
+  })
+  await page.route(apiUrl('/auth/csrf'), async (route) => {
+    requestCounts.csrf += 1
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'e2e-csrf-token',
+        headerName: 'X-XSRF-TOKEN',
+      }),
+    })
+  })
+  await page.route(apiUrl('/auth/refresh'), async (route) => {
+    requestCounts.refresh += 1
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Unauthorized' }),
+    })
+  })
+
+  await page.goto('/')
+  await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
+  expect(requestCounts.currentUser).toBeGreaterThan(0)
+  expect(requestCounts.csrf).toBe(1)
+  expect(requestCounts.refresh).toBe(1)
+
+  const requestCountsAfterBootstrap = { ...requestCounts }
+
+  await page.clock.setFixedTime(initialTime + 61_000)
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event('visibilitychange'))
+    window.dispatchEvent(new Event('offline'))
+    window.dispatchEvent(new Event('online'))
+  })
+  await page.waitForTimeout(100)
+
+  expect(requestCounts).toEqual(requestCountsAfterBootstrap)
 })
 
 test('registers a random account, logs in, and logs out through the auth pages', async ({
@@ -185,6 +634,18 @@ test('registers a random account, logs in, and logs out through the auth pages',
   const currentUserContract = await mockCurrentUserContract(page, account)
 
   await registerAndLogin(page, account, currentUserContract)
+
+  const currentUserRequestCountBeforeLogout =
+    currentUserContract.currentUserRequestCount()
+  const unexpectedPostLogoutRequests: string[] = []
+
+  page.on('request', (request) => {
+    const pathname = new URL(request.url()).pathname
+
+    if (pathname === '/users/me' || pathname === '/auth/refresh') {
+      unexpectedPostLogoutRequests.push(pathname)
+    }
+  })
 
   if (expectAuthCookies) {
     // 직접 API 호출은 cross-site가 될 수 있으므로 proxy 또는 same-site 환경에서 켠다.
@@ -208,6 +669,10 @@ test('registers a random account, logs in, and logs out through the auth pages',
 
   expect(logoutResponse.status()).toBe(200)
   await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
+  expect(currentUserContract.currentUserRequestCount()).toBe(
+    currentUserRequestCountBeforeLogout,
+  )
+  expect(unexpectedPostLogoutRequests).toEqual([])
 
   if (expectAuthCookies) {
     const cookies = await page.context().cookies(apiBaseUrl)
@@ -325,9 +790,12 @@ async function mockCurrentUserContract(
   account: ReturnType<typeof createRandomAccount>,
 ) {
   let isSignedIn = false
+  let currentUserRequestCount = 0
 
   // 서버의 /users/me가 구현될 때까지 현재 사용자 조회만 계약 응답으로 대체한다.
   await page.route(apiUrl('/users/me'), async (route) => {
+    currentUserRequestCount += 1
+
     if (!isSignedIn) {
       await route.fulfill({
         status: 401,
@@ -355,7 +823,23 @@ async function mockCurrentUserContract(
     signOut() {
       isSignedIn = false
     },
+    currentUserRequestCount() {
+      return currentUserRequestCount
+    },
   }
+}
+
+async function mockCsrfEndpoint(page: Page) {
+  await page.route(apiUrl('/auth/csrf'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'e2e-csrf-token',
+        headerName: 'X-XSRF-TOKEN',
+      }),
+    })
+  })
 }
 
 async function failNextMswLogout(page: Page) {

@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -63,6 +69,9 @@ it('renders the signed-out application shell with accessible navigation', () => 
   expect(
     within(navigation).queryByRole('link', { name: '풀이' }),
   ).not.toBeInTheDocument()
+  expect(
+    within(navigation).queryByRole('link', { name: '마이페이지' }),
+  ).not.toBeInTheDocument()
   expect(screen.getByRole('main')).toContainElement(
     screen.getByText('Route content'),
   )
@@ -79,6 +88,10 @@ it('renders the signed-in user and logout action in the application shell', () =
     screen.getByRole('img', { name: '현재 로그인한 사용자' }),
   ).toBeVisible()
   expect(screen.getByTestId('current-user')).toHaveTextContent('orb-user')
+  expect(screen.getByRole('link', { name: '마이페이지' })).toHaveAttribute(
+    'href',
+    '/mypage',
+  )
   expect(screen.getByRole('link', { name: '풀이' })).toHaveAttribute(
     'href',
     '/solutions',
@@ -106,6 +119,29 @@ it('uses the active locale for the application navigation', () => {
   expect(
     within(navigation).queryByRole('link', { name: 'Solutions' }),
   ).not.toBeInTheDocument()
+})
+
+it('clears the current user without invalidating the query after logout succeeds', async () => {
+  vi.mocked(logoutAccount).mockResolvedValue({ message: 'Logout successful' })
+  const queryClient = createQueryClient()
+  const cancelQueries = vi.spyOn(queryClient, 'cancelQueries')
+  const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
+
+  queryClient.setQueryData(currentUserQueryKey, {
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+  renderWithClient(queryClient, <RootLayout />)
+
+  await userEvent.click(screen.getByRole('button', { name: '로그아웃' }))
+
+  await waitFor(() => {
+    expect(queryClient.getQueryData(currentUserQueryKey)).toBeNull()
+  })
+  expect(cancelQueries).toHaveBeenCalledWith({ queryKey: currentUserQueryKey })
+  expect(invalidateQueries).not.toHaveBeenCalled()
+  expect(navigate).toHaveBeenCalledWith({ to: '/' })
 })
 
 it('shows and dismisses an Astryx toast when logout fails', async () => {

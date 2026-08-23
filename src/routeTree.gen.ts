@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SolutionsRouteImport } from './routes/solutions'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as MypageRouteImport } from './routes/mypage'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as IndexRouteImport } from './routes/index'
@@ -18,6 +19,7 @@ import { Route as SolutionsNewRouteImport } from './routes/solutions_.new'
 import { Route as SolutionsSolutionIdRouteImport } from './routes/solutions_.$solutionId'
 import { Route as GroupsGroupIdRouteImport } from './routes/groups_.$groupId'
 import { Route as SolutionsSolutionIdEditRouteImport } from './routes/solutions_.$solutionId_.edit'
+import { Route as GroupsGroupIdProblemSetsProblemSetIdRouteImport } from './routes/groups_.$groupId_.problem-sets.$problemSetId'
 import { Route as GroupsGroupIdPracticesPracticeIdRouteImport } from './routes/groups_.$groupId_.practices_.$practiceId'
 
 const SolutionsRoute = SolutionsRouteImport.update({
@@ -28,6 +30,11 @@ const SolutionsRoute = SolutionsRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MypageRoute = MypageRouteImport.update({
+  id: '/mypage',
+  path: '/mypage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -65,6 +72,12 @@ const SolutionsSolutionIdEditRoute = SolutionsSolutionIdEditRouteImport.update({
   path: '/solutions/$solutionId/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GroupsGroupIdProblemSetsProblemSetIdRoute =
+  GroupsGroupIdProblemSetsProblemSetIdRouteImport.update({
+    id: '/groups_/$groupId_/problem-sets/$problemSetId',
+    path: '/groups/$groupId/problem-sets/$problemSetId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const GroupsGroupIdPracticesPracticeIdRoute =
   GroupsGroupIdPracticesPracticeIdRouteImport.update({
     id: '/groups_/$groupId_/practices_/$practiceId',
@@ -76,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/groups': typeof GroupsRoute
   '/login': typeof LoginRoute
+  '/mypage': typeof MypageRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
   '/groups/$groupId': typeof GroupsGroupIdRoute
@@ -83,11 +97,13 @@ export interface FileRoutesByFullPath {
   '/solutions/new': typeof SolutionsNewRoute
   '/solutions/$solutionId/edit': typeof SolutionsSolutionIdEditRoute
   '/groups/$groupId/practices/$practiceId': typeof GroupsGroupIdPracticesPracticeIdRoute
+  '/groups/$groupId/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/groups': typeof GroupsRoute
   '/login': typeof LoginRoute
+  '/mypage': typeof MypageRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
   '/groups/$groupId': typeof GroupsGroupIdRoute
@@ -95,12 +111,14 @@ export interface FileRoutesByTo {
   '/solutions/new': typeof SolutionsNewRoute
   '/solutions/$solutionId/edit': typeof SolutionsSolutionIdEditRoute
   '/groups/$groupId/practices/$practiceId': typeof GroupsGroupIdPracticesPracticeIdRoute
+  '/groups/$groupId/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/groups': typeof GroupsRoute
   '/login': typeof LoginRoute
+  '/mypage': typeof MypageRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
   '/groups_/$groupId': typeof GroupsGroupIdRoute
@@ -108,6 +126,7 @@ export interface FileRoutesById {
   '/solutions_/new': typeof SolutionsNewRoute
   '/solutions_/$solutionId_/edit': typeof SolutionsSolutionIdEditRoute
   '/groups_/$groupId_/practices_/$practiceId': typeof GroupsGroupIdPracticesPracticeIdRoute
+  '/groups_/$groupId_/problem-sets/$problemSetId': typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -115,6 +134,7 @@ export interface FileRouteTypes {
     | '/'
     | '/groups'
     | '/login'
+    | '/mypage'
     | '/register'
     | '/solutions'
     | '/groups/$groupId'
@@ -122,11 +142,13 @@ export interface FileRouteTypes {
     | '/solutions/new'
     | '/solutions/$solutionId/edit'
     | '/groups/$groupId/practices/$practiceId'
+    | '/groups/$groupId/problem-sets/$problemSetId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/groups'
     | '/login'
+    | '/mypage'
     | '/register'
     | '/solutions'
     | '/groups/$groupId'
@@ -134,11 +156,13 @@ export interface FileRouteTypes {
     | '/solutions/new'
     | '/solutions/$solutionId/edit'
     | '/groups/$groupId/practices/$practiceId'
+    | '/groups/$groupId/problem-sets/$problemSetId'
   id:
     | '__root__'
     | '/'
     | '/groups'
     | '/login'
+    | '/mypage'
     | '/register'
     | '/solutions'
     | '/groups_/$groupId'
@@ -146,12 +170,14 @@ export interface FileRouteTypes {
     | '/solutions_/new'
     | '/solutions_/$solutionId_/edit'
     | '/groups_/$groupId_/practices_/$practiceId'
+    | '/groups_/$groupId_/problem-sets/$problemSetId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GroupsRoute: typeof GroupsRoute
   LoginRoute: typeof LoginRoute
+  MypageRoute: typeof MypageRoute
   RegisterRoute: typeof RegisterRoute
   SolutionsRoute: typeof SolutionsRoute
   GroupsGroupIdRoute: typeof GroupsGroupIdRoute
@@ -159,6 +185,7 @@ export interface RootRouteChildren {
   SolutionsNewRoute: typeof SolutionsNewRoute
   SolutionsSolutionIdEditRoute: typeof SolutionsSolutionIdEditRoute
   GroupsGroupIdPracticesPracticeIdRoute: typeof GroupsGroupIdPracticesPracticeIdRoute
+  GroupsGroupIdProblemSetsProblemSetIdRoute: typeof GroupsGroupIdProblemSetsProblemSetIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -175,6 +202,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mypage': {
+      id: '/mypage'
+      path: '/mypage'
+      fullPath: '/mypage'
+      preLoaderRoute: typeof MypageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -226,6 +260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SolutionsSolutionIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups_/$groupId_/problem-sets/$problemSetId': {
+      id: '/groups_/$groupId_/problem-sets/$problemSetId'
+      path: '/groups/$groupId/problem-sets/$problemSetId'
+      fullPath: '/groups/$groupId/problem-sets/$problemSetId'
+      preLoaderRoute: typeof GroupsGroupIdProblemSetsProblemSetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/groups_/$groupId_/practices_/$practiceId': {
       id: '/groups_/$groupId_/practices_/$practiceId'
       path: '/groups/$groupId/practices/$practiceId'
@@ -240,6 +281,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GroupsRoute: GroupsRoute,
   LoginRoute: LoginRoute,
+  MypageRoute: MypageRoute,
   RegisterRoute: RegisterRoute,
   SolutionsRoute: SolutionsRoute,
   GroupsGroupIdRoute: GroupsGroupIdRoute,
@@ -247,6 +289,8 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsNewRoute: SolutionsNewRoute,
   SolutionsSolutionIdEditRoute: SolutionsSolutionIdEditRoute,
   GroupsGroupIdPracticesPracticeIdRoute: GroupsGroupIdPracticesPracticeIdRoute,
+  GroupsGroupIdProblemSetsProblemSetIdRoute:
+    GroupsGroupIdProblemSetsProblemSetIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -18,26 +18,19 @@ import {
   Users,
 } from 'lucide-react'
 
-import { apiClient, AuthSessionExpiredError } from '@/lib/api/client'
+import { AuthSessionExpiredError } from '@/lib/api/client'
 import { getGroup } from '@/lib/api/groups'
+import { currentUserQueryOptions } from '@/lib/auth/auth-queries'
 
 interface MemberTabProps {
   groupId: string
 }
 
-interface CurrentUserResponse {
-  userId: string
-  nickname: string
-}
-
 export function MemberTab({ groupId }: MemberTabProps) {
-  // 1. 현재 로그인 유저 정보 조회 (OWNER 여부 판별용)
-  const userQuery = useQuery({
-    queryKey: ['me'],
-    queryFn: () => apiClient<CurrentUserResponse>('/users/me'),
-  })
+  // 1. 현재 로그인 사용자 정보 조회
+  const currentUserQuery = useQuery(currentUserQueryOptions())
 
-  // 2. GET /groups/{groupId} 멤버 및 그룹 정보 조회 Query
+  // 2. 그룹 상세 정보 조회 (GET /groups/{groupId})
   const groupQuery = useQuery({
     queryKey: ['group', groupId],
     queryFn: () => getGroup(groupId),
@@ -46,9 +39,9 @@ export function MemberTab({ groupId }: MemberTabProps) {
 
   const isAuthRequired = groupQuery.error instanceof AuthSessionExpiredError
   const groupDetail = groupQuery.data
-  const currentUserId = userQuery.data?.userId
+  const currentUserId = currentUserQuery.data?.id
 
-  // 현재 사용자가 그룹의 OWNER인지 확인
+  // 3. 현재 사용자가 그룹의 OWNER인지 판별
   const currentUserMember = groupDetail?.members.find(
     (m) => m.userId === currentUserId,
   )
@@ -77,9 +70,9 @@ export function MemberTab({ groupId }: MemberTabProps) {
 
   return (
     <VStack width="100%" gap={6}>
-      {/* 1. 상단 액션 버튼 영역 (OWNER 권한별 조건부 렌더링) */}
+      {/* 1. 상단 액션 버튼 영역 (OWNER는 폐쇄/강퇴, MEMBER는 탈퇴) */}
       <HStack width="100%" hAlign="end" gap={2}>
-        {isOwner && (
+        {isOwner ? (
           <>
             <Button
               label="그룹 폐쇄"
@@ -96,17 +89,18 @@ export function MemberTab({ groupId }: MemberTabProps) {
               onClick={handleKickMember}
             />
           </>
+        ) : (
+          <Button
+            label="그룹 탈퇴"
+            size="sm"
+            variant="secondary"
+            icon={<Icon icon={LogOut} size="sm" />}
+            onClick={handleLeaveGroup}
+          />
         )}
-        <Button
-          label="그룹 탈퇴"
-          size="sm"
-          variant="secondary"
-          icon={<Icon icon={LogOut} size="sm" />}
-          onClick={handleLeaveGroup}
-        />
       </HStack>
 
-      {/* 2. 조건부 상태 렌더링 및 멤버 목록 Table View */}
+      {/* 2. 상태별 화면 렌더링 및 멤버 목록 */}
       {groupQuery.isPending ? (
         <MemberListSkeleton />
       ) : groupQuery.isError ? (
@@ -130,7 +124,9 @@ export function MemberTab({ groupId }: MemberTabProps) {
                 label="다시 시도"
                 size="sm"
                 variant="secondary"
-                onClick={() => void groupQuery.refetch()}
+                onClick={() => {
+                  void groupQuery.refetch()
+                }}
               />
             )
           }

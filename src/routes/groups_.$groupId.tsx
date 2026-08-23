@@ -4,13 +4,14 @@ import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
 import { Section } from '@astryxdesign/core/Section'
+import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { VStack } from '@astryxdesign/core/VStack'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, BookOpen, Dumbbell, Users } from 'lucide-react'
 import { useState } from 'react'
 
-import type { GroupSummary } from '@/lib/api/groups'
+import { getGroup } from '@/lib/api/groups'
 
 import { MemberTab } from './-components/MemberTab'
 import { ProblemSetTab } from './-components/ProblemSetTab'
@@ -25,14 +26,15 @@ type TabType = 'problem-sets' | 'practice' | 'members'
 export function GroupDetailPage() {
   const { groupId } = Route.useParams()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
 
   const [activeTab, setActiveTab] = useState<TabType>('problem-sets')
 
-  // 이전 목록 캐시에서 그룹명 빠른 추출
-  const cachedGroups = queryClient.getQueryData<GroupSummary[]>(['groups'])
-  const cachedGroup = cachedGroups?.find((g) => g.groupId === groupId)
-  const groupName = cachedGroup?.name ?? '그룹 상세'
+  // 1. GET /groups/{groupId} 상세 API 직접 호출
+  const { data: groupDetail, isLoading } = useQuery({
+    queryKey: ['group', groupId],
+    queryFn: () => getGroup(groupId),
+    enabled: Boolean(groupId),
+  })
 
   return (
     <Center width="100%">
@@ -46,7 +48,7 @@ export function GroupDetailPage() {
         {/* 목록 돌아가기 */}
         <HStack width="100%">
           <Button
-            label="목록으로 돌아가기"
+            label="그룹 목록으로 돌아가기"
             size="sm"
             variant="secondary"
             icon={<Icon icon={ArrowLeft} size="sm" />}
@@ -57,7 +59,12 @@ export function GroupDetailPage() {
         {/* 메인 헤더 */}
         <VStack width="100%" gap={8}>
           <VStack width="100%" hAlign="center" gap={1}>
-            <Heading level={1}>{groupName}</Heading>
+            {/* 로딩 중에는 Skeleton을 표시하여 깜빡임 방지 */}
+            {isLoading ? (
+              <Skeleton width="220px" height="36px" />
+            ) : (
+              <Heading level={1}>{groupDetail?.name}</Heading>
+            )}
           </VStack>
 
           {/* 탭 버튼 */}
@@ -110,7 +117,7 @@ export function GroupDetailPage() {
               {/* [탭 2] 연습 탭 */}
               {activeTab === 'practice' && <PracticeTab groupId={groupId} />}
 
-              {/* [탭 3] 멤버 탭 (독립 컴포넌트 호출) */}
+              {/* [탭 3] 멤버 탭 */}
               {activeTab === 'members' && <MemberTab groupId={groupId} />}
             </VStack>
           </Section>

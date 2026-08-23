@@ -9,12 +9,17 @@ import { LoginPage } from '@/routes/login'
 import { RegisterPage } from '@/routes/register'
 import { useAppStore } from '@/stores/use-app-store'
 
+const { routeSearch } = vi.hoisted(() => ({
+  routeSearch: { current: {} },
+}))
+
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute:
     () =>
     <TOptions extends object>(options: TOptions) => ({
       ...options,
       useNavigate: () => vi.fn(),
+      useSearch: () => routeSearch.current,
     }),
   Link: ({ children, to }: { children: ReactNode; to: string }) => (
     <a href={to}>{children}</a>
@@ -23,6 +28,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 afterEach(() => {
   cleanup()
+  routeSearch.current = {}
   useAppStore.getState().setLocale('ko')
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
@@ -60,6 +66,18 @@ it('keeps native login field semantics', () => {
   expect(passwordInput).toHaveAttribute('name', 'password')
   expect(passwordInput).toHaveAttribute('autocomplete', 'current-password')
   expect(passwordInput).toBeRequired()
+})
+
+it('shows a password change confirmation on the login page', () => {
+  routeSearch.current = { passwordChanged: true }
+
+  renderRoute(<LoginPage />)
+
+  expect(
+    screen.getByText(
+      '비밀번호를 변경했습니다. 새 비밀번호로 다시 로그인해 주세요.',
+    ),
+  ).toBeVisible()
 })
 
 it.each([

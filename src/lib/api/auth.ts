@@ -11,6 +11,15 @@ export interface RegisterRequest {
   nickname: string
 }
 
+export interface NicknameUpdateRequest {
+  nickname: string
+}
+
+export interface PasswordChangeRequest {
+  currentPassword: string
+  newPassword: string
+}
+
 export interface MessageResponse {
   message: string
 }
@@ -48,6 +57,29 @@ export function logoutAccount() {
   })
 }
 
-export function getCurrentUser() {
-  return apiClient<CurrentUserResponse>('/users/me')
+export function getCurrentUser(signal?: AbortSignal) {
+  return apiClient<CurrentUserResponse>(
+    '/users/me',
+    signal ? { signal } : undefined,
+  )
+}
+
+export function updateCurrentUser(request: NicknameUpdateRequest) {
+  return apiClient<CurrentUserResponse>('/users/me', {
+    method: 'PATCH',
+    body: request,
+  })
+}
+
+export function changeCurrentUserPassword(request: PasswordChangeRequest) {
+  return apiClient<MessageResponse>('/users/me/password', {
+    method: 'PATCH',
+    body: request,
+  })
+}
+
+export function deleteCurrentUser() {
+  return apiClient<undefined>('/users/me', {
+    method: 'DELETE',
+  })
 }

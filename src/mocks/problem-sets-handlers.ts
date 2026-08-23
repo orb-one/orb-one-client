@@ -1,17 +1,23 @@
 import { http, HttpResponse } from 'msw'
-import { mockProblemSetList } from './problem-sets'
+import { mockProblemSetDetail, mockProblemSetList } from './problem-sets'
 
 export const problemSetHandlers = [
-  // 특정 그룹의 문제집 목록 조회 (GET /groups/:groupId/problem-sets)
-  http.get('/groups/:groupId/problem-sets', ({ params }) => {
-    const { groupId } = params
+  // 1. 문제집 목록 조회 (GET /groups/:groupId/problem-sets)
+  http.get('/groups/:groupId/problem-sets', () => {
+    return HttpResponse.json(mockProblemSetList, { status: 200 })
+  }),
 
-    // 요청받은 groupId에 맞춰 response 전달
-    const responseData = mockProblemSetList.map((item) => ({
-      ...item,
-      group_id: String(groupId),
-    }))
+  // 2. 문제집 상세 조회 (GET /groups/:groupId/problem-sets/:problemSetId)
+  http.get('/groups/:groupId/problem-sets/:problemSetId', ({ params }) => {
+    const { problemSetId } = params
 
-    return HttpResponse.json(responseData)
+    // 필요 시 problemSetId 일치 여부 확인
+    return HttpResponse.json(
+      {
+        ...mockProblemSetDetail,
+        problemSetId: String(problemSetId),
+      },
+      { status: 200 },
+    )
   }),
 ]

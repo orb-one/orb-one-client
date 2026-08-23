@@ -2,15 +2,18 @@ import { expect, it } from 'vitest'
 
 import { parseApiErrorResponse } from '@/lib/api/errors'
 
-it('parses recognized API error responses', () => {
-  const response = {
-    code: 'DUPLICATE_EMAIL',
-    message: '이미 가입된 이메일입니다.',
-    timestamp: '2026-07-12T00:00:00Z',
-  }
+it.each(['DUPLICATE_EMAIL', 'USER_OWNS_GROUP'] as const)(
+  'parses the recognized %s API error response',
+  (code) => {
+    const response = {
+      code,
+      message: 'API error',
+      timestamp: '2026-07-12T00:00:00Z',
+    }
 
-  expect(parseApiErrorResponse(response)).toEqual(response)
-})
+    expect(parseApiErrorResponse(response)).toEqual(response)
+  },
+)
 
 it.each([
   null,

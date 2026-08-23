@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:e2e:install": "playwright install chromium",
     "test:e2e": "playwright test",
+    "test:e2e:auth-live": "E2E_LIVE_AUTH=true E2E_ENABLE_MSW=false playwright test e2e/auth-live.spec.ts",
     "test:e2e:live": "E2E_LIVE_API=true E2E_ENABLE_MSW=false playwright test e2e/solutions-live.spec.ts",
     "test:e2e:headed": "playwright test --headed",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build",

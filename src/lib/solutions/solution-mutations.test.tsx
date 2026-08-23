@@ -6,15 +6,24 @@ import {
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 
-import { createSolution, updateSolution } from '@/lib/api/solutions'
+import {
+  createSolution,
+  deleteSolution,
+  restoreSolution,
+  updateSolution,
+} from '@/lib/api/solutions'
 import {
   useCreateSolution,
+  useDeleteSolution,
+  restoreDeletedSolution,
   useUpdateSolution,
 } from '@/lib/solutions/solution-mutations'
 import { solutionQueryKeys } from '@/lib/solutions/solution-queries'
 
 vi.mock('@/lib/api/solutions', () => ({
   createSolution: vi.fn(),
+  deleteSolution: vi.fn(),
+  restoreSolution: vi.fn(),
   updateSolution: vi.fn(),
 }))
 
@@ -115,6 +124,60 @@ it('creates a solution and invalidates every solution list', async () => {
   expect(isInvalidated(queryClient, problemSolutionsKey)).toBe(true)
   expect(isInvalidated(queryClient, otherProblemSolutionsKey)).toBe(false)
   expect(isInvalidated(queryClient, detailKey)).toBe(false)
+})
+
+it('deletes a solution and invalidates every list', async () => {
+  const queryClient = createQueryClient()
+  const solutionId = 'solution-1'
+  const allSolutionsKey = solutionQueryKeys.list()
+  const problemSolutionsKey = solutionQueryKeys.list({
+    problemId: 'problem-1',
+  })
+  const detailKey = solutionQueryKeys.detail(solutionId)
+
+  seedQuery(queryClient, allSolutionsKey)
+  seedQuery(queryClient, problemSolutionsKey)
+  seedQuery(queryClient, detailKey)
+  vi.mocked(deleteSolution).mockResolvedValue()
+
+  const { result } = renderHook(() => useDeleteSolution(solutionId), {
+    wrapper: ({ children }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    ),
+  })
+
+  await act(async () => {
+    await expect(result.current.mutateAsync()).resolves.toBeUndefined()
+  })
+
+  expect(deleteSolution).toHaveBeenCalledWith(solutionId)
+  expect(queryClient.getQueryData(detailKey)).toEqual([])
+  expect(isInvalidated(queryClient, allSolutionsKey)).toBe(true)
+  expect(isInvalidated(queryClient, problemSolutionsKey)).toBe(true)
+})
+
+it('restores a deleted solution and invalidates every list and its detail', async () => {
+  const queryClient = createQueryClient()
+  const solutionId = 'solution-1'
+  const allSolutionsKey = solutionQueryKeys.list()
+  const problemSolutionsKey = solutionQueryKeys.list({
+    problemId: 'problem-1',
+  })
+  const detailKey = solutionQueryKeys.detail(solutionId)
+
+  seedQuery(queryClient, allSolutionsKey)
+  seedQuery(queryClient, problemSolutionsKey)
+  seedQuery(queryClient, detailKey)
+  vi.mocked(restoreSolution).mockResolvedValue()
+
+  await expect(
+    restoreDeletedSolution(queryClient, solutionId),
+  ).resolves.toBeUndefined()
+
+  expect(restoreSolution).toHaveBeenCalledWith(solutionId)
+  expect(isInvalidated(queryClient, allSolutionsKey)).toBe(true)
+  expect(isInvalidated(queryClient, problemSolutionsKey)).toBe(true)
+  expect(isInvalidated(queryClient, detailKey)).toBe(true)
 })
 
 function createQueryClient() {

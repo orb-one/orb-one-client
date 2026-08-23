@@ -3,6 +3,7 @@ export const API_ERROR_CODES = [
   'INVALID_CREDENTIALS',
   'INVALID_REFRESH_TOKEN',
   'DUPLICATE_EMAIL',
+  'USER_OWNS_GROUP',
 ] as const
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number]

@@ -2,7 +2,13 @@ import { LayerProvider } from '@astryxdesign/core/Layer'
 import { Theme } from '@astryxdesign/core/theme'
 import { neutralTheme } from '@astryxdesign/theme-neutral/built'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -181,6 +187,55 @@ it('prevents submission when the existing code is empty', async () => {
   )
 
   expect(await screen.findByText('소스 코드를 입력해 주세요.')).toBeVisible()
+  expect(updateSolution).not.toHaveBeenCalled()
+})
+
+it('rejects execution metrics outside the server integer range', async () => {
+  vi.mocked(getCurrentUser).mockResolvedValue(currentUser)
+  vi.mocked(getSolution).mockResolvedValue(solution)
+
+  renderRoute(<SolutionEditPage solutionId="solution-1" />)
+
+  const memoryUsageInput = await screen.findByRole('spinbutton', {
+    name: /메모리 사용량/,
+  })
+  await userEvent.clear(memoryUsageInput)
+  await userEvent.type(memoryUsageInput, '2147483648')
+  await userEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
+
+  expect(
+    await screen.findByText(
+      '메모리 사용량은 -2,147,483,648부터 2,147,483,647 사이의 정수로 입력해 주세요.',
+    ),
+  ).toBeVisible()
+  await waitFor(() => expect(memoryUsageInput).toHaveFocus())
+  expect(memoryUsageInput).toHaveValue(2_147_483_648)
+  expect(updateSolution).not.toHaveBeenCalled()
+})
+
+it('rejects a native bad number input without restoring the previous metric', async () => {
+  vi.mocked(getCurrentUser).mockResolvedValue(currentUser)
+  vi.mocked(getSolution).mockResolvedValue(solution)
+
+  renderRoute(<SolutionEditPage solutionId="solution-1" />)
+
+  const memoryUsageInput = await screen.findByRole('spinbutton', {
+    name: /메모리 사용량/,
+  })
+  Object.defineProperty(memoryUsageInput, 'validity', {
+    configurable: true,
+    value: { badInput: true },
+  })
+  fireEvent.input(memoryUsageInput, { target: { value: '' } })
+  await userEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
+
+  expect(
+    await screen.findByText(
+      '메모리 사용량은 -2,147,483,648부터 2,147,483,647 사이의 정수로 입력해 주세요.',
+    ),
+  ).toBeVisible()
+  await waitFor(() => expect(memoryUsageInput).toHaveFocus())
+  expect(memoryUsageInput).toHaveValue(null)
   expect(updateSolution).not.toHaveBeenCalled()
 })
 

@@ -1,11 +1,24 @@
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
-import {
-  createSolution,
-  getSolution,
-  getSolutions,
-  updateSolution,
-} from '@/lib/api/solutions'
+let createSolution: typeof import('@/lib/api/solutions').createSolution
+let deleteSolution: typeof import('@/lib/api/solutions').deleteSolution
+let getSolution: typeof import('@/lib/api/solutions').getSolution
+let getSolutions: typeof import('@/lib/api/solutions').getSolutions
+let restoreSolution: typeof import('@/lib/api/solutions').restoreSolution
+let updateSolution: typeof import('@/lib/api/solutions').updateSolution
+
+beforeEach(async () => {
+  vi.resetModules()
+  const solutions = await import('@/lib/api/solutions')
+
+  createSolution = solutions.createSolution
+  deleteSolution = solutions.deleteSolution
+  getSolution = solutions.getSolution
+  getSolutions = solutions.getSolutions
+  restoreSolution = solutions.restoreSolution
+  updateSolution = solutions.updateSolution
+  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
+})
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -144,7 +157,10 @@ it('creates a solution with every documented request field', async () => {
     timeElapsed: 67,
     description: '풀이 설명',
   }
-  const fetchMock = mockJsonResponse({ solutionId: 'solution-3' })
+  const fetchMock = mockJsonResponse(
+    { solutionId: 'solution-3' },
+    { withCsrf: true },
+  )
 
   await expect(createSolution(request)).resolves.toEqual({ id: 'solution-3' })
 
@@ -157,10 +173,11 @@ it('creates a solution with every documented request field', async () => {
     }),
   )
 
-  const headers = fetchMock.mock.calls[0]?.[1]?.headers
+  const headers = fetchMock.mock.calls[1]?.[1]?.headers
 
   expect(headers).toBeInstanceOf(Headers)
   expect((headers as Headers).get('Content-Type')).toBe('application/json')
+  expect((headers as Headers).get('X-XSRF-TOKEN')).toBe('csrf-token')
 })
 
 it('updates every replaceable solution field and maps the detail response', async () => {
@@ -173,14 +190,17 @@ it('updates every replaceable solution field and maps the detail response', asyn
     timeElapsed: 45,
     description: null,
   }
-  const fetchMock = mockJsonResponse({
-    solutionId: 'solution/id',
-    problemId: 'problem-1',
-    userId: 'user-1',
-    ...request,
-    createdAt: '2026-08-01T01:00:00',
-    updatedAt: '2026-08-01T02:00:00',
-  })
+  const fetchMock = mockJsonResponse(
+    {
+      solutionId: 'solution/id',
+      problemId: 'problem-1',
+      userId: 'user-1',
+      ...request,
+      createdAt: '2026-08-01T01:00:00',
+      updatedAt: '2026-08-01T02:00:00',
+    },
+    { withCsrf: true },
+  )
 
   await expect(updateSolution('solution/id', request)).resolves.toEqual({
     id: 'solution/id',
@@ -205,16 +225,81 @@ it('updates every replaceable solution field and maps the detail response', asyn
       body: JSON.stringify(request),
     }),
   )
+  expect(
+    new Headers(fetchMock.mock.calls[1]?.[1]?.headers).get('X-XSRF-TOKEN'),
+  ).toBe('csrf-token')
 })
 
-function mockJsonResponse(body: unknown) {
-  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
+it('deletes an encoded solution path with CSRF protection', async () => {
+  const fetchMock = mockEmptyResponseWithCsrf()
 
-  const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
-    new Response(JSON.stringify(body), {
-      headers: { 'content-type': 'application/json' },
+  await expect(deleteSolution('solution/id')).resolves.toBeUndefined()
+
+  expect(fetchMock).toHaveBeenLastCalledWith(
+    'http://localhost:8080/solutions/solution%2Fid',
+    expect.objectContaining({
+      method: 'DELETE',
+      credentials: 'include',
     }),
   )
+  expect(
+    new Headers(fetchMock.mock.calls[1]?.[1]?.headers).get('X-XSRF-TOKEN'),
+  ).toBe('csrf-token')
+})
+
+it('restores an encoded solution path with CSRF protection', async () => {
+  const fetchMock = mockEmptyResponseWithCsrf()
+
+  await expect(restoreSolution('solution/id')).resolves.toBeUndefined()
+
+  expect(fetchMock).toHaveBeenLastCalledWith(
+    'http://localhost:8080/solutions/solution%2Fid/restore',
+    expect.objectContaining({
+      method: 'POST',
+      credentials: 'include',
+    }),
+  )
+  expect(
+    new Headers(fetchMock.mock.calls[1]?.[1]?.headers).get('X-XSRF-TOKEN'),
+  ).toBe('csrf-token')
+})
+
+function mockJsonResponse(
+  body: unknown,
+  { withCsrf = false }: { withCsrf?: boolean } = {},
+) {
+  const responseBodies = withCsrf
+    ? [{ token: 'csrf-token', headerName: 'X-XSRF-TOKEN' }, body]
+    : [body]
+
+  const fetchMock = vi.fn<typeof fetch>()
+
+  for (const responseBody of responseBodies) {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify(responseBody), {
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+  }
+
+  vi.stubGlobal('fetch', fetchMock)
+
+  return fetchMock
+}
+
+function mockEmptyResponseWithCsrf() {
+  const fetchMock = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          token: 'csrf-token',
+          headerName: 'X-XSRF-TOKEN',
+        }),
+        { headers: { 'content-type': 'application/json' } },
+      ),
+    )
+    .mockResolvedValueOnce(new Response(null, { status: 204 }))
 
   vi.stubGlobal('fetch', fetchMock)
 
