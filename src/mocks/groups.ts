@@ -10,12 +10,14 @@ export const mockGroupSummaryList: GroupSummaryResponse[] = [
     name: '알고리즘 스터디 1반',
     nickname: 'algo_master',
     createdAt: '2026-07-31T15:46:25',
+    isMember: true,
   },
   {
     groupId: '164d381c-df19-4854-96c1-1ec443ea4bcc',
     name: '코딩테스트 대비반',
     nickname: 'testerB',
     createdAt: '2026-07-26T14:18:42',
+    isMember: false,
   },
 ]
 

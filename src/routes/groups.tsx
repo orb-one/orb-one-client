@@ -1,4 +1,3 @@
-import { Badge } from '@astryxdesign/core/Badge'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
@@ -7,20 +6,20 @@ import { EmptyState } from '@astryxdesign/core/EmptyState'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
-import { TextInput } from '@astryxdesign/core/TextInput'
 import { List, ListItem } from '@astryxdesign/core/List'
 import { Section } from '@astryxdesign/core/Section'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
+import { TextInput } from '@astryxdesign/core/TextInput'
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Layers, Plus, UserCheck, Users } from 'lucide-react'
+import { Calendar, Layers, Plus, UserCheck, Users } from 'lucide-react'
 import { useState } from 'react'
 
 import { AuthSessionExpiredError } from '@/lib/api/client'
-import { createGroup, getGroups, getGroup, joinGroup } from '@/lib/api/groups'
+import { createGroup, getGroup, getGroups, joinGroup } from '@/lib/api/groups'
 import type { GroupSummary } from '@/lib/api/groups'
 import { useI18n } from '@/lib/i18n/use-translations'
 
@@ -33,15 +32,15 @@ export function GroupListPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
-  // 1. 상태 관리 (선택된 그룹 ID / 모달 열림 여부 / 신규 그룹명)
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  // 1. 상태 관리
+  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
   const [isCheckingGroupId, setIsCheckingGroupId] = useState<string | null>(
     null,
   )
 
-  // i18n 다국어 및 폴백 문구
+  // i18n 다국어 문구
   const copy = t.groups
 
   // 2. 그룹 목록 조회 Query
@@ -50,12 +49,13 @@ export function GroupListPage() {
     queryFn: () => getGroups(),
   })
 
+  const groups = groupsQuery.data ?? []
+
   // 3. 그룹 가입 POST /groups/{groupId}/members
   const joinGroupMutation = useMutation({
     mutationFn: (groupId: string) => joinGroup(groupId),
     onSuccess: (data) => {
       alert(data.message)
-      setSelectedGroupId(null)
       void queryClient.invalidateQueries({ queryKey: ['groups'] })
     },
     onError: (error) => {
@@ -77,16 +77,6 @@ export function GroupListPage() {
   })
 
   const isAuthRequired = groupsQuery.error instanceof AuthSessionExpiredError
-  const groups = groupsQuery.data ?? []
-
-  // 그룹 가입 버튼 핸들러
-  function handleJoinGroup() {
-    if (!selectedGroupId) {
-      alert(copy.selectGroupAlert)
-      return
-    }
-    joinGroupMutation.mutate(selectedGroupId)
-  }
 
   // 그룹 생성 팝업 열기/닫기
   function handleOpenCreateModal() {
@@ -109,27 +99,27 @@ export function GroupListPage() {
     createGroupMutation.mutate(trimmedName)
   }
 
-  // 행(Row) 클릭 (단일 선택)
-  function handleSelectRow(groupId: string) {
-    if (!groupId) return
-    setSelectedGroupId((prev) => (prev === groupId ? null : groupId))
-  }
+  // 행(Row) 클릭 시 상세 페이지 이동
+  async function handleRowClick(group: GroupSummary) {
+    if (!group.isMember) {
+      alert(
+        '그룹에 가입되어 있지 않습니다. [그룹 가입] 버튼을 눌러 먼저 가입해 주세요.',
+      )
+      return
+    }
 
-  // 행 더블클릭 (상세 페이지 이동)
-  async function handleDoubleClickRow(groupId: string) {
     try {
-      setIsCheckingGroupId(groupId)
-      // 그룹 상세 정보 및 멤버 권한 사전 검증
-      await getGroup(groupId)
+      setIsCheckingGroupId(group.groupId)
+      // 그룹 상세 정보 및 접근 권한 사전 검증
+      await getGroup(group.groupId)
 
-      // 성공(200) 시 상세 페이지로 이동
+      // 성공 시 상세 페이지로 이동
       void navigate({
         to: '/groups/$groupId',
-        params: { groupId },
+        params: { groupId: group.groupId },
       })
     } catch {
-      // 400, 401, 404 등 오류 응답 시 에러 메시지 알림 후 이동 차단
-      alert('그룹에 가입되어 있지 않거나 접근 권한이 없습니다.')
+      alert('그룹에 접근할 수 있는 권한이 없습니다.')
     } finally {
       setIsCheckingGroupId(null)
     }
@@ -152,25 +142,15 @@ export function GroupListPage() {
             </Text>
             <Heading level={1}>{copy.title}</Heading>
             <Text type="body" color="secondary">
-              {copy.description}
+              {copy.emptyDescription}
             </Text>
           </VStack>
 
           <HStack gap={3}>
             <Button
-              label={
-                joinGroupMutation.isPending ? copy.joining : copy.joinGroup
-              }
-              size="sm"
-              variant="primary"
-              isDisabled={!selectedGroupId || joinGroupMutation.isPending}
-              icon={<Icon icon={UserCheck} size="sm" />}
-              onClick={handleJoinGroup}
-            />
-            <Button
               label={copy.createGroup}
               size="sm"
-              variant="secondary"
+              variant="primary"
               icon={<Icon icon={Plus} size="sm" />}
               onClick={handleOpenCreateModal}
             />
@@ -214,30 +194,39 @@ export function GroupListPage() {
           <Section width="100%" padding={0} dividers={['bottom']}>
             <List density="balanced" hasDividers>
               {groups.map((group) => {
-                const isSelected =
-                  Boolean(selectedGroupId) && selectedGroupId === group.groupId
+                const isHovered = hoveredGroupId === group.groupId
                 const isChecking = isCheckingGroupId === group.groupId
+                const isJoiningThis =
+                  joinGroupMutation.isPending &&
+                  joinGroupMutation.variables === group.groupId
 
                 return (
                   <div
                     key={group.groupId}
                     onClick={() => {
-                      handleSelectRow(group.groupId)
+                      void handleRowClick(group)
                     }}
-                    onDoubleClick={() => {
-                      void handleDoubleClickRow(group.groupId)
+                    onMouseEnter={() => {
+                      setHoveredGroupId(group.groupId)
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredGroupId(null)
                     }}
                     style={{
                       cursor: isChecking ? 'wait' : 'pointer',
                       opacity: isChecking ? 0.6 : 1,
-                      backgroundColor: isSelected
-                        ? 'var(--astryxdesign-color-bg-selected, rgba(59, 130, 246, 0.08))'
+                      backgroundColor: isHovered
+                        ? 'var(--astryxdesign-color-bg-selected, rgba(59, 130, 246, 0.12))'
                         : 'transparent',
                       borderRadius: '8px',
                       transition: 'background-color 0.15s ease',
                       userSelect: 'none',
                     }}
-                    title="더블 클릭하여 그룹으로 이동"
+                    title={
+                      group.isMember
+                        ? '클릭하여 그룹으로 이동'
+                        : '미가입 그룹입니다. [그룹 가입] 버튼을 눌러 입장하세요.'
+                    }
                   >
                     <ListItem
                       label={group.name}
@@ -245,17 +234,24 @@ export function GroupListPage() {
                         <Icon
                           icon={Layers}
                           size="sm"
-                          color={isSelected ? 'accent' : 'secondary'}
+                          color={isHovered ? 'accent' : 'secondary'}
                         />
                       }
                       description={<GroupListMetadata group={group} />}
                       endContent={
-                        <Badge
-                          label={
-                            isSelected ? '선택됨' : group.nickname || '공용'
-                          }
-                          variant={isSelected ? 'blue' : 'neutral'}
-                        />
+                        group.isMember ? null : (
+                          <Button
+                            label={isJoiningThis ? '가입 중...' : '그룹 가입'}
+                            size="sm"
+                            variant="secondary"
+                            isDisabled={joinGroupMutation.isPending}
+                            icon={<Icon icon={UserCheck} size="sm" />}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              joinGroupMutation.mutate(group.groupId)
+                            }}
+                          />
+                        )
                       }
                     />
                   </div>
@@ -265,7 +261,7 @@ export function GroupListPage() {
           </Section>
         )}
 
-        {/* 4. 그룹 생성 모달 / 팝업 */}
+        {/* 4. 그룹 생성 모달 */}
         <Dialog
           isOpen={isCreateModalOpen}
           onOpenChange={(open) => {
@@ -280,7 +276,6 @@ export function GroupListPage() {
               label="그룹 이름"
               placeholder="예: 알고리즘 스터디 2반"
               value={newGroupName}
-              // 값 또는 이벤트 객체 모두에 대응 가능한 안전한 onChange
               onChange={(valOrEvent: unknown) => {
                 if (typeof valOrEvent === 'string') {
                   setNewGroupName(valOrEvent)
@@ -334,7 +329,7 @@ function GroupListMetadata({ group }: GroupListMetadataProps) {
     : null
 
   return (
-    <HStack gap={3} wrap="wrap" vAlign="center">
+    <VStack gap={0.5} width="100%">
       <HStack gap={1} vAlign="center">
         <Icon icon={Users} size="xsm" color="secondary" />
         <Text type="supporting" color="secondary">
@@ -342,11 +337,14 @@ function GroupListMetadata({ group }: GroupListMetadataProps) {
         </Text>
       </HStack>
       {createdAtFormatted ? (
-        <Text type="supporting" color="secondary">
-          생성일: {createdAtFormatted}
-        </Text>
+        <HStack gap={1} vAlign="center">
+          <Icon icon={Calendar} size="xsm" color="secondary" />
+          <Text type="supporting" color="secondary">
+            생성일: {createdAtFormatted}
+          </Text>
+        </HStack>
       ) : null}
-    </HStack>
+    </VStack>
   )
 }
 

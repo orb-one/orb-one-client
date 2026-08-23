@@ -8,6 +8,7 @@ export interface GroupSummaryResponse {
   name: string
   nickname: string
   createdAt?: string
+  isMember: boolean
 }
 
 export type GetGroupsResponse = GroupSummaryResponse[]
@@ -53,6 +54,7 @@ export interface GroupSummary {
   name: string
   nickname: string
   createdAt: string | null
+  isMember: boolean
 }
 
 // 2) 상세 페이지용 멤버 도메인
@@ -77,6 +79,7 @@ export function mapGroupSummary(response: GroupSummaryResponse): GroupSummary {
     name: response.name,
     nickname: response.nickname,
     createdAt: response.createdAt ?? null,
+    isMember: response.isMember,
   }
 }
 
@@ -137,4 +140,35 @@ export async function createGroup(
   })
 
   return response
+}
+
+// 5) 그룹 폐쇄 API (DELETE /groups/{groupId})
+export async function deleteGroup(groupId: string): Promise<void> {
+  const encodedGroupId = encodeURIComponent(groupId)
+
+  await apiClient(`/groups/${encodedGroupId}`, {
+    method: 'DELETE',
+  })
+}
+
+// 6) 그룹 멤버 강퇴 API (DELETE /groups/{groupId}/members/{memberId})
+export async function kickGroupMember(
+  groupId: string,
+  memberId: string,
+): Promise<void> {
+  const encodedGroupId = encodeURIComponent(groupId)
+  const encodedMemberId = encodeURIComponent(memberId)
+
+  await apiClient(`/groups/${encodedGroupId}/members/${encodedMemberId}`, {
+    method: 'DELETE',
+  })
+}
+
+// 7) 그룹 탈퇴 API (DELETE /groups/{groupId}/members/me)
+export async function leaveGroup(groupId: string): Promise<void> {
+  const encodedGroupId = encodeURIComponent(groupId)
+
+  await apiClient(`/groups/${encodedGroupId}/members/me`, {
+    method: 'DELETE',
+  })
 }
