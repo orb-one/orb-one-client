@@ -2,13 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from './client'
 
 export interface PracticeResponse {
-  id: string
+  practiceId: string
   title: string
-  start_date: string
-  end_date: string
-  group_id: string
-  created_at: string
-  updated_at: string
+  startDate: string
+  endDate: string
+  groupId: string
+  createdAt: string
+  updatedAt: string
   problems?: PracticeProblem[]
 }
 
@@ -33,13 +33,13 @@ export interface Practice {
 
 export function mapPractice(response: PracticeResponse): Practice {
   const practice: Practice = {
-    id: response.id,
+    id: response.practiceId,
     title: response.title,
-    startDate: response.start_date,
-    endDate: response.end_date,
-    groupId: response.group_id,
-    createdAt: response.created_at,
-    updatedAt: response.updated_at,
+    startDate: response.startDate,
+    endDate: response.endDate,
+    groupId: response.groupId,
+    createdAt: response.createdAt,
+    updatedAt: response.updatedAt,
   }
 
   if (response.problems !== undefined) {
@@ -151,8 +151,8 @@ export function useUpdatePractice(groupId: string, practiceId: string) {
     mutationFn: async (data: UpdatePracticeRequest) => {
       const payload: Record<string, string> = {}
       if (data.title) payload.title = data.title
-      if (data.startDate) payload.start_date = data.startDate
-      if (data.endDate) payload.end_date = data.endDate
+      if (data.startDate) payload.startDate = data.startDate
+      if (data.endDate) payload.endDate = data.endDate
 
       const response = await apiClient<PracticeResponse>(
         `/groups/${groupId}/practices/${practiceId}`,
@@ -188,7 +188,7 @@ export function useAddPracticeProblem(groupId: string, practiceId: string) {
     mutationFn: async (data: AddPracticeProblemRequest) => {
       const payload = {
         provider: data.provider,
-        external_problem_id: data.externalProblemId,
+        externalProblemId: data.externalProblemId,
         name: data.name,
         url: data.url,
       }
