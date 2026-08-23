@@ -97,12 +97,6 @@ export function useCreatePractice(groupId: string) {
         title: data.title,
         start_date: data.startDate,
         end_date: data.endDate,
-        problems: data.problems.map((p) => ({
-          provider: p.provider,
-          external_problem_id: p.externalProblemId,
-          name: p.name,
-          url: p.url,
-        })),
       }
 
       const response = await apiClient<PracticeResponse>(
