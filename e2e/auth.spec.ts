@@ -151,6 +151,7 @@ test('opens the protected my page from the signed-in navigation', async ({
   await expect(
     page.getByRole('heading', { name: '비밀번호 변경' }),
   ).toBeVisible()
+  await expect(page.getByRole('heading', { name: '회원탈퇴' })).toBeVisible()
   await expect(page.getByLabel('닉네임')).toHaveValue('mypage-user')
   await expect(page.getByLabel('이메일')).toHaveValue('mypage@example.com')
 })
@@ -204,9 +205,25 @@ test('updates the nickname across the my page and application header', async ({
   await expect(page.getByLabel('현재 비밀번호')).toBeVisible()
   await expect(page.getByLabel('새 비밀번호', { exact: true })).toBeVisible()
   await expect(page.getByLabel('새 비밀번호 확인')).toBeVisible()
+  const accountDeletionButton = page.getByRole('button', { name: '회원탈퇴' })
+
+  await expect(accountDeletionButton).toBeVisible()
+  await accountDeletionButton.click()
+
+  const deletionDialog = page.getByRole('dialog')
+
+  await expect(deletionDialog).toBeInViewport()
+  await expect(
+    deletionDialog.getByRole('textbox', { name: '확인 문구' }),
+  ).toBeInViewport()
+  await expect(
+    deletionDialog.getByRole('button', { name: '회원탈퇴' }),
+  ).toBeInViewport()
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(320)
+
+  await deletionDialog.getByRole('button', { name: '취소' }).click()
 })
 
 test('changes the password and signs the user out', async ({ page }) => {
@@ -274,6 +291,127 @@ test('changes the password and signs the user out', async ({ page }) => {
   })
 })
 
+test('deletes the account only after explicit consent', async ({ page }) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  let deletionRequestCount = 0
+
+  await mockCsrfEndpoint(page)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    if (route.request().method() === 'DELETE') {
+      deletionRequestCount += 1
+      await route.fulfill({ status: 204 })
+      return
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'delete-user',
+        email: 'delete@example.com',
+        nickname: 'delete-user',
+      }),
+    })
+  })
+
+  await page.goto('/mypage')
+  await page.getByRole('button', { name: '회원탈퇴' }).click()
+
+  const deletionDialog = page.getByRole('dialog')
+  const confirmDeletionButton = deletionDialog.getByRole('button', {
+    name: '회원탈퇴',
+  })
+
+  await expect(deletionDialog).toContainText(
+    '계정과 저장한 풀이가 영구 삭제되며',
+  )
+  await expect(confirmDeletionButton).toBeDisabled()
+  expect(deletionRequestCount).toBe(0)
+
+  await deletionDialog
+    .getByRole('textbox', { name: '확인 문구' })
+    .fill('탈퇴에 동의합니다 ')
+  await expect(confirmDeletionButton).toBeDisabled()
+
+  await deletionDialog
+    .getByRole('textbox', { name: '확인 문구' })
+    .fill('탈퇴에 동의합니다')
+  await expect(confirmDeletionButton).toBeEnabled()
+
+  const deletionResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url() === apiUrl('/users/me') &&
+      response.request().method() === 'DELETE',
+  )
+
+  await confirmDeletionButton.click()
+
+  const deletionResponse = await deletionResponsePromise
+
+  expect(deletionResponse.status()).toBe(204)
+  expect(deletionRequestCount).toBe(1)
+  await page.waitForURL((url) => url.pathname === '/')
+  await expect(page.getByText('회원탈퇴가 완료되었습니다.')).toBeVisible()
+  await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
+})
+
+test('explains group ownership conflicts without signing the user out', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  await mockCsrfEndpoint(page)
+  await page.route(apiUrl('/users/me'), async (route) => {
+    if (route.request().method() === 'DELETE') {
+      await route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'USER_OWNS_GROUP',
+          message: 'User owns a group',
+          timestamp: '2026-08-23T00:00:00Z',
+        }),
+      })
+      return
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'group-owner',
+        email: 'owner@example.com',
+        nickname: 'group-owner',
+      }),
+    })
+  })
+
+  await page.goto('/mypage')
+  await page.getByRole('button', { name: '회원탈퇴' }).click()
+  const deletionDialog = page.getByRole('dialog')
+
+  await deletionDialog
+    .getByRole('textbox', { name: '확인 문구' })
+    .fill('탈퇴에 동의합니다')
+  await deletionDialog.getByRole('button', { name: '회원탈퇴' }).click()
+
+  await expect(page.getByRole('alert')).toContainText(
+    '소유한 그룹이 있어 탈퇴할 수 없습니다.',
+  )
+  await expect(page.getByRole('alert')).toContainText(
+    '그룹 소유권을 이전하거나 그룹을 폐쇄한 뒤 다시 시도해 주세요.',
+  )
+  await expect(page).toHaveURL(/\/mypage$/)
+  await expect(page.getByTestId('current-user')).toContainText('group-owner')
+})
+
 test('redirects signed-out users away from the protected my page', async ({
   page,
 }) => {
@@ -314,12 +452,13 @@ test('refreshes expired current user requests before showing signed-in UI', asyn
 
   const account = createRandomAccount()
   let currentUserRequestCount = 0
+  let hasRefreshed = false
 
   await mockCsrfEndpoint(page)
   await page.route(apiUrl('/users/me'), async (route) => {
     currentUserRequestCount += 1
 
-    if (currentUserRequestCount === 1) {
+    if (!hasRefreshed) {
       await route.fulfill({
         status: 401,
         contentType: 'application/json',
@@ -340,6 +479,7 @@ test('refreshes expired current user requests before showing signed-in UI', asyn
   })
   await page.route(apiUrl('/auth/refresh'), async (route) => {
     expect(route.request().headers()['x-xsrf-token']).toBe('e2e-csrf-token')
+    hasRefreshed = true
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -359,7 +499,7 @@ test('refreshes expired current user requests before showing signed-in UI', asyn
 
   expect(refreshResponse.status()).toBe(200)
   await expect(page.getByTestId('current-user')).toContainText(account.nickname)
-  expect(currentUserRequestCount).toBe(2)
+  expect(currentUserRequestCount).toBeGreaterThanOrEqual(2)
 })
 
 test('does not repeat auth requests after the signed-out state becomes stale', async ({

@@ -108,6 +108,24 @@ export const messages = {
       passwordChangedLogoutError:
         '비밀번호는 변경했지만 로그아웃하지 못했습니다. 로그아웃을 다시 시도해 주세요.',
       passwordChangeLogoutRetry: '로그아웃 다시 시도',
+      accountDeletionTitle: '회원탈퇴',
+      accountDeletionDescription:
+        '계정과 저장한 풀이를 영구 삭제합니다. 이 작업은 되돌릴 수 없습니다.',
+      accountDeletionSubmit: '회원탈퇴',
+      accountDeletionConfirmTitle: '정말 회원탈퇴할까요?',
+      accountDeletionConfirmDescription:
+        '계정과 저장한 풀이가 영구 삭제되며 복구할 수 없습니다. 탈퇴 후 자동으로 로그아웃됩니다. 소유한 그룹이 있다면 먼저 소유권을 이전하거나 그룹을 폐쇄해야 합니다.',
+      accountDeletionConfirmationLabel: '확인 문구',
+      accountDeletionConfirmationDescription:
+        '계속하려면 아래에 “탈퇴에 동의합니다”를 정확히 입력해 주세요.',
+      accountDeletionConsent: '탈퇴에 동의합니다',
+      accountDeletionCancel: '취소',
+      accountDeletionSuccess: '회원탈퇴가 완료되었습니다.',
+      accountDeletionGroupOwnerError: '소유한 그룹이 있어 탈퇴할 수 없습니다.',
+      accountDeletionGroupOwnerGuidance:
+        '그룹 소유권을 이전하거나 그룹을 폐쇄한 뒤 다시 시도해 주세요.',
+      accountDeletionError:
+        '회원탈퇴를 완료하지 못했습니다. 다시 시도해 주세요.',
     },
     solutions: {
       authRequired: '저장된 풀이를 확인하려면 로그인해 주세요.',
@@ -401,6 +419,24 @@ export const messages = {
       passwordChangedLogoutError:
         'Your password was changed, but sign-out failed. Try signing out again.',
       passwordChangeLogoutRetry: 'Retry sign-out',
+      accountDeletionTitle: 'Delete account',
+      accountDeletionDescription:
+        'Permanently delete your account and saved solutions. This action cannot be undone.',
+      accountDeletionSubmit: 'Delete account',
+      accountDeletionConfirmTitle: 'Delete your account?',
+      accountDeletionConfirmDescription:
+        'Your account and saved solutions will be permanently deleted and cannot be restored. You will be signed out after deletion. Transfer ownership or close any groups you own first.',
+      accountDeletionConfirmationLabel: 'Confirmation phrase',
+      accountDeletionConfirmationDescription:
+        'To continue, enter “I agree to delete my account” exactly as shown.',
+      accountDeletionConsent: 'I agree to delete my account',
+      accountDeletionCancel: 'Cancel',
+      accountDeletionSuccess: 'Your account has been deleted.',
+      accountDeletionGroupOwnerError:
+        'You cannot delete your account while you own a group.',
+      accountDeletionGroupOwnerGuidance:
+        'Transfer ownership or close the group, then try again.',
+      accountDeletionError: 'Could not delete your account. Please try again.',
     },
     solutions: {
       authRequired: 'Sign in to view your saved solutions.',
@@ -604,6 +640,8 @@ export const authErrorTranslations = {
     INVALID_CREDENTIALS: 'The email or password is incorrect.',
     INVALID_REFRESH_TOKEN: 'Please sign in again.',
     DUPLICATE_EMAIL: 'An account already exists for this email.',
+    USER_OWNS_GROUP:
+      'Transfer ownership or close your groups before deleting your account.',
   },
 } as const satisfies Record<
   Exclude<Locale, typeof defaultLocale>,
