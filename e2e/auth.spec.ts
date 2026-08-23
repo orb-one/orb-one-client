@@ -156,6 +156,64 @@ test('opens the protected my page from the signed-in navigation', async ({
   await expect(page.getByLabel('이메일')).toHaveValue('mypage@example.com')
 })
 
+test('keeps focus inside the account deletion dialog and restores it on close', async ({
+  page,
+}) => {
+  test.skip(
+    isMswE2eEnabled,
+    'MSW-enabled runs already control /users/me through the service worker.',
+  )
+
+  await page.route(apiUrl('/users/me'), async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'keyboard-user',
+        email: 'keyboard@example.com',
+        nickname: 'keyboard-user',
+      }),
+    })
+  })
+
+  await page.goto('/mypage')
+
+  const openDialogButton = page.getByRole('button', { name: '회원탈퇴' })
+
+  await openDialogButton.focus()
+  await page.keyboard.press('Enter')
+
+  const dialog = page.getByRole('dialog', { name: '정말 회원탈퇴할까요?' })
+  const dialogHeading = dialog.getByRole('heading', {
+    name: '정말 회원탈퇴할까요?',
+  })
+  const confirmationInput = dialog.getByRole('textbox', { name: '확인 문구' })
+  const cancelButton = dialog.getByRole('button', { name: '취소' })
+  const deleteButton = dialog.getByRole('button', { name: '회원탈퇴' })
+
+  await expect(dialogHeading).toBeFocused()
+
+  await page.keyboard.press('Tab')
+  await expect(confirmationInput).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(cancelButton).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(confirmationInput).toBeFocused()
+
+  await confirmationInput.fill('탈퇴에 동의합니다')
+  await page.keyboard.press('Tab')
+  await expect(cancelButton).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(deleteButton).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(confirmationInput).toBeFocused()
+
+  await page.keyboard.press('Escape')
+
+  await expect(dialog).not.toBeVisible()
+  await expect(openDialogButton).toBeFocused()
+})
+
 test('updates the nickname across the my page and application header', async ({
   page,
 }) => {
@@ -197,6 +255,10 @@ test('updates the nickname across the my page and application header', async ({
   await expect(page.getByLabel('닉네임')).toHaveValue('after-update')
   await expect(page.getByTestId('current-user')).toContainText('after-update')
   expect(nicknameUpdateRequest).toEqual({ nickname: 'after-update' })
+
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(1280)
 
   await page.setViewportSize({ width: 320, height: 667 })
 

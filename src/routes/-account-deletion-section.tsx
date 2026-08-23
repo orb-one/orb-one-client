@@ -9,6 +9,7 @@ import { Text } from '@astryxdesign/core/Text'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { useToast } from '@astryxdesign/core/Toast'
 import { VStack } from '@astryxdesign/core/VStack'
+import { useFocusTrap } from '@astryxdesign/core/hooks'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 
@@ -25,6 +26,10 @@ export function AccountDeletionSection({
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [confirmationText, setConfirmationText] = useState('')
   const deletionMutation = useMutation({ mutationFn: deleteCurrentUser })
+  const { containerRef: dialogRef } = useFocusTrap<HTMLDialogElement>({
+    isActive: isDialogOpen,
+    onEscape: closeConfirmation,
+  })
   const isDeletionConfirmed = confirmationText === copy.accountDeletionConsent
   const isUserOwnsGroupError =
     deletionMutation.error instanceof ApiError &&
@@ -104,6 +109,7 @@ export function AccountDeletionSection({
         </HStack>
 
         <Dialog
+          ref={dialogRef}
           isOpen={isDialogOpen}
           aria-label={copy.accountDeletionConfirmTitle}
           onOpenChange={(isOpen) => {
