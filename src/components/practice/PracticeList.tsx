@@ -1,14 +1,13 @@
 import { Button } from '@astryxdesign/core/Button'
 import { Table, pixel, proportional } from '@astryxdesign/core/Table'
 import { Text } from '@astryxdesign/core/Text'
-import { Link } from '@tanstack/react-router'
 import type { Practice } from '@/lib/api/practice'
 import { Trash2 } from 'lucide-react'
 import { Icon } from '@astryxdesign/core/Icon'
 
 interface PracticeListProps {
   practices: Practice[]
-  groupId: string
+  groupId?: string
   isDeleteMode: boolean
   onDeletePractice: (practiceId: string) => void
   onEditPractice: (practice: Practice) => void
@@ -16,7 +15,6 @@ interface PracticeListProps {
 
 export function PracticeList({
   practices,
-  groupId,
   isDeleteMode,
   onDeletePractice,
   onEditPractice,
@@ -59,15 +57,22 @@ export function PracticeList({
           key: 'title',
           header: '제목',
           width: proportional(2),
-          renderCell: (p: Practice) => (
-            <Link
-              to="/groups/$groupId/practices/$practiceId"
-              params={{ groupId, practiceId: p.id }}
-              className="text-primary font-medium hover:underline"
-            >
-              {p.title}
-            </Link>
-          ),
+          renderCell: (p: Practice) => {
+            const externalUrl = p.problems?.[0]?.url
+            if (externalUrl) {
+              return (
+                <a
+                  href={externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary font-medium hover:underline"
+                >
+                  {p.title}
+                </a>
+              )
+            }
+            return <Text type="supporting">{p.title}</Text>
+          },
         },
         {
           key: 'start',
