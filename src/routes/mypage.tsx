@@ -35,6 +35,7 @@ import {
 } from '@/lib/auth/profile-validation'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { signOutMockUser } from '@/lib/auth/mock-auth-session'
+import { AccountDeletionSection } from '@/routes/-account-deletion-section'
 import { PasswordChangeForm } from '@/routes/-password-change-form'
 
 export const Route = createFileRoute('/mypage')({
@@ -65,6 +66,19 @@ export function MyPage() {
       replace: true,
       search: { passwordChanged: true },
     })
+  }
+
+  async function handleAccountDeleted() {
+    await queryClient.cancelQueries()
+    await signOutMockUser()
+    queryClient.removeQueries({
+      predicate: (query) =>
+        query.queryKey[0] !== currentUserQueryKey[0] ||
+        query.queryKey[1] !== currentUserQueryKey[1],
+    })
+    queryClient.getMutationCache().clear()
+    queryClient.setQueryData(currentUserQueryKey, null)
+    void navigate({ to: '/', replace: true })
   }
 
   function handleSessionExpired() {
@@ -117,6 +131,10 @@ export function MyPage() {
       <ProfileForm currentUser={currentUserQuery.data} />
       <PasswordChangeForm
         onPasswordChanged={handlePasswordChanged}
+        onSessionExpired={handleSessionExpired}
+      />
+      <AccountDeletionSection
+        onDeleted={handleAccountDeleted}
         onSessionExpired={handleSessionExpired}
       />
     </MyPageFrame>

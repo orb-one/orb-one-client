@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 let getCurrentUser: typeof import('@/lib/api/auth').getCurrentUser
 let changeCurrentUserPassword: typeof import('@/lib/api/auth').changeCurrentUserPassword
+let deleteCurrentUser: typeof import('@/lib/api/auth').deleteCurrentUser
 let loginAccount: typeof import('@/lib/api/auth').loginAccount
 let logoutAccount: typeof import('@/lib/api/auth').logoutAccount
 let refreshSession: typeof import('@/lib/api/auth').refreshSession
@@ -16,6 +17,7 @@ beforeEach(async () => {
 
   getCurrentUser = auth.getCurrentUser
   changeCurrentUserPassword = auth.changeCurrentUserPassword
+  deleteCurrentUser = auth.deleteCurrentUser
   loginAccount = auth.loginAccount
   logoutAccount = auth.logoutAccount
   refreshSession = auth.refreshSession
@@ -214,6 +216,24 @@ it('patches the current user password with CSRF protection', async () => {
   )
   expect(getRequestHeader(fetchMock, 2, 'Content-Type')).toBe(
     'application/json',
+  )
+  expect(getRequestHeader(fetchMock, 2, 'X-XSRF-TOKEN')).toBe('csrf-token')
+})
+
+it('deletes the current user with CSRF protection', async () => {
+  const fetchMock = mockFetch(
+    csrfResponse(),
+    new Response(null, { status: 204 }),
+  )
+
+  await expect(deleteCurrentUser()).resolves.toBeUndefined()
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    'http://localhost:8080/users/me',
+    expect.objectContaining({
+      method: 'DELETE',
+      credentials: 'include',
+    }),
   )
   expect(getRequestHeader(fetchMock, 2, 'X-XSRF-TOKEN')).toBe('csrf-token')
 })

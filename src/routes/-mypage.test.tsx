@@ -1,19 +1,34 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
 import {
   changeCurrentUserPassword,
+  deleteCurrentUser,
   getCurrentUser,
   logoutAccount,
   updateCurrentUser,
 } from '@/lib/api/auth'
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import { currentUserQueryKey } from '@/lib/auth/auth-queries'
+import { signOutMockUser } from '@/lib/auth/mock-auth-session'
 
-const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }))
+const { navigate, showToast } = vi.hoisted(() => ({
+  navigate: vi.fn(),
+  showToast: vi.fn(),
+}))
+
+vi.mock('@astryxdesign/core/Toast', () => ({
+  useToast: () => showToast,
+}))
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute:
@@ -30,9 +45,14 @@ vi.mock('@tanstack/react-router', () => ({
 
 vi.mock('@/lib/api/auth', () => ({
   changeCurrentUserPassword: vi.fn(),
+  deleteCurrentUser: vi.fn(),
   getCurrentUser: vi.fn(),
   logoutAccount: vi.fn(),
   updateCurrentUser: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/mock-auth-session', () => ({
+  signOutMockUser: vi.fn(),
 }))
 
 import { MyPage } from '@/routes/mypage'
@@ -189,6 +209,41 @@ it('signs out and redirects after changing the password', async () => {
     replace: true,
     search: { passwordChanged: true },
   })
+})
+
+it('clears user data and redirects home after account deletion', async () => {
+  vi.mocked(deleteCurrentUser).mockResolvedValue(undefined)
+  vi.mocked(signOutMockUser).mockResolvedValue()
+  const queryClient = renderMyPage({
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  })
+  const userScopedQueryKey = ['solutions', 'mine'] as const
+
+  queryClient.setQueryData(userScopedQueryKey, [{ id: 'solution-1' }])
+
+  await userEvent.click(screen.getByRole('button', { name: '회원탈퇴' }))
+  const deletionDialog = screen.getByRole('dialog')
+
+  await userEvent.type(
+    within(deletionDialog).getByRole('textbox', { name: '확인 문구' }),
+    '탈퇴에 동의합니다',
+  )
+  await userEvent.click(
+    within(deletionDialog).getByRole('button', { name: '회원탈퇴' }),
+  )
+
+  await waitFor(() => {
+    expect(navigate).toHaveBeenCalledWith({ to: '/', replace: true })
+  })
+  expect(deleteCurrentUser).toHaveBeenCalledOnce()
+  expect(signOutMockUser).toHaveBeenCalledOnce()
+  expect(queryClient.getQueryData(userScopedQueryKey)).toBeUndefined()
+  expect(queryClient.getQueryData(currentUserQueryKey)).toBeNull()
+  expect(showToast).toHaveBeenCalledWith(
+    expect.objectContaining({ body: '회원탈퇴가 완료되었습니다.' }),
+  )
 })
 
 it('announces while the current account is loading', () => {

@@ -77,3 +77,9 @@ export function changeCurrentUserPassword(request: PasswordChangeRequest) {
     body: request,
   })
 }
+
+export function deleteCurrentUser() {
+  return apiClient<undefined>('/users/me', {
+    method: 'DELETE',
+  })
+}

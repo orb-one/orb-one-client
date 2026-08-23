@@ -4,6 +4,7 @@ import {
   consumeMockLogoutFailure,
   failNextMockLogout,
   getCurrentMockUser,
+  signOutMockUser,
   updateMockUserNickname,
 } from '@/mocks/auth-session'
 import { problemHandlers } from '@/mocks/problem-handlers'
@@ -88,6 +89,15 @@ export const handlers = [
     }
 
     return HttpResponse.json({ message: 'Password changed successfully' })
+  }),
+  http.delete('*/users/me', () => {
+    if (!getCurrentMockUser()) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    signOutMockUser()
+
+    return new HttpResponse(null, { status: 204 })
   }),
 ]
 
