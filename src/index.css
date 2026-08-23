@@ -25,3 +25,114 @@ body {
     @apply font-sans;
   }
 }
+
+@layer components {
+  .orb-brand-accent {
+    --color-accent: light-dark(#075985, #38bdf8);
+    --color-accent-muted: light-dark(#e0f2fe, #0c4a6e);
+    --color-on-accent: light-dark(#fafafa, #171717);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .brand-logo {
+      filter: invert(1);
+    }
+  }
+
+  .landing-provider-marquee {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 8%,
+      black 92%,
+      transparent
+    );
+  }
+
+  .landing-provider-track {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+  }
+
+  .landing-provider-group {
+    display: flex;
+    align-items: center;
+    gap: clamp(3.5rem, 8vw, 7rem);
+    padding-right: clamp(3.5rem, 8vw, 7rem);
+  }
+
+  .landing-provider-logo {
+    display: block;
+    max-height: 2rem;
+    opacity: 0.72;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .landing-provider-logo-contrast {
+      filter: brightness(0) invert(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .landing-hero-copy {
+      animation: landing-rise 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .landing-hero-visual {
+      animation: landing-rise 760ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .landing-section-reveal {
+      animation: landing-rise 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .landing-provider-track {
+      animation: landing-provider-scroll 30s linear infinite;
+    }
+
+    .landing-provider-marquee:hover .landing-provider-track {
+      animation-play-state: paused;
+    }
+
+    @supports (animation-timeline: view()) {
+      .landing-section-reveal {
+        animation-timeline: view();
+        animation-range: entry 8% cover 28%;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .landing-provider-marquee {
+      overflow-x: auto;
+      mask-image: none;
+    }
+
+    .landing-provider-group[aria-hidden='true'] {
+      display: none;
+    }
+
+    .landing-provider-group {
+      padding-inline: 1rem;
+    }
+  }
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-provider-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}

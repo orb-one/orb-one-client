@@ -60,15 +60,25 @@ it('renders the signed-out application shell with accessible navigation', () => 
     'backdrop-blur-md',
     'supports-[backdrop-filter]:bg-surface/80',
   )
-  expect(
-    within(navigation).getByRole('link', { name: 'Orb One' }),
-  ).toHaveAttribute('href', '/')
+  const homeLink = within(navigation).getByRole('link', { name: 'O(1)' })
+
+  expect(homeLink).toHaveAttribute('href', '/')
+  expect(homeLink.querySelector('img')).toHaveAttribute(
+    'src',
+    '/brand/o1-wordmark-a.svg',
+  )
   expect(
     within(navigation).getByRole('link', { name: '로그인' }),
   ).toHaveAttribute('href', '/login')
   expect(
-    within(navigation).queryByRole('link', { name: '풀이' }),
-  ).not.toBeInTheDocument()
+    within(navigation).getByRole('link', { name: '풀이' }),
+  ).toHaveAttribute('href', '/solutions')
+  expect(
+    within(navigation).getByRole('link', { name: '그룹' }),
+  ).toHaveAttribute('href', '/groups')
+  expect(
+    within(navigation).getByRole('link', { name: '풀이 기록 시작' }),
+  ).toHaveAttribute('href', '/register')
   expect(
     within(navigation).queryByRole('link', { name: '마이페이지' }),
   ).not.toBeInTheDocument()
@@ -96,6 +106,10 @@ it('renders the signed-in user and logout action in the application shell', () =
     'href',
     '/solutions',
   )
+  expect(screen.getByRole('link', { name: '그룹' })).toHaveAttribute(
+    'href',
+    '/groups',
+  )
   expect(screen.getByRole('button', { name: '로그아웃' })).toBeEnabled()
 })
 
@@ -103,7 +117,10 @@ it('announces when the sign-in state is loading', () => {
   renderPendingRoot()
 
   expect(screen.getByRole('status')).toHaveTextContent('로그인 상태 확인 중')
-  expect(screen.queryByRole('link', { name: '풀이' })).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '풀이' })).toHaveAttribute(
+    'href',
+    '/solutions',
+  )
 })
 
 it('uses the active locale for the application navigation', () => {
@@ -115,10 +132,13 @@ it('uses the active locale for the application navigation', () => {
     name: 'Main navigation',
   })
 
-  expect(within(navigation).getByRole('link', { name: 'Login' })).toBeVisible()
   expect(
-    within(navigation).queryByRole('link', { name: 'Solutions' }),
-  ).not.toBeInTheDocument()
+    within(navigation).getByRole('link', { name: 'Sign in' }),
+  ).toBeVisible()
+  expect(
+    within(navigation).getByRole('link', { name: 'Solutions' }),
+  ).toBeVisible()
+  expect(within(navigation).getByRole('link', { name: 'Groups' })).toBeVisible()
 })
 
 it('clears the current user without invalidating the query after logout succeeds', async () => {

@@ -5,7 +5,6 @@ import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
 import { IconButton } from '@astryxdesign/core/IconButton'
 import { Link } from '@astryxdesign/core/Link'
-import { NavIcon } from '@astryxdesign/core/NavIcon'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
 import { TopNav, TopNavHeading } from '@astryxdesign/core/TopNav'
@@ -13,9 +12,10 @@ import { useToast } from '@astryxdesign/core/Toast'
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
-import { LogOut, Orbit } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useRef } from 'react'
 
+import { BrandLogo } from '@/components/brand/brand-logo'
 import { logoutAccount } from '@/lib/api/auth'
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import {
@@ -43,16 +43,12 @@ export function RootLayout() {
       topNav={
         <TopNav
           label={t.navigation.mainLabel}
-          className="bg-surface supports-[backdrop-filter]:bg-surface/80 backdrop-blur-md"
+          className="orb-brand-accent bg-surface supports-[backdrop-filter]:bg-surface/80 backdrop-blur-md"
           heading={
             <TopNavHeading
-              heading={t.common.productName}
               headingHref="/"
-              logo={
-                <NavIcon
-                  icon={<Icon icon={Orbit} size="sm" color="inherit" />}
-                />
-              }
+              logo={<BrandLogo />}
+              logoLabel={t.common.productName}
             />
           }
           endContent={<RootAuthNav />}
@@ -111,7 +107,8 @@ function RootAuthNav() {
 
   if (currentUserQuery.isPending) {
     return (
-      <HStack role="status" aria-live="polite" vAlign="center">
+      <HStack role="status" aria-live="polite" gap={2} vAlign="center">
+        <RootPrimaryLinks />
         <Skeleton width={96} height={32} radius="rounded" />
         <VisuallyHidden>{copy.loadingUser}</VisuallyHidden>
       </HStack>
@@ -121,9 +118,7 @@ function RootAuthNav() {
   if (currentUser) {
     return (
       <HStack gap={2} vAlign="center">
-        <Link href="/solutions" isStandalone>
-          {copy.solutions}
-        </Link>
+        <RootPrimaryLinks />
         <Link href="/mypage" label={copy.mypage} isStandalone>
           <HStack gap={1.5} vAlign="center" data-testid="current-user">
             <Avatar
@@ -158,5 +153,37 @@ function RootAuthNav() {
     )
   }
 
-  return <Button label={copy.login} href="/login" size="sm" variant="ghost" />
+  return (
+    <HStack gap={2} vAlign="center">
+      <RootPrimaryLinks />
+      <Button label={copy.login} href="/login" size="sm" variant="ghost" />
+      <span className="hidden md:inline-flex">
+        <Button
+          label={copy.register}
+          href="/register"
+          size="sm"
+          variant="primary"
+        />
+      </span>
+    </HStack>
+  )
+}
+
+function RootPrimaryLinks() {
+  const copy = useTranslations().navigation
+
+  return (
+    <>
+      <span className="hidden md:inline-flex">
+        <Link href="/solutions" isStandalone>
+          {copy.solutions}
+        </Link>
+      </span>
+      <span className="hidden md:inline-flex">
+        <Link href="/groups" isStandalone>
+          {copy.groups}
+        </Link>
+      </span>
+    </>
+  )
 }

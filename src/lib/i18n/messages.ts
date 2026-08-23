@@ -5,18 +5,93 @@ export const defaultLocale = 'ko'
 export const messages = {
   ko: {
     common: {
-      productName: 'Orb One',
+      productName: 'O(1)',
     },
     navigation: {
       mainLabel: '주요 탐색',
       login: '로그인',
       solutions: '풀이',
+      groups: '그룹',
+      register: '풀이 기록 시작',
       logout: '로그아웃',
       loggingOut: '로그아웃 중',
       logoutError: '로그아웃에 실패했습니다. 다시 시도해 주세요.',
       currentUser: '현재 로그인한 사용자',
       mypage: '마이페이지',
       loadingUser: '로그인 상태 확인 중',
+    },
+    landing: {
+      hero: {
+        title: '풀이를 모으고, 함께 돌아봅니다.',
+        description:
+          '여러 문제 제공자의 문제와 연결된 코드와 풀이 기록을 그룹 문제집에서 함께 찾아보세요.',
+      },
+      preview: {
+        ariaLabel:
+          '그룹 문제집에서 여러 제공자의 문제와 연결된 풀이를 함께 보는 예시',
+        collectionLabel: '그룹 문제집',
+        collectionTitle: '이번 주 알고리즘 스터디',
+        linkedLabel: '연결된 풀이',
+        linkedTitle: 'BOJ 1260 · DFS와 BFS',
+        groupSolution: '그룹 풀이',
+        solved: '풀이 완료',
+        javaSummary: 'BFS와 DFS를 나누어 탐색 순서를 기록했습니다.',
+        pythonSummary: '인접 리스트 정렬과 방문 순서를 비교했습니다.',
+      },
+      cta: {
+        startRecording: '풀이 기록 시작',
+        signIn: '로그인',
+        viewSolutions: '내 풀이 보기',
+        viewGroups: '그룹 보기',
+      },
+      workflow: {
+        title: '서로 다른 문제를, 하나의 학습 흐름으로.',
+        description:
+          '제공처가 달라도 풀이를 기록하고 그룹 문제집에서 함께 찾아볼 수 있습니다.',
+        choose: {
+          title: '여러 제공처에서 고릅니다',
+          description:
+            'BOJ, JUNGOL, SWEA, Programmers에서 기록할 문제를 선택합니다.',
+        },
+        record: {
+          title: '풀이 정보를 기록합니다',
+          description: '코드와 접근 과정, 해결 상태를 문제에 연결합니다.',
+        },
+        explain: {
+          title: '문제집으로 모읍니다',
+          description:
+            '함께 풀 문제를 제공처와 관계없이 한 문제집에 구성합니다.',
+        },
+        find: {
+          title: '그룹에서 함께 봅니다',
+          description: '문제집을 공유하고 각 문제에 연결된 풀이를 찾아봅니다.',
+        },
+      },
+      solutions: {
+        title: '코드만 남기지 마세요.',
+        description:
+          '풀이 과정, 해결 상태, 실행 시간과 메모리를 코드와 함께 기록할 수 있습니다.',
+        cta: '풀이 보기',
+      },
+      groups: {
+        title: '다른 출처의 문제도, 같은 문제집에서.',
+        description:
+          '그룹 문제집에 여러 제공자의 문제를 모으고, 각 문제와 연결된 풀이를 함께 찾아볼 수 있습니다.',
+        cta: '그룹 보기',
+      },
+      support: {
+        title: '지원하는 문제 제공자',
+      },
+      finalCta: {
+        title: '흩어진 풀이를 함께 쓸 지식으로.',
+        description:
+          '여러 문제 제공자의 풀이를 기록하고 그룹 문제집에서 공유하는 학습 공간을 시작하세요.',
+      },
+      images: {
+        solutionAlt: '코드와 풀이 설명을 함께 보여주는 풀이 상세 화면',
+        groupAlt: '그룹에서 함께 풀 문제를 정리한 문제집 화면',
+      },
+      footer: '여러 문제 제공자의 풀이를 모으고 공유하는 학습 플랫폼',
     },
     auth: {
       sessionExpired: '세션이 만료되었습니다. 다시 로그인해 주세요.',
@@ -317,18 +392,96 @@ export const messages = {
   },
   en: {
     common: {
-      productName: 'Orb One',
+      productName: 'O(1)',
     },
     navigation: {
       mainLabel: 'Main navigation',
-      login: 'Login',
+      login: 'Sign in',
       solutions: 'Solutions',
+      groups: 'Groups',
+      register: 'Start recording',
       logout: 'Log out',
       loggingOut: 'Logging out',
       logoutError: 'Could not log out. Please try again.',
       currentUser: 'Current signed-in user',
       mypage: 'Account',
       loadingUser: 'Checking sign-in status',
+    },
+    landing: {
+      hero: {
+        title: 'Collect solutions. Review them together.',
+        description:
+          'Bring problems, code, and solution notes from different providers into shared group problem sets.',
+      },
+      preview: {
+        ariaLabel:
+          'Example of problems from multiple providers and their linked solutions in a group problem set',
+        collectionLabel: 'Group problem set',
+        collectionTitle: "This week's algorithm study",
+        linkedLabel: 'Linked solutions',
+        linkedTitle: 'BOJ 1260 · DFS와 BFS',
+        groupSolution: 'Group solution',
+        solved: 'Solved',
+        javaSummary: 'Recorded the traversal order for BFS and DFS separately.',
+        pythonSummary:
+          'Compared adjacency-list sorting with the resulting visit order.',
+      },
+      cta: {
+        startRecording: 'Start recording',
+        signIn: 'Sign in',
+        viewSolutions: 'View my solutions',
+        viewGroups: 'View groups',
+      },
+      workflow: {
+        title: 'One learning flow across problem platforms.',
+        description:
+          'Record solutions from different providers, then find them together through group problem sets.',
+        choose: {
+          title: 'Choose across providers',
+          description:
+            'Select a problem from BOJ, JUNGOL, SWEA, or Programmers.',
+        },
+        record: {
+          title: 'Record the solution',
+          description:
+            'Connect the code, reasoning, and status to the problem.',
+        },
+        explain: {
+          title: 'Collect a problem set',
+          description: 'Bring problems from different providers into one set.',
+        },
+        find: {
+          title: 'Share it with the group',
+          description:
+            'Share the set and find solutions linked to each problem.',
+        },
+      },
+      solutions: {
+        title: 'Keep more than the code.',
+        description:
+          'Save the approach, solution status, runtime, and memory alongside the source code.',
+        cta: 'View solutions',
+      },
+      groups: {
+        title: 'Different sources, one shared problem set.',
+        description:
+          'Collect problems from multiple providers and find the solutions linked to each one with your group.',
+        cta: 'View groups',
+      },
+      support: {
+        title: 'Supported problem providers',
+      },
+      finalCta: {
+        title: 'Turn scattered solutions into shared knowledge.',
+        description:
+          'Start a learning space for recording solutions and sharing them through group problem sets.',
+      },
+      images: {
+        solutionAlt:
+          'Solution detail showing source code and written reasoning',
+        groupAlt: 'Group problem set organizing problems to solve together',
+      },
+      footer: 'A learning platform for collecting and sharing solutions',
     },
     auth: {
       sessionExpired: 'Your session has expired. Please sign in again.',
