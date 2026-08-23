@@ -55,8 +55,8 @@ export function CreatePracticeModal({
     createPractice.mutate(
       {
         title,
-        startDate: new Date(startDate).toISOString(),
-        endDate: new Date(endDate).toISOString(),
+        startDate: `${startDate}T00:00:00`,
+        endDate: `${endDate}T23:59:59`,
         problems: [
           {
             provider,
