@@ -50,13 +50,18 @@ export function mapPractice(response: PracticeResponse): Practice {
   }
 
   if (response.problems !== undefined) {
-    practice.problems = response.problems.map((p) => ({
-      problemId: p.problemId,
-      provider: p.provider,
-      externalProblemId: p.externalProblemId ?? p.external_problem_id ?? '',
-      name: p.name,
-      url: p.url,
-    }))
+    practice.problems = response.problems.map((p) => {
+      const prob: PracticeProblem = {
+        problemId: p.problemId,
+        provider: p.provider,
+        externalProblemId: p.externalProblemId ?? p.external_problem_id ?? '',
+        name: p.name,
+      }
+      if (p.url !== undefined) {
+        prob.url = p.url
+      }
+      return prob
+    })
   }
 
   return practice
