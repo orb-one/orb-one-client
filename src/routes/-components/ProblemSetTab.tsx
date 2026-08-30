@@ -5,6 +5,7 @@ import { EmptyState } from '@astryxdesign/core/EmptyState'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
 import { List, ListItem } from '@astryxdesign/core/List'
+import { Pagination } from '@astryxdesign/core/Pagination'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
 import { TextInput } from '@astryxdesign/core/TextInput'
@@ -54,20 +55,29 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
+  // 1. 페이지네이션 상태
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 20
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [newProblemSetName, setNewProblemSetName] = useState('')
   const [problems, setProblems] = useState<ProblemFormItem[]>([
     { ...INITIAL_PROBLEM },
   ])
 
-  // 문제집 목록 조회 Query
+  // 2. 문제집 목록 조회 Query
   const problemSetsQuery = useQuery({
-    queryKey: ['problemSets', groupId],
-    queryFn: () => getProblemSets(groupId),
+    queryKey: ['problemSets', groupId, currentPage, pageSize],
+    queryFn: () =>
+      getProblemSets(groupId, { page: currentPage - 1, size: pageSize }),
+    placeholderData: (previousData) => previousData,
     enabled: Boolean(groupId),
   })
 
-  // 문제집 생성 Mutation
+  const problemSets = problemSetsQuery.data?.items ?? []
+  const totalPages = problemSetsQuery.data?.totalPages ?? 1
+
+  // 3. 문제집 생성 Mutation
   const createProblemSetMutation = useMutation<
     ProblemSetCreateResponse,
     Error,
@@ -77,6 +87,7 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
     onSuccess: (res) => {
       alert(`'${res.name}' 문제집이 성공적으로 생성되었습니다.`)
       handleCloseCreateModal()
+      setCurrentPage(1)
       void queryClient.invalidateQueries({ queryKey: ['problemSets', groupId] })
     },
     onError: (err) => {
@@ -84,7 +95,7 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
     },
   })
 
-  // 문제집 삭제 Mutation (타입 자동 추론 적용)
+  // 4. 문제집 삭제 Mutation
   const deleteProblemSetMutation = useMutation({
     mutationFn: ({ problemSetId }: { problemSetId: string; name: string }) =>
       deleteProblemSet(groupId, problemSetId),
@@ -113,7 +124,7 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
     },
   })
 
-  // 모든 필드(난이도 포함) 필수 입력 여부 검증
+  // 모든 필드 필수 입력 여부 검증
   const isFormValid =
     Boolean(newProblemSetName.trim()) &&
     problems.length > 0 &&
@@ -212,8 +223,6 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
     })
   }
 
-  const problemSets = problemSetsQuery.data ?? []
-
   return (
     <VStack width="100%" gap={6}>
       {/* 상단 액션 버튼 */}
@@ -255,46 +264,60 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
           headingLevel={2}
         />
       ) : (
-        <List density="balanced" hasDividers>
-          {problemSets.map((ps) => {
-            const isDeletingThis =
-              deleteProblemSetMutation.isPending &&
-              deleteProblemSetMutation.variables.problemSetId ===
-                ps.problemSetId
+        <VStack width="100%" gap={6}>
+          <List density="balanced" hasDividers>
+            {problemSets.map((ps) => {
+              const isDeletingThis =
+                deleteProblemSetMutation.isPending &&
+                deleteProblemSetMutation.variables.problemSetId ===
+                  ps.problemSetId
 
-            return (
-              <div
-                key={ps.problemSetId}
-                onClick={() => {
-                  handleNavigateToProblemSetDetail(ps.problemSetId)
-                }}
-                style={{ cursor: 'pointer', userSelect: 'none' }}
-                title="클릭하여 문제 목록으로 이동"
-              >
-                <ListItem
-                  label={ps.name}
-                  description={`문제 수: ${String(ps.problemCount)}개 · 생성일: ${new Date(ps.createdAt).toLocaleDateString()}`}
-                  startContent={
-                    <Icon icon={BookOpen} size="sm" color="secondary" />
-                  }
-                  endContent={
-                    <Button
-                      label={isDeletingThis ? '삭제 중...' : '삭제'}
-                      size="sm"
-                      variant="destructive"
-                      isDisabled={deleteProblemSetMutation.isPending}
-                      icon={<Icon icon={Trash2} size="sm" />}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteProblemSet(ps.problemSetId, ps.name)
-                      }}
-                    />
-                  }
-                />
-              </div>
-            )
-          })}
-        </List>
+              return (
+                <div
+                  key={ps.problemSetId}
+                  onClick={() => {
+                    handleNavigateToProblemSetDetail(ps.problemSetId)
+                  }}
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
+                  title="클릭하여 문제 목록으로 이동"
+                >
+                  <ListItem
+                    label={ps.name}
+                    description={`문제 수: ${String(ps.problemCount)}개 · 생성일: ${new Date(ps.createdAt).toLocaleDateString()}`}
+                    startContent={
+                      <Icon icon={BookOpen} size="sm" color="secondary" />
+                    }
+                    endContent={
+                      <Button
+                        label={isDeletingThis ? '삭제 중...' : '삭제'}
+                        size="sm"
+                        variant="destructive"
+                        isDisabled={deleteProblemSetMutation.isPending}
+                        icon={<Icon icon={Trash2} size="sm" />}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteProblemSet(ps.problemSetId, ps.name)
+                        }}
+                      />
+                    }
+                  />
+                </div>
+              )
+            })}
+          </List>
+
+          {/* Pagination 컴포넌트 */}
+          <HStack hAlign="center" width="100%">
+            <Pagination
+              page={currentPage}
+              totalPages={totalPages}
+              isDisabled={problemSetsQuery.isFetching}
+              onChange={(page: number) => {
+                setCurrentPage(page)
+              }}
+            />
+          </HStack>
+        </VStack>
       )}
 
       {/* 문제집 생성 모달 */}
