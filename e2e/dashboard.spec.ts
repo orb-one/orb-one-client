@@ -33,7 +33,7 @@ test('keeps the public landing page usable on a narrow viewport', async ({
 
   await expect(
     page.getByRole('heading', {
-      name: '풀이를 모으고, 함께 돌아봅니다.',
+      name: '문제를 모아 풀이를 나눠 보세요',
       level: 1,
     }),
   ).toBeVisible()

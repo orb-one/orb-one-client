@@ -47,6 +47,8 @@ import { RootLayout } from '@/routes/__root'
 afterEach(() => {
   cleanup()
   useAppStore.getState().setLocale('ko')
+  document.documentElement.lang = 'ko'
+  document.title = '오브원'
   vi.clearAllMocks()
 })
 
@@ -60,12 +62,12 @@ it('renders the signed-out application shell with accessible navigation', () => 
     'backdrop-blur-md',
     'supports-[backdrop-filter]:bg-surface/80',
   )
-  const homeLink = within(navigation).getByRole('link', { name: 'O(1)' })
+  const homeLink = within(navigation).getByRole('link', { name: '오브원' })
 
   expect(homeLink).toHaveAttribute('href', '/')
   expect(homeLink.querySelector('img')).toHaveAttribute(
     'src',
-    '/brand/o1-wordmark-a.svg',
+    '/brand/orb-one-symbol.svg',
   )
   expect(
     within(navigation).getByRole('link', { name: '로그인' }),
@@ -85,6 +87,8 @@ it('renders the signed-out application shell with accessible navigation', () => 
   expect(screen.getByRole('main')).toContainElement(
     screen.getByText('Route content'),
   )
+  expect(document.documentElement).toHaveAttribute('lang', 'ko')
+  expect(document.title).toBe('오브원')
 })
 
 it('renders the signed-in user and logout action in the application shell', () => {
@@ -133,12 +137,17 @@ it('uses the active locale for the application navigation', () => {
   })
 
   expect(
+    within(navigation).getByRole('link', { name: 'Orb One' }),
+  ).toBeVisible()
+  expect(
     within(navigation).getByRole('link', { name: 'Sign in' }),
   ).toBeVisible()
   expect(
     within(navigation).getByRole('link', { name: 'Solutions' }),
   ).toBeVisible()
   expect(within(navigation).getByRole('link', { name: 'Groups' })).toBeVisible()
+  expect(document.documentElement).toHaveAttribute('lang', 'en')
+  expect(document.title).toBe('Orb One')
 })
 
 it('clears the current user without invalidating the query after logout succeeds', async () => {

@@ -3,6 +3,7 @@ interface SharedLearningPreviewCopy {
   collectionLabel: string
   collectionTitle: string
   linkedLabel: string
+  linkedProblem: string
   linkedTitle: string
   groupSolution: string
   solved: string
@@ -81,11 +82,14 @@ export function SharedLearningPreview({ copy }: SharedLearningPreviewProps) {
           <p className="text-xs font-medium text-[var(--color-text-secondary)]">
             {copy.linkedLabel}
           </p>
+          <p className="mt-4 text-xs font-medium text-[var(--color-accent)]">
+            {copy.linkedProblem}
+          </p>
           <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em]">
             {copy.linkedTitle}
           </h2>
 
-          <div className="mt-5 divide-y divide-[var(--color-border-subtle)] border-y border-[var(--color-border-subtle)]">
+          <div className="mt-4 divide-y divide-[var(--color-border-subtle)] border-y border-[var(--color-border-subtle)]">
             <SolutionRow
               language="Java"
               summary={copy.javaSummary}

@@ -4,8 +4,8 @@ interface BrandLogoProps {
 }
 
 const dimensions = {
-  sm: { width: 53, height: 28 },
-  md: { width: 61, height: 32 },
+  sm: { width: 28, height: 28 },
+  md: { width: 32, height: 32 },
 } as const
 
 export function BrandLogo({ label, size = 'md' }: BrandLogoProps) {
@@ -13,7 +13,7 @@ export function BrandLogo({ label, size = 'md' }: BrandLogoProps) {
 
   return (
     <img
-      src="/brand/o1-wordmark-a.svg"
+      src="/brand/orb-one-symbol.svg"
       width={width}
       height={height}
       alt={label ?? ''}

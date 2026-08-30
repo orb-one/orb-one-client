@@ -5,7 +5,7 @@ export const defaultLocale = 'ko'
 export const messages = {
   ko: {
     common: {
-      productName: 'O(1)',
+      productName: '오브원',
     },
     navigation: {
       mainLabel: '주요 탐색',
@@ -22,21 +22,22 @@ export const messages = {
     },
     landing: {
       hero: {
-        title: '풀이를 모으고, 함께 돌아봅니다.',
+        title: '문제를 모아 풀이를 나눠 보세요',
         description:
-          '여러 문제 제공자의 문제와 연결된 코드와 풀이 기록을 그룹 문제집에서 함께 찾아보세요.',
+          '여러 사이트의 문제를 스터디 문제집에 담고 문제별로 스터디원의 코드와 풀이를 확인할 수 있습니다',
       },
       preview: {
         ariaLabel:
-          '그룹 문제집에서 여러 제공자의 문제와 연결된 풀이를 함께 보는 예시',
-        collectionLabel: '그룹 문제집',
-        collectionTitle: '이번 주 알고리즘 스터디',
-        linkedLabel: '연결된 풀이',
-        linkedTitle: 'BOJ 1260 · DFS와 BFS',
-        groupSolution: '그룹 풀이',
+          '여러 사이트의 문제와 스터디원의 풀이를 보여주는 문제집 예시',
+        collectionLabel: '스터디 문제집',
+        collectionTitle: '이번 주 문제',
+        linkedLabel: '등록된 풀이',
+        linkedProblem: 'BOJ 1260',
+        linkedTitle: 'DFS와 BFS',
+        groupSolution: '스터디원 풀이',
         solved: '풀이 완료',
-        javaSummary: 'BFS와 DFS를 나누어 탐색 순서를 기록했습니다.',
-        pythonSummary: '인접 리스트 정렬과 방문 순서를 비교했습니다.',
+        javaSummary: 'DFS는 재귀로 구현하고 BFS는 큐로 순서를 관리했습니다',
+        pythonSummary: '인접 리스트를 정렬해 번호가 작은 정점부터 방문했습니다',
       },
       cta: {
         startRecording: '풀이 기록 시작',
@@ -45,53 +46,51 @@ export const messages = {
         viewGroups: '그룹 보기',
       },
       workflow: {
-        title: '서로 다른 문제를, 하나의 학습 흐름으로.',
+        title: '문제를 고른 뒤 이렇게 기록합니다',
         description:
-          '제공처가 달라도 풀이를 기록하고 그룹 문제집에서 함께 찾아볼 수 있습니다.',
+          '문제와 코드를 저장하고 풀이 과정을 적은 뒤 같은 문제에 등록된 다른 풀이를 확인할 수 있습니다',
         choose: {
-          title: '여러 제공처에서 고릅니다',
-          description:
-            'BOJ, JUNGOL, SWEA, Programmers에서 기록할 문제를 선택합니다.',
+          title: '문제를 고릅니다',
+          description: '지원하는 사이트에서 문제를 찾아 선택합니다',
         },
         record: {
-          title: '풀이 정보를 기록합니다',
-          description: '코드와 접근 과정, 해결 상태를 문제에 연결합니다.',
+          title: '코드를 올립니다',
+          description: '사용한 언어와 소스 코드를 저장합니다',
         },
         explain: {
-          title: '문제집으로 모읍니다',
-          description:
-            '함께 풀 문제를 제공처와 관계없이 한 문제집에 구성합니다.',
+          title: '풀이를 적습니다',
+          description: '어떻게 풀었는지 Markdown으로 남깁니다',
         },
         find: {
-          title: '그룹에서 함께 봅니다',
-          description: '문제집을 공유하고 각 문제에 연결된 풀이를 찾아봅니다.',
+          title: '다른 풀이도 봅니다',
+          description: '같은 문제에 등록된 스터디원의 풀이를 확인합니다',
         },
       },
       solutions: {
-        title: '코드만 남기지 마세요.',
+        title: '코드 옆에 풀이도 남겨두세요',
         description:
-          '풀이 과정, 해결 상태, 실행 시간과 메모리를 코드와 함께 기록할 수 있습니다.',
+          '코드와 함께 접근 방법과 해결 여부를 남기고 실행 시간과 메모리도 저장할 수 있습니다',
         cta: '풀이 보기',
       },
       groups: {
-        title: '다른 출처의 문제도, 같은 문제집에서.',
+        title: '스터디 문제는 한 문제집에',
         description:
-          '그룹 문제집에 여러 제공자의 문제를 모으고, 각 문제와 연결된 풀이를 함께 찾아볼 수 있습니다.',
+          '여러 사이트에서 고른 문제를 문제집에 담고 문제마다 등록된 풀이를 확인할 수 있습니다',
         cta: '그룹 보기',
       },
       support: {
-        title: '지원하는 문제 제공자',
+        title: '지원하는 문제 사이트',
       },
       finalCta: {
-        title: '흩어진 풀이를 함께 쓸 지식으로.',
+        title: '오늘 푼 문제부터 남겨보세요',
         description:
-          '여러 문제 제공자의 풀이를 기록하고 그룹 문제집에서 공유하는 학습 공간을 시작하세요.',
+          '문제와 코드를 저장하고 풀이 과정도 남겨두면 필요할 때 다시 찾아볼 수 있습니다',
       },
       images: {
         solutionAlt: '코드와 풀이 설명을 함께 보여주는 풀이 상세 화면',
         groupAlt: '그룹에서 함께 풀 문제를 정리한 문제집 화면',
       },
-      footer: '여러 문제 제공자의 풀이를 모으고 공유하는 학습 플랫폼',
+      footer: '알고리즘 문제와 풀이를 기록하고 나누는 서비스',
     },
     auth: {
       sessionExpired: '세션이 만료되었습니다. 다시 로그인해 주세요.',
@@ -392,7 +391,7 @@ export const messages = {
   },
   en: {
     common: {
-      productName: 'O(1)',
+      productName: 'Orb One',
     },
     navigation: {
       mainLabel: 'Main navigation',
@@ -409,22 +408,24 @@ export const messages = {
     },
     landing: {
       hero: {
-        title: 'Collect solutions. Review them together.',
+        title: 'Share solutions for the problems you study',
         description:
-          'Bring problems, code, and solution notes from different providers into shared group problem sets.',
+          'Add problems from different sites to a shared problem set and review the code and notes your group saved for each one',
       },
       preview: {
         ariaLabel:
-          'Example of problems from multiple providers and their linked solutions in a group problem set',
-        collectionLabel: 'Group problem set',
-        collectionTitle: "This week's algorithm study",
-        linkedLabel: 'Linked solutions',
-        linkedTitle: 'BOJ 1260 · DFS와 BFS',
+          'Example of problems from several sites and the solutions saved by a study group',
+        collectionLabel: 'Study problem set',
+        collectionTitle: 'Problems for this week',
+        linkedLabel: 'Saved solutions',
+        linkedProblem: 'BOJ 1260',
+        linkedTitle: 'DFS와 BFS',
         groupSolution: 'Group solution',
         solved: 'Solved',
-        javaSummary: 'Recorded the traversal order for BFS and DFS separately.',
+        javaSummary:
+          'Used recursion for DFS and a queue to control the BFS order',
         pythonSummary:
-          'Compared adjacency-list sorting with the resulting visit order.',
+          'Sorted each adjacency list to visit lower-numbered vertices first',
       },
       cta: {
         startRecording: 'Start recording',
@@ -433,55 +434,52 @@ export const messages = {
         viewGroups: 'View groups',
       },
       workflow: {
-        title: 'One learning flow across problem platforms.',
+        title: 'Keep each problem with its solution',
         description:
-          'Record solutions from different providers, then find them together through group problem sets.',
+          'Save the code and reasoning then review how others solved the same problem',
         choose: {
-          title: 'Choose across providers',
-          description:
-            'Select a problem from BOJ, JUNGOL, SWEA, or Programmers.',
+          title: 'Choose a problem',
+          description: 'Find it by site and problem number',
         },
         record: {
-          title: 'Record the solution',
-          description:
-            'Connect the code, reasoning, and status to the problem.',
+          title: 'Upload the code',
+          description: 'Save the language and source code',
         },
         explain: {
-          title: 'Collect a problem set',
-          description: 'Bring problems from different providers into one set.',
+          title: 'Write down the approach',
+          description: 'Explain how you solved it in Markdown',
         },
         find: {
-          title: 'Share it with the group',
-          description:
-            'Share the set and find solutions linked to each problem.',
+          title: 'Review other solutions',
+          description: 'See the notes your group saved for the same problem',
         },
       },
       solutions: {
-        title: 'Keep more than the code.',
+        title: 'Keep the reasoning next to the code',
         description:
-          'Save the approach, solution status, runtime, and memory alongside the source code.',
+          'Save the approach and status with the code then add runtime and memory when you have them',
         cta: 'View solutions',
       },
       groups: {
-        title: 'Different sources, one shared problem set.',
+        title: 'Build one problem set from different sites',
         description:
-          'Collect problems from multiple providers and find the solutions linked to each one with your group.',
+          'Add problems from different sites and review the solutions saved for each one',
         cta: 'View groups',
       },
       support: {
-        title: 'Supported problem providers',
+        title: 'Problem sites currently supported',
       },
       finalCta: {
-        title: 'Turn scattered solutions into shared knowledge.',
+        title: 'Save the next problem you solve',
         description:
-          'Start a learning space for recording solutions and sharing them through group problem sets.',
+          'Save the problem with its code and reasoning so you can find it again',
       },
       images: {
         solutionAlt:
           'Solution detail showing source code and written reasoning',
         groupAlt: 'Group problem set organizing problems to solve together',
       },
-      footer: 'A learning platform for collecting and sharing solutions',
+      footer: 'Record solutions and share them with your study group',
     },
     auth: {
       sessionExpired: 'Your session has expired. Please sign in again.',

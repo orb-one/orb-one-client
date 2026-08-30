@@ -51,7 +51,7 @@ export function LandingPage() {
         <div className="landing-hero-copy lg:col-span-5 lg:pl-[4vw]">
           <h1
             id="landing-hero-title"
-            className="max-w-[15ch] text-[clamp(3rem,4vw,3.75rem)] leading-[0.98] font-semibold tracking-[-0.055em] text-balance break-keep"
+            className="max-w-[22ch] text-[clamp(3rem,4vw,3.75rem)] leading-[0.98] font-semibold tracking-[-0.055em] text-balance break-keep"
           >
             {copy.hero.title}
           </h1>
@@ -91,7 +91,7 @@ export function LandingPage() {
         <div className="max-w-[720px]">
           <h2
             id="landing-workflow-title"
-            className="text-3xl leading-tight font-semibold tracking-[-0.035em] md:text-5xl"
+            className="text-3xl leading-tight font-semibold tracking-[-0.035em] break-keep md:text-5xl"
           >
             {copy.workflow.title}
           </h2>
@@ -126,7 +126,7 @@ export function LandingPage() {
           <img
             src={solutionDetailImage}
             width={1440}
-            height={1000}
+            height={952}
             alt={copy.images.solutionAlt}
             loading="lazy"
             decoding="async"
@@ -136,7 +136,7 @@ export function LandingPage() {
         <div className="lg:col-span-5 lg:pr-[4vw]">
           <h2
             id="landing-solutions-title"
-            className="max-w-[11ch] text-4xl leading-[1.04] font-semibold tracking-[-0.04em] md:text-5xl"
+            className="max-w-[11ch] text-4xl leading-[1.04] font-semibold tracking-[-0.04em] break-keep md:text-5xl"
           >
             {copy.solutions.title}
           </h2>
@@ -162,7 +162,7 @@ export function LandingPage() {
         <div className="lg:col-span-5 lg:pl-[4vw]">
           <h2
             id="landing-groups-title"
-            className="max-w-[12ch] text-4xl leading-[1.04] font-semibold tracking-[-0.04em] md:text-5xl"
+            className="max-w-[12ch] text-4xl leading-[1.04] font-semibold tracking-[-0.04em] break-keep md:text-5xl"
           >
             {copy.groups.title}
           </h2>
@@ -183,7 +183,7 @@ export function LandingPage() {
           <img
             src={groupProblemSetImage}
             width={1440}
-            height={650}
+            height={602}
             alt={copy.images.groupAlt}
             loading="lazy"
             decoding="async"
@@ -198,7 +198,7 @@ export function LandingPage() {
       >
         <h2
           id="landing-final-cta-title"
-          className="max-w-[13ch] text-4xl leading-[1.04] font-semibold tracking-[-0.045em] text-balance md:text-6xl"
+          className="max-w-[13ch] text-4xl leading-[1.04] font-semibold tracking-[-0.045em] text-balance break-keep md:text-6xl"
         >
           {copy.finalCta.title}
         </h2>

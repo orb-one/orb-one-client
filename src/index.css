@@ -33,12 +33,6 @@ body {
     --color-on-accent: light-dark(#fafafa, #171717);
   }
 
-  @media (prefers-color-scheme: dark) {
-    .brand-logo {
-      filter: invert(1);
-    }
-  }
-
   .landing-provider-marquee {
     mask-image: linear-gradient(
       to right,

@@ -13,7 +13,7 @@ import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { LogOut } from 'lucide-react'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { BrandLogo } from '@/components/brand/brand-logo'
 import { logoutAccount } from '@/lib/api/auth'
@@ -23,7 +23,7 @@ import {
   currentUserQueryOptions,
 } from '@/lib/auth/auth-queries'
 import { signOutMockUser } from '@/lib/auth/mock-auth-session'
-import { useTranslations } from '@/lib/i18n/use-translations'
+import { useI18n, useTranslations } from '@/lib/i18n/use-translations'
 
 const logoutErrorToastId = 'auth.logout.error'
 
@@ -32,7 +32,12 @@ export const Route = createRootRoute({
 })
 
 export function RootLayout() {
-  const t = useTranslations()
+  const { locale, t } = useI18n()
+
+  useEffect(() => {
+    document.documentElement.lang = locale
+    document.title = t.common.productName
+  }, [locale, t.common.productName])
 
   return (
     <AppShell

@@ -24,13 +24,13 @@ it('renders the public landing page with real product imagery and signed-out act
 
   expect(
     screen.getByRole('heading', {
-      name: '풀이를 모으고, 함께 돌아봅니다.',
+      name: '문제를 모아 풀이를 나눠 보세요',
       level: 1,
     }),
   ).toBeVisible()
   expect(
     screen.getByRole('heading', {
-      name: '서로 다른 문제를, 하나의 학습 흐름으로.',
+      name: '문제를 고른 뒤 이렇게 기록합니다',
     }),
   ).toBeVisible()
   expect(screen.getByText('BOJ', { selector: 'span' })).toBeVisible()
@@ -46,7 +46,7 @@ it('renders the public landing page with real product imagery and signed-out act
 
   expect(
     screen.getByRole('group', {
-      name: '그룹 문제집에서 여러 제공자의 문제와 연결된 풀이를 함께 보는 예시',
+      name: '여러 사이트의 문제와 스터디원의 풀이를 보여주는 문제집 예시',
     }),
   ).toBeVisible()
   expect(
@@ -92,7 +92,7 @@ it('uses the active locale for landing copy and actions', () => {
 
   expect(
     screen.getByRole('heading', {
-      name: 'Collect solutions. Review them together.',
+      name: 'Share solutions for the problems you study',
       level: 1,
     }),
   ).toBeVisible()
@@ -101,7 +101,7 @@ it('uses the active locale for landing copy and actions', () => {
   ).toHaveAttribute('href', '/register')
   expect(
     screen.getByRole('group', {
-      name: 'Example of problems from multiple providers and their linked solutions in a group problem set',
+      name: 'Example of problems from several sites and the solutions saved by a study group',
     }),
   ).toBeVisible()
 })
