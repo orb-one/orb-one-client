@@ -2,7 +2,7 @@ import { apiClient } from '@/lib/api/client'
 
 // 1. API Response DTO
 
-// 1) [전체 그룹 조회]
+// 1) [전체 그룹 조회 DTO]
 export interface GroupSummaryResponse {
   groupId: string
   name: string
@@ -11,9 +11,20 @@ export interface GroupSummaryResponse {
   isMember: boolean
 }
 
-export type GetGroupsResponse = GroupSummaryResponse[]
+export interface GetGroupsParams {
+  page?: number // 0-based index
+  size?: number
+}
 
-// 2) [특정 그룹 상세 조회]
+export interface GetGroupsResponse {
+  items: GroupSummaryResponse[]
+  page: number
+  size: number
+  totalCount: number
+  hasNext: boolean
+}
+
+// 2) [특정 그룹 상세 조회 DTO]
 export interface GroupMemberResponse {
   userId: string
   nickname: string
@@ -70,7 +81,6 @@ export interface TransferGroupOwnershipResponse {
 
 // 2. UI/프론트엔드 도메인 모델
 
-// 1) 전체 목록용 요약 도메인
 export interface GroupSummary {
   groupId: string
   name: string
@@ -79,14 +89,21 @@ export interface GroupSummary {
   isMember: boolean
 }
 
-// 2) 상세 페이지용 멤버 도메인
+export interface PaginatedGroups {
+  items: GroupSummary[]
+  page: number
+  size: number
+  totalCount: number
+  totalPages: number
+  hasNext: boolean
+}
+
 export interface GroupMember {
   userId: string
   nickname: string
   role: string
 }
 
-// 3) 상세 페이지용 전체 도메인
 export interface GroupDetail {
   groupId: string
   name: string
@@ -105,6 +122,21 @@ export function mapGroupSummary(response: GroupSummaryResponse): GroupSummary {
   }
 }
 
+export function mapPaginatedGroups(response: GetGroupsResponse): PaginatedGroups {
+  const size = response.size || 10
+  const totalCount = response.totalCount || 0
+  const totalPages = Math.max(1, Math.ceil(totalCount / size))
+
+  return {
+    items: response.items.map(mapGroupSummary),
+    page: response.page,
+    size: response.size,
+    totalCount: response.totalCount,
+    totalPages,
+    hasNext: response.hasNext,
+  }
+}
+
 function mapGroupDetail(response: GroupDetailResponse): GroupDetail {
   return {
     groupId: response.groupId,
@@ -119,10 +151,22 @@ function mapGroupDetail(response: GroupDetailResponse): GroupDetail {
 
 // 4. API 요청 함수
 
-// 1) 전체 그룹 목록 조회 (GET /groups)
-export async function getGroups(): Promise<GroupSummary[]> {
-  const response = await apiClient<GroupSummaryResponse[]>('/groups')
-  return response.map(mapGroupSummary)
+// 1) 전체 그룹 목록 조회 (GET /groups?page=0&size=10)
+export async function getGroups(
+  params: GetGroupsParams = { page: 0, size: 20 },
+): Promise<PaginatedGroups> {
+  const page = params.page ?? 0
+  const size = params.size ?? 20
+
+  const query = new URLSearchParams()
+  query.set('page', String(page))
+  query.set('size', String(size))
+
+  const response = await apiClient<GetGroupsResponse>(
+    `/groups?${query.toString()}`,
+  )
+
+  return mapPaginatedGroups(response)
 }
 
 // 2) 특정 그룹 상세 정보 조회 (GET /groups/{groupId})
