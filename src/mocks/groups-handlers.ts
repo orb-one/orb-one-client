@@ -183,7 +183,7 @@ export const groupHandlers = [
     if (index !== -1) {
       mockGroupSummaryList.splice(index, 1)
     }
-    delete mockGroupDetails[groupId]
+    Reflect.deleteProperty(mockGroupDetails, groupId)
 
     return new HttpResponse(null, { status: 204 })
   }),

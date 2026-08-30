@@ -118,7 +118,7 @@ export function GroupListPage() {
     try {
       setIsCheckingGroupId(group.groupId)
 
-      // 그룹 상세 정보 및 접근 권한 사전 검증      
+      // 그룹 상세 정보 및 접근 권한 사전 검증
       await getGroup(group.groupId)
 
       // 성공 시 상세 페이지로 이동
@@ -275,7 +275,9 @@ export function GroupListPage() {
                 page={currentPage}
                 totalPages={totalPages}
                 isDisabled={groupsQuery.isFetching}
-                onChange={(page: number) => setCurrentPage(page)}
+                onChange={(page: number) => {
+                  setCurrentPage(page)
+                }}
               />
             </HStack>
           </VStack>
