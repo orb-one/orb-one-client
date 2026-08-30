@@ -7,6 +7,7 @@ import { EmptyState } from '@astryxdesign/core/EmptyState'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
+import { Pagination } from '@astryxdesign/core/Pagination'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
 import { TextInput } from '@astryxdesign/core/TextInput'
@@ -69,6 +70,10 @@ export function ProblemSetDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
+  // 1. 페이지네이션 상태 관리
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 20
+
   const [expandedProblemId, setExpandedProblemId] = useState<string | null>(
     null,
   )
@@ -79,19 +84,35 @@ export function ProblemSetDetailPage() {
     { ...INITIAL_PROBLEM },
   ])
 
-  // 문제집 상세 및 문제 목록 조회 Query
+  // 2. 문제집 상세 및 문제 목록 조회 Query
   const {
     data: problemSet,
     isLoading,
+    isFetching,
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['problemSetDetail', groupId, problemSetId],
-    queryFn: () => getProblemSetDetail(groupId, problemSetId),
+    queryKey: [
+      'problemSetDetail',
+      groupId,
+      problemSetId,
+      currentPage,
+      pageSize,
+    ],
+    queryFn: () =>
+      getProblemSetDetail(groupId, problemSetId, {
+        page: currentPage - 1,
+        size: pageSize,
+      }),
+    placeholderData: (previousData) => previousData,
     enabled: Boolean(groupId && problemSetId),
   })
 
-  // 문제 추가 Mutation
+  const problems = problemSet?.problems ?? []
+  const totalPages = problemSet?.totalPages ?? 1
+  const totalCount = problemSet?.totalCount ?? 0
+
+  // 3. 문제 추가 Mutation
   const addProblemsMutation = useMutation<
     AddProblemsResponse,
     ApiErrorResponse,
@@ -127,12 +148,17 @@ export function ProblemSetDetailPage() {
     },
   })
 
-  // 문제 삭제 Mutation
+  // 4. 문제 삭제 Mutation
   const deleteProblemMutation = useMutation({
     mutationFn: ({ problemId }: { problemId: string; name: string }) =>
       deleteProblemFromProblemSet(groupId, problemSetId, problemId),
     onSuccess: (_, variables) => {
       alert(`'${variables.name}' 문제가 성공적으로 삭제되었습니다.`)
+
+      if (problems.length === 1 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1)
+      }
+
       void queryClient.invalidateQueries({
         queryKey: ['problemSetDetail', groupId, problemSetId],
       })
@@ -247,7 +273,6 @@ export function ProblemSetDetailPage() {
     }
   }
 
-  const problems = problemSet?.problems ?? []
   const createdDate = problemSet?.createdAt
     ? new Date(problemSet.createdAt).toLocaleDateString()
     : '-'
@@ -288,7 +313,7 @@ export function ProblemSetDetailPage() {
               <HStack vAlign="center" gap={3} wrap="wrap">
                 <Heading level={1}>{problemSet?.name ?? '문제집 상세'}</Heading>
                 <Badge
-                  label={`총 ${String(problems.length)}문제`}
+                  label={`총 ${String(totalCount)}문제`}
                   variant="neutral"
                 />
               </HStack>
@@ -351,242 +376,267 @@ export function ProblemSetDetailPage() {
             headingLevel={2}
           />
         ) : (
-          /* 개별 문제 카드 목록 */
-          <VStack gap={3} width="100%">
-            {problems.map((problem, index) => {
-              const isExpanded = expandedProblemId === problem.problemId
-              const isDeletingThis =
-                deleteProblemMutation.isPending &&
-                deleteProblemMutation.variables.problemId === problem.problemId
+          /* 개별 문제 카드 목록 및 페이지네이션 */
+          <VStack gap={4} width="100%">
+            <VStack gap={3} width="100%">
+              {problems.map((problem, index) => {
+                const problemIndex = (currentPage - 1) * pageSize + index + 1
+                const isExpanded = expandedProblemId === problem.problemId
+                const isDeletingThis =
+                  deleteProblemMutation.isPending &&
+                  deleteProblemMutation.variables.problemId ===
+                    problem.problemId
 
-              return (
-                <div
-                  key={problem.problemId}
-                  style={{
-                    backgroundColor: 'var(--color-bg-surface, #ffffff)',
-                    border: isExpanded
-                      ? '1px solid var(--color-border-accent, #3b82f6)'
-                      : '1px solid var(--color-border-subtle, #e2e8f0)',
-                    borderRadius: '12px',
-                    boxShadow: isExpanded
-                      ? '0 4px 12px rgba(0, 0, 0, 0.05)'
-                      : '0 1px 3px rgba(0, 0, 0, 0.02)',
-                    transition: 'all 0.2s ease-in-out',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {/* 카드 헤더 */}
+                return (
                   <div
-                    onClick={() => {
-                      handleToggleExpand(problem.problemId)
-                    }}
+                    key={problem.problemId}
                     style={{
-                      padding: '16px 20px',
-                      cursor: 'pointer',
-                      userSelect: 'none',
+                      backgroundColor: 'var(--color-bg-surface, #ffffff)',
+                      border: isExpanded
+                        ? '1px solid var(--color-border-accent, #3b82f6)'
+                        : '1px solid var(--color-border-subtle, #e2e8f0)',
+                      borderRadius: '12px',
+                      boxShadow: isExpanded
+                        ? '0 4px 12px rgba(0, 0, 0, 0.05)'
+                        : '0 1px 3px rgba(0, 0, 0, 0.02)',
+                      transition: 'all 0.2s ease-in-out',
+                      overflow: 'hidden',
                     }}
                   >
-                    <HStack
-                      width="100%"
-                      vAlign="center"
-                      hAlign="between"
-                      gap={3}
-                      wrap="wrap"
-                    >
-                      {/* 번호 + 플랫폼 + 문제명 + 번호 */}
-                      <HStack vAlign="center" gap={3} style={{ minWidth: 0 }}>
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            color: 'var(--color-text-secondary, #64748b)',
-                            fontSize: '14px',
-                            minWidth: '24px',
-                          }}
-                        >
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                        <Badge label={problem.provider} variant="neutral" />
-                        <Text type="body">
-                          <strong>{problem.name}</strong>
-                        </Text>
-                        <span
-                          style={{
-                            color: 'var(--color-text-tertiary, #94a3b8)',
-                            fontSize: '13px',
-                          }}
-                        >
-                          #{problem.externalProblemId}
-                        </span>
-                      </HStack>
-
-                      {/* 풀이 + 삭제 */}
-                      <HStack vAlign="center" gap={2}>
-                        <Button
-                          label="풀이"
-                          size="sm"
-                          variant="secondary"
-                          icon={<Icon icon={Code2} size="sm" />}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleGoToSolution(problem.problemId)
-                          }}
-                        />
-                        <Button
-                          label={isDeletingThis ? '삭제 중...' : '삭제'}
-                          size="sm"
-                          variant="destructive"
-                          isDisabled={deleteProblemMutation.isPending}
-                          icon={<Icon icon={Trash2} size="sm" />}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteProblem(problem.problemId, problem.name)
-                          }}
-                        />
-                        <div
-                          style={{
-                            padding: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: 'var(--color-text-secondary, #64748b)',
-                          }}
-                        >
-                          <Icon
-                            icon={isExpanded ? ChevronUp : ChevronDown}
-                            size="sm"
-                            color="inherit"
-                          />
-                        </div>
-                      </HStack>
-                    </HStack>
-                  </div>
-
-                  {/* 상세 패널 */}
-                  {isExpanded && (
+                    {/* 카드 헤더 */}
                     <div
+                      onClick={() => {
+                        handleToggleExpand(problem.problemId)
+                      }}
                       style={{
                         padding: '16px 20px',
-                        backgroundColor: 'var(--color-bg-subtle, #f8fafc)',
-                        borderTop:
-                          '1px solid var(--color-border-subtle, #e2e8f0)',
+                        cursor: 'pointer',
+                        userSelect: 'none',
                       }}
                     >
-                      <VStack gap={3} width="100%">
-                        <HStack
-                          width="100%"
-                          gap={6}
-                          wrap="wrap"
-                          vAlign="center"
-                        >
-                          <VStack gap={0.5}>
-                            <Text type="supporting" color="secondary">
-                              플랫폼
-                            </Text>
-                            <Text type="body">
-                              <code
-                                style={{
-                                  fontSize: '12px',
-                                  padding: '2px 6px',
-                                  backgroundColor: '#e2e8f0',
-                                  borderRadius: '4px',
-                                }}
-                              >
-                                {problem.provider}
-                              </code>
-                            </Text>
-                          </VStack>
-
-                          <VStack gap={0.5}>
-                            <Text type="supporting" color="secondary">
-                              문제 번호
-                            </Text>
-                            <Text type="body">
-                              <code
-                                style={{
-                                  fontSize: '12px',
-                                  padding: '2px 6px',
-                                  backgroundColor: '#e2e8f0',
-                                  borderRadius: '4px',
-                                }}
-                              >
-                                {problem.externalProblemId}
-                              </code>
-                            </Text>
-                          </VStack>
-
-                          <VStack gap={0.5}>
-                            <Text type="supporting" color="secondary">
-                              난이도 수준
-                            </Text>
-                            <HStack vAlign="center" gap={1}>
-                              <Icon icon={Sparkles} size="sm" color="accent" />
-                              <Text type="body">
-                                <strong>{problem.difficulty}</strong>
-                              </Text>
-                            </HStack>
-                          </VStack>
-                        </HStack>
-
-                        {/* 외부 링크 바로가기 바 */}
-                        {problem.url ? (
-                          <div
+                      <HStack
+                        width="100%"
+                        vAlign="center"
+                        hAlign="between"
+                        gap={3}
+                        wrap="wrap"
+                      >
+                        {/* 번호 + 플랫폼 + 문제명 + 번호 */}
+                        <HStack vAlign="center" gap={3} style={{ minWidth: 0 }}>
+                          <span
                             style={{
-                              marginTop: '4px',
-                              padding: '10px 14px',
-                              backgroundColor: '#ffffff',
-                              borderRadius: '8px',
-                              border:
-                                '1px solid var(--color-border-subtle, #e2e8f0)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
+                              fontWeight: 700,
+                              color: 'var(--color-text-secondary, #64748b)',
+                              fontSize: '14px',
+                              minWidth: '24px',
                             }}
                           >
-                            <HStack
-                              gap={2}
-                              vAlign="center"
-                              style={{ minWidth: 0 }}
-                            >
-                              <Icon
-                                icon={ExternalLink}
-                                size="sm"
-                                color="accent"
-                              />
-                              <Text type="body" color="secondary">
-                                <span
+                            {String(problemIndex).padStart(2, '0')}
+                          </span>
+                          <Badge label={problem.provider} variant="neutral" />
+                          <Text type="body">
+                            <strong>{problem.name}</strong>
+                          </Text>
+                          <span
+                            style={{
+                              color: 'var(--color-text-tertiary, #94a3b8)',
+                              fontSize: '13px',
+                            }}
+                          >
+                            #{problem.externalProblemId}
+                          </span>
+                        </HStack>
+
+                        {/* 풀이 + 삭제 */}
+                        <HStack vAlign="center" gap={2}>
+                          <Button
+                            label="풀이"
+                            size="sm"
+                            variant="secondary"
+                            icon={<Icon icon={Code2} size="sm" />}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleGoToSolution(problem.problemId)
+                            }}
+                          />
+                          <Button
+                            label={isDeletingThis ? '삭제 중...' : '삭제'}
+                            size="sm"
+                            variant="destructive"
+                            isDisabled={deleteProblemMutation.isPending}
+                            icon={<Icon icon={Trash2} size="sm" />}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteProblem(
+                                problem.problemId,
+                                problem.name,
+                              )
+                            }}
+                          />
+                          <div
+                            style={{
+                              padding: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              color: 'var(--color-text-secondary, #64748b)',
+                            }}
+                          >
+                            <Icon
+                              icon={isExpanded ? ChevronUp : ChevronDown}
+                              size="sm"
+                              color="inherit"
+                            />
+                          </div>
+                        </HStack>
+                      </HStack>
+                    </div>
+
+                    {/* 상세 패널 */}
+                    {isExpanded && (
+                      <div
+                        style={{
+                          padding: '16px 20px',
+                          backgroundColor: 'var(--color-bg-subtle, #f8fafc)',
+                          borderTop:
+                            '1px solid var(--color-border-subtle, #e2e8f0)',
+                        }}
+                      >
+                        <VStack gap={3} width="100%">
+                          <HStack
+                            width="100%"
+                            gap={6}
+                            wrap="wrap"
+                            vAlign="center"
+                          >
+                            <VStack gap={0.5}>
+                              <Text type="supporting" color="secondary">
+                                플랫폼
+                              </Text>
+                              <Text type="body">
+                                <code
                                   style={{
-                                    maxWidth: '500px',
-                                    display: 'inline-block',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    verticalAlign: 'bottom',
+                                    fontSize: '12px',
+                                    padding: '2px 6px',
+                                    backgroundColor: '#e2e8f0',
+                                    borderRadius: '4px',
                                   }}
                                 >
-                                  {problem.url}
-                                </span>
+                                  {problem.provider}
+                                </code>
                               </Text>
-                            </HStack>
-                            <a
-                              href={problem.url}
-                              target="_blank"
-                              rel="noreferrer noopener"
+                            </VStack>
+
+                            <VStack gap={0.5}>
+                              <Text type="supporting" color="secondary">
+                                문제 번호
+                              </Text>
+                              <Text type="body">
+                                <code
+                                  style={{
+                                    fontSize: '12px',
+                                    padding: '2px 6px',
+                                    backgroundColor: '#e2e8f0',
+                                    borderRadius: '4px',
+                                  }}
+                                >
+                                  {problem.externalProblemId}
+                                </code>
+                              </Text>
+                            </VStack>
+
+                            <VStack gap={0.5}>
+                              <Text type="supporting" color="secondary">
+                                난이도 수준
+                              </Text>
+                              <HStack vAlign="center" gap={1}>
+                                <Icon
+                                  icon={Sparkles}
+                                  size="sm"
+                                  color="accent"
+                                />
+                                <Text type="body">
+                                  <strong>
+                                    {problem.difficulty ?? '미지정'}
+                                  </strong>
+                                </Text>
+                              </HStack>
+                            </VStack>
+                          </HStack>
+
+                          {/* 외부 링크 바로가기 바 */}
+                          {problem.url ? (
+                            <div
                               style={{
-                                color: '#2563eb',
-                                fontSize: '13px',
-                                fontWeight: 600,
-                                textDecoration: 'none',
+                                marginTop: '4px',
+                                padding: '10px 14px',
+                                backgroundColor: '#ffffff',
+                                borderRadius: '8px',
+                                border:
+                                  '1px solid var(--color-border-subtle, #e2e8f0)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
                               }}
                             >
-                              문제 원문 열기 ↗
-                            </a>
-                          </div>
-                        ) : null}
-                      </VStack>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                              <HStack
+                                gap={2}
+                                vAlign="center"
+                                style={{ minWidth: 0 }}
+                              >
+                                <Icon
+                                  icon={ExternalLink}
+                                  size="sm"
+                                  color="accent"
+                                />
+                                <Text type="body" color="secondary">
+                                  <span
+                                    style={{
+                                      maxWidth: '500px',
+                                      display: 'inline-block',
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      verticalAlign: 'bottom',
+                                    }}
+                                  >
+                                    {problem.url}
+                                  </span>
+                                </Text>
+                              </HStack>
+                              <a
+                                href={problem.url}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                style={{
+                                  color: '#2563eb',
+                                  fontSize: '13px',
+                                  fontWeight: 600,
+                                  textDecoration: 'none',
+                                }}
+                              >
+                                문제 원문 열기 ↗
+                              </a>
+                            </div>
+                          ) : null}
+                        </VStack>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </VStack>
+
+            {/* Pagination 컴포넌트 */}
+            <HStack hAlign="center" width="100%">
+              <Pagination
+                page={currentPage}
+                totalPages={totalPages}
+                isDisabled={isFetching}
+                onChange={(page: number) => {
+                  setCurrentPage(page)
+                }}
+              />
+            </HStack>
           </VStack>
         )}
 
