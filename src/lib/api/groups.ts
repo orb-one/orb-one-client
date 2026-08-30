@@ -122,7 +122,9 @@ export function mapGroupSummary(response: GroupSummaryResponse): GroupSummary {
   }
 }
 
-export function mapPaginatedGroups(response: GetGroupsResponse): PaginatedGroups {
+export function mapPaginatedGroups(
+  response: GetGroupsResponse,
+): PaginatedGroups {
   const size = response.size || 10
   const totalCount = response.totalCount || 0
   const totalPages = Math.max(1, Math.ceil(totalCount / size))
