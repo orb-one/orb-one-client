@@ -7,6 +7,7 @@ import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
 import { List, ListItem } from '@astryxdesign/core/List'
+import { Pagination } from '@astryxdesign/core/Pagination'
 import { Section } from '@astryxdesign/core/Section'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
@@ -33,6 +34,9 @@ export function GroupListPage() {
   const navigate = useNavigate()
 
   // 1. 상태 관리
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 20
+
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
@@ -43,13 +47,15 @@ export function GroupListPage() {
   // i18n 다국어 문구
   const copy = t.groups
 
-  // 2. 그룹 목록 조회 Query
+  // 2. 그룹 목록 조회 Query -> GET /groups?page=0&size=20
   const groupsQuery = useQuery({
-    queryKey: ['groups'],
-    queryFn: () => getGroups(),
+    queryKey: ['groups', currentPage, pageSize],
+    queryFn: () => getGroups({ page: currentPage - 1, size: pageSize }),
+    placeholderData: (previousData) => previousData,
   })
 
-  const groups = groupsQuery.data ?? []
+  const groups = groupsQuery.data?.items ?? []
+  const totalPages = groupsQuery.data?.totalPages ?? 1
 
   // 3. 그룹 가입 POST /groups/{groupId}/members
   const joinGroupMutation = useMutation({
@@ -69,6 +75,7 @@ export function GroupListPage() {
     onSuccess: () => {
       alert('새로운 그룹이 성공적으로 생성되었습니다.')
       handleCloseCreateModal()
+      setCurrentPage(1)
       void queryClient.invalidateQueries({ queryKey: ['groups'] })
     },
     onError: (error) => {
@@ -110,6 +117,7 @@ export function GroupListPage() {
 
     try {
       setIsCheckingGroupId(group.groupId)
+
       // 그룹 상세 정보 및 접근 권한 사전 검증
       await getGroup(group.groupId)
 
@@ -190,78 +198,92 @@ export function GroupListPage() {
             headingLevel={2}
           />
         ) : (
-          /* 3. 데이터 목록 영역 */
-          <Section width="100%" padding={0} dividers={['bottom']}>
-            <List density="balanced" hasDividers>
-              {groups.map((group) => {
-                const isHovered = hoveredGroupId === group.groupId
-                const isChecking = isCheckingGroupId === group.groupId
-                const isJoiningThis =
-                  joinGroupMutation.isPending &&
-                  joinGroupMutation.variables === group.groupId
+          /* 3. 데이터 목록 및 Pagination 컴포넌트 */
+          <VStack width="100%" gap={6}>
+            <Section width="100%" padding={0} dividers={['bottom']}>
+              <List density="balanced" hasDividers>
+                {groups.map((group) => {
+                  const isHovered = hoveredGroupId === group.groupId
+                  const isChecking = isCheckingGroupId === group.groupId
+                  const isJoiningThis =
+                    joinGroupMutation.isPending &&
+                    joinGroupMutation.variables === group.groupId
 
-                return (
-                  <div
-                    key={group.groupId}
-                    onClick={() => {
-                      void handleRowClick(group)
-                    }}
-                    onMouseEnter={() => {
-                      setHoveredGroupId(group.groupId)
-                    }}
-                    onMouseLeave={() => {
-                      setHoveredGroupId(null)
-                    }}
-                    style={{
-                      cursor: isChecking ? 'wait' : 'pointer',
-                      opacity: isChecking ? 0.6 : 1,
-                      backgroundColor: isHovered
-                        ? 'var(--astryxdesign-color-bg-selected, rgba(59, 130, 246, 0.12))'
-                        : 'transparent',
-                      borderRadius: '8px',
-                      transition: 'background-color 0.15s ease',
-                      userSelect: 'none',
-                    }}
-                    title={
-                      group.isMember
-                        ? '클릭하여 그룹으로 이동'
-                        : '미가입 그룹입니다. [그룹 가입] 버튼을 눌러 입장하세요.'
-                    }
-                  >
-                    <ListItem
-                      label={group.name}
-                      startContent={
-                        <Icon
-                          icon={Layers}
-                          size="sm"
-                          color={isHovered ? 'accent' : 'secondary'}
-                        />
+                  return (
+                    <div
+                      key={group.groupId}
+                      onClick={() => {
+                        void handleRowClick(group)
+                      }}
+                      onMouseEnter={() => {
+                        setHoveredGroupId(group.groupId)
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredGroupId(null)
+                      }}
+                      style={{
+                        cursor: isChecking ? 'wait' : 'pointer',
+                        opacity: isChecking ? 0.6 : 1,
+                        backgroundColor: isHovered
+                          ? 'var(--astryxdesign-color-bg-selected, rgba(59, 130, 246, 0.12))'
+                          : 'transparent',
+                        borderRadius: '8px',
+                        transition: 'background-color 0.15s ease',
+                        userSelect: 'none',
+                      }}
+                      title={
+                        group.isMember
+                          ? '클릭하여 그룹으로 이동'
+                          : '미가입 그룹입니다. [그룹 가입] 버튼을 눌러 입장하세요.'
                       }
-                      description={<GroupListMetadata group={group} />}
-                      endContent={
-                        group.isMember ? null : (
-                          <Button
-                            label={isJoiningThis ? '가입 중...' : '그룹 가입'}
+                    >
+                      <ListItem
+                        label={group.name}
+                        startContent={
+                          <Icon
+                            icon={Layers}
                             size="sm"
-                            variant="secondary"
-                            isDisabled={joinGroupMutation.isPending}
-                            icon={<Icon icon={UserCheck} size="sm" />}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              joinGroupMutation.mutate(group.groupId)
-                            }}
+                            color={isHovered ? 'accent' : 'secondary'}
                           />
-                        )
-                      }
-                    />
-                  </div>
-                )
-              })}
-            </List>
-          </Section>
+                        }
+                        description={<GroupListMetadata group={group} />}
+                        endContent={
+                          group.isMember ? null : (
+                            <Button
+                              label={isJoiningThis ? '가입 중...' : '그룹 가입'}
+                              size="sm"
+                              variant="secondary"
+                              isDisabled={joinGroupMutation.isPending}
+                              icon={<Icon icon={UserCheck} size="sm" />}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                joinGroupMutation.mutate(group.groupId)
+                              }}
+                            />
+                          )
+                        }
+                      />
+                    </div>
+                  )
+                })}
+              </List>
+            </Section>
+
+            {/* 4. Pagination 컴포넌트 */}
+            <HStack hAlign="center" width="100%">
+              <Pagination
+                page={currentPage}
+                totalPages={totalPages}
+                isDisabled={groupsQuery.isFetching}
+                onChange={(page: number) => {
+                  setCurrentPage(page)
+                }}
+              />
+            </HStack>
+          </VStack>
         )}
 
-        {/* 4. 그룹 생성 모달 */}
+        {/* 5. 그룹 생성 모달 */}
         <Dialog
           isOpen={isCreateModalOpen}
           onOpenChange={(open) => {
