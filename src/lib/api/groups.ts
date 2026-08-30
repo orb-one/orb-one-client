@@ -46,6 +46,28 @@ export interface CreateGroupResponse {
   createdAt: string
 }
 
+// 5) [그룹 이름 수정]
+export interface UpdateGroupNameRequest {
+  name: string
+}
+
+export interface UpdateGroupNameResponse {
+  groupId: string
+  name: string
+}
+
+// 6) [그룹 소유권 이전]
+export interface TransferGroupOwnershipRequest {
+  newOwnerId: string
+}
+
+export interface TransferGroupOwnershipResponse {
+  groupId: string
+  previousOwnerId: string
+  newOwnerId: string
+  message: string
+}
+
 // 2. UI/프론트엔드 도메인 모델
 
 // 1) 전체 목록용 요약 도메인
@@ -97,13 +119,13 @@ function mapGroupDetail(response: GroupDetailResponse): GroupDetail {
 
 // 4. API 요청 함수
 
-// 1) 전체 그룹 목록을 조회한다. (GET /groups)
+// 1) 전체 그룹 목록 조회 (GET /groups)
 export async function getGroups(): Promise<GroupSummary[]> {
   const response = await apiClient<GroupSummaryResponse[]>('/groups')
   return response.map(mapGroupSummary)
 }
 
-// 2) 특정 그룹 상세 정보를 조회한다. (GET /groups/{groupId})
+// 2) 특정 그룹 상세 정보 조회 (GET /groups/{groupId})
 export async function getGroup(groupId: string): Promise<GroupDetail> {
   const encodedGroupId = encodeURIComponent(groupId)
   const response = await apiClient<GroupDetailResponse>(
@@ -113,7 +135,7 @@ export async function getGroup(groupId: string): Promise<GroupDetail> {
   return mapGroupDetail(response)
 }
 
-// 3) 선택한 그룹에 멤버 가입을 요청한다. (POST /groups/{groupId}/members)
+// 3) 그룹 가입 요청 (POST /groups/{groupId}/members)
 export async function joinGroup(groupId: string): Promise<GroupJoinResponse> {
   const encodedGroupId = encodeURIComponent(groupId)
 
@@ -127,7 +149,7 @@ export async function joinGroup(groupId: string): Promise<GroupJoinResponse> {
   return response
 }
 
-// 4) 그룹 생성 API (POST /groups)
+// 4) 그룹 생성 (POST /groups)
 export async function createGroup(
   data: CreateGroupRequest,
 ): Promise<CreateGroupResponse> {
@@ -142,7 +164,49 @@ export async function createGroup(
   return response
 }
 
-// 5) 그룹 폐쇄 API (DELETE /groups/{groupId})
+// 5) 그룹 이름 수정 (PATCH /groups/{groupId})
+export async function updateGroupName(
+  groupId: string,
+  data: UpdateGroupNameRequest,
+): Promise<UpdateGroupNameResponse> {
+  const encodedGroupId = encodeURIComponent(groupId)
+
+  const response = await apiClient<UpdateGroupNameResponse>(
+    `/groups/${encodedGroupId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: data,
+    },
+  )
+
+  return response
+}
+
+// 6) 그룹 소유권 이전 (PATCH /groups/{groupId}/owner)
+export async function transferGroupOwnership(
+  groupId: string,
+  data: TransferGroupOwnershipRequest,
+): Promise<TransferGroupOwnershipResponse> {
+  const encodedGroupId = encodeURIComponent(groupId)
+
+  const response = await apiClient<TransferGroupOwnershipResponse>(
+    `/groups/${encodedGroupId}/owner`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: data,
+    },
+  )
+
+  return response
+}
+
+// 7) 그룹 폐쇄 (DELETE /groups/{groupId})
 export async function deleteGroup(groupId: string): Promise<void> {
   const encodedGroupId = encodeURIComponent(groupId)
 
@@ -151,7 +215,7 @@ export async function deleteGroup(groupId: string): Promise<void> {
   })
 }
 
-// 6) 그룹 멤버 강퇴 API (DELETE /groups/{groupId}/members/{memberId})
+// 8) 그룹 멤버 강퇴 (DELETE /groups/{groupId}/members/{memberId})
 export async function kickGroupMember(
   groupId: string,
   memberId: string,
@@ -164,7 +228,7 @@ export async function kickGroupMember(
   })
 }
 
-// 7) 그룹 탈퇴 API (DELETE /groups/{groupId}/members/me)
+// 9) 그룹 탈퇴 (DELETE /groups/{groupId}/members/me)
 export async function leaveGroup(groupId: string): Promise<void> {
   const encodedGroupId = encodeURIComponent(groupId)
 
