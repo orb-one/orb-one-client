@@ -1,19 +1,24 @@
 import { Badge } from '@astryxdesign/core/Badge'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
+import { Dialog } from '@astryxdesign/core/Dialog'
 import { EmptyState } from '@astryxdesign/core/EmptyState'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
 import { List, ListItem } from '@astryxdesign/core/List'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
+import { Text } from '@astryxdesign/core/Text'
+import { TextInput } from '@astryxdesign/core/TextInput'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import {
+  ArrowRightLeft,
   Check,
   Crown,
   LogOut,
+  Pencil,
   ShieldAlert,
   User,
   UserMinus,
@@ -27,6 +32,8 @@ import {
   getGroup,
   kickGroupMember,
   leaveGroup,
+  transferGroupOwnership,
+  updateGroupName,
 } from '@/lib/api/groups'
 import { currentUserQueryOptions } from '@/lib/auth/auth-queries'
 
@@ -50,16 +57,16 @@ export function MemberTab({ groupId }: MemberTabProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  // 상태 관리
+  // 1. 선택 대상 및 모달 상태 관리
   const [selectedMember, setSelectedMember] = useState<SelectedMember | null>(
     null,
   )
   const [hoveredUserId, setHoveredUserId] = useState<string | null>(null)
+  const [isEditNameModalOpen, setIsEditNameModalOpen] = useState(false)
+  const [editGroupName, setEditGroupName] = useState('')
 
-  // 1. 현재 로그인 사용자 정보 조회
+  // 2. 현재 로그인 사용자 정보 및 그룹 정보 조회
   const currentUserQuery = useQuery(currentUserQueryOptions())
-
-  // 2. 그룹 상세 정보 조회 (GET /groups/{groupId})
   const groupQuery = useQuery({
     queryKey: ['group', groupId],
     queryFn: () => getGroup(groupId),
@@ -70,13 +77,72 @@ export function MemberTab({ groupId }: MemberTabProps) {
   const groupDetail = groupQuery.data
   const currentUserId = currentUserQuery.data?.id
 
-  // 3. 현재 사용자가 그룹의 OWNER인지 판별
+  // 3. OWNER 권한 판별
   const currentUserMember = groupDetail?.members.find(
     (m) => m.userId === currentUserId,
   )
   const isOwner = currentUserMember?.role === 'OWNER'
 
-  // 그룹 폐쇄 (DELETE /groups/{groupId}) -> /groups 이동
+  // 4. 그룹 이름 수정 (PATCH /groups/{groupId})
+  const updateGroupNameMutation = useMutation({
+    mutationFn: (name: string) => updateGroupName(groupId, { name }),
+    onSuccess: (data) => {
+      alert(`그룹 이름이 '${data.name}'(으)로 성공적으로 수정되었습니다.`)
+      setIsEditNameModalOpen(false)
+      void queryClient.invalidateQueries({ queryKey: ['group', groupId] })
+      void queryClient.invalidateQueries({ queryKey: ['groups'] })
+    },
+    onError: (err: ApiErrorResponse) => {
+      const status = err.response?.status
+      const serverMessage = err.response?.data?.message
+
+      if (status !== undefined) {
+        alert(
+          serverMessage ??
+            `오류가 발생했습니다. (상태 코드: ${String(status)})`,
+        )
+      } else {
+        alert(
+          serverMessage ??
+            (err.message !== ''
+              ? err.message
+              : '그룹 이름 수정 중 오류가 발생했습니다.'),
+        )
+      }
+    },
+  })
+
+  // 5. 그룹 소유권 이전 (PATCH /groups/{groupId}/owner)
+  const transferOwnershipMutation = useMutation({
+    mutationFn: (newOwnerId: string) =>
+      transferGroupOwnership(groupId, { newOwnerId }),
+    onSuccess: (data) => {
+      alert(data.message || '그룹 소유권이 성공적으로 이전되었습니다.')
+      setSelectedMember(null)
+      void queryClient.invalidateQueries({ queryKey: ['group', groupId] })
+      void queryClient.invalidateQueries({ queryKey: ['groups'] })
+    },
+    onError: (err: ApiErrorResponse) => {
+      const status = err.response?.status
+      const serverMessage = err.response?.data?.message
+
+      if (status !== undefined) {
+        alert(
+          serverMessage ??
+            `오류가 발생했습니다. (상태 코드: ${String(status)})`,
+        )
+      } else {
+        alert(
+          serverMessage ??
+            (err.message !== ''
+              ? err.message
+              : '소유권 이전 중 오류가 발생했습니다.'),
+        )
+      }
+    },
+  })
+
+  // 6. 그룹 폐쇄 (DELETE /groups/{groupId}) -> /groups 이동
   const deleteGroupMutation = useMutation({
     mutationFn: () => deleteGroup(groupId),
     onSuccess: () => {
@@ -104,7 +170,7 @@ export function MemberTab({ groupId }: MemberTabProps) {
     },
   })
 
-  // 그룹 멤버 강퇴 (DELETE /groups/{groupId}/members/{memberId})
+  // 7. 그룹 멤버 강퇴 (DELETE /groups/{groupId}/members/{memberId})
   const kickMemberMutation = useMutation({
     mutationFn: (target: SelectedMember) =>
       kickGroupMember(groupId, target.userId),
@@ -133,7 +199,7 @@ export function MemberTab({ groupId }: MemberTabProps) {
     },
   })
 
-  // 그룹 탈퇴 (DELETE /groups/{groupId}/members/me) -> /groups 이동
+  // 8. 그룹 탈퇴 (DELETE /groups/{groupId}/members/me)
   const leaveGroupMutation = useMutation({
     mutationFn: () => leaveGroup(groupId),
     onSuccess: () => {
@@ -155,19 +221,49 @@ export function MemberTab({ groupId }: MemberTabProps) {
           serverMessage ??
             (err.message !== ''
               ? err.message
-              : '그룹 폐쇄 중 오류가 발생했습니다.'),
+              : '그룹 탈퇴 중 오류가 발생했습니다.'),
         )
       }
     },
   })
 
-  // 버튼 액션 핸들러
-  function handleCloseGroup() {
-    if (confirm('정말로 그룹을 폐쇄하시겠습니까? 작업은 되돌릴 수 없습니다.')) {
-      deleteGroupMutation.mutate()
+  // 이름 수정 모달 열기/닫기
+  function handleOpenEditNameModal() {
+    setEditGroupName(groupDetail?.name ?? '')
+    setIsEditNameModalOpen(true)
+  }
+
+  function handleCloseEditNameModal() {
+    setEditGroupName('')
+    setIsEditNameModalOpen(false)
+  }
+
+  function handleSubmitEditName() {
+    const trimmed = editGroupName.trim()
+    if (!trimmed) {
+      alert('변경할 그룹 이름을 입력해 주세요.')
+      return
+    }
+    updateGroupNameMutation.mutate(trimmed)
+  }
+
+  // 소유권 이전 핸들러
+  function handleTransferOwnership() {
+    if (!selectedMember) {
+      alert('소유권을 이전할 멤버를 목록에서 먼저 선택해 주세요.')
+      return
+    }
+
+    if (
+      confirm(
+        `'${selectedMember.nickname}' 멤버에게 그룹 소유권을 이전하시겠습니까?\n이전 후에는 관리자 권한이 MEMBER로 변경됩니다.`,
+      )
+    ) {
+      transferOwnershipMutation.mutate(selectedMember.userId)
     }
   }
 
+  // 강퇴 핸들러
   function handleKickMember() {
     if (!selectedMember) {
       alert('강퇴할 멤버를 목록에서 클릭하여 선택해 주세요.')
@@ -181,6 +277,16 @@ export function MemberTab({ groupId }: MemberTabProps) {
     }
   }
 
+  // 폐쇄 핸들러
+  function handleCloseGroup() {
+    if (
+      confirm('정말로 그룹을 폐쇄하시겠습니까? 이 작업은 되돌릴 수 없습니다.')
+    ) {
+      deleteGroupMutation.mutate()
+    }
+  }
+
+  // 탈퇴 핸들러
   function handleLeaveGroup() {
     if (confirm('그룹에서 정말 탈퇴하시겠습니까?')) {
       leaveGroupMutation.mutate()
@@ -188,25 +294,39 @@ export function MemberTab({ groupId }: MemberTabProps) {
   }
 
   const isActionPending =
+    updateGroupNameMutation.isPending ||
+    transferOwnershipMutation.isPending ||
     deleteGroupMutation.isPending ||
     kickMemberMutation.isPending ||
     leaveGroupMutation.isPending
 
   return (
     <VStack width="100%" gap={6}>
-      {/* 1. OWNER는 폐쇄/강퇴, MEMBER는 탈퇴 */}
+      {/* 1. 상단 액션 버튼 영역 */}
       <HStack width="100%" hAlign="end" gap={2} wrap="wrap" vAlign="center">
         {isOwner ? (
           <>
             <Button
-              label={
-                deleteGroupMutation.isPending ? '폐쇄 처리 중...' : '그룹 폐쇄'
-              }
+              label="그룹 이름 수정"
               size="sm"
               variant="secondary"
               isDisabled={isActionPending}
-              icon={<Icon icon={ShieldAlert} size="sm" />}
-              onClick={handleCloseGroup}
+              icon={<Icon icon={Pencil} size="sm" />}
+              onClick={handleOpenEditNameModal}
+            />
+            <Button
+              label={
+                transferOwnershipMutation.isPending
+                  ? '이전 처리 중...'
+                  : selectedMember
+                    ? `'${selectedMember.nickname}'에게 소유권 이전`
+                    : '그룹 소유권 이전'
+              }
+              size="sm"
+              variant="secondary"
+              isDisabled={isActionPending || !selectedMember}
+              icon={<Icon icon={ArrowRightLeft} size="sm" />}
+              onClick={handleTransferOwnership}
             />
             <Button
               label={
@@ -218,9 +338,19 @@ export function MemberTab({ groupId }: MemberTabProps) {
               }
               size="sm"
               variant="destructive"
-              isDisabled={isActionPending}
+              isDisabled={isActionPending || !selectedMember}
               icon={<Icon icon={UserMinus} size="sm" />}
               onClick={handleKickMember}
+            />
+            <Button
+              label={
+                deleteGroupMutation.isPending ? '폐쇄 처리 중...' : '그룹 폐쇄'
+              }
+              size="sm"
+              variant="secondary"
+              isDisabled={isActionPending}
+              icon={<Icon icon={ShieldAlert} size="sm" />}
+              onClick={handleCloseGroup}
             />
           </>
         ) : (
@@ -330,7 +460,7 @@ export function MemberTab({ groupId }: MemberTabProps) {
                   isOwner && !isMemberOwner
                     ? isSelected
                       ? '클릭하여 선택 해제'
-                      : '클릭하여 강퇴 대상으로 선택'
+                      : '클릭하여 강퇴/소유권 이전 대상으로 선택'
                     : undefined
                 }
               >
@@ -355,7 +485,7 @@ export function MemberTab({ groupId }: MemberTabProps) {
                       {isSelected && (
                         <HStack vAlign="center" gap={1}>
                           <Icon icon={Check} size="xsm" color="accent" />
-                          <Badge label="강퇴 대상 선택됨" variant="neutral" />
+                          <Badge label="선택됨" variant="neutral" />
                         </HStack>
                       )}
                       <Badge
@@ -370,6 +500,60 @@ export function MemberTab({ groupId }: MemberTabProps) {
           })}
         </List>
       )}
+
+      {/* 3. 그룹 이름 수정 다이얼로그 */}
+      <Dialog
+        isOpen={isEditNameModalOpen}
+        onOpenChange={(open) => {
+          if (!open) handleCloseEditNameModal()
+        }}
+      >
+        <VStack gap={4} padding={4}>
+          <h2>그룹 이름 수정</h2>
+          <Text type="body">변경할 새로운 그룹 이름을 입력해 주세요.</Text>
+
+          <TextInput
+            label="그룹 이름"
+            placeholder="예: 알고리즘 마스터"
+            value={editGroupName}
+            onChange={(valOrEvent: unknown) => {
+              if (typeof valOrEvent === 'string') {
+                setEditGroupName(valOrEvent)
+              } else if (
+                valOrEvent &&
+                typeof valOrEvent === 'object' &&
+                'target' in valOrEvent
+              ) {
+                const target = (
+                  valOrEvent as React.ChangeEvent<HTMLInputElement>
+                ).target
+                setEditGroupName(target.value)
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSubmitEditName()
+            }}
+          />
+
+          <HStack gap={2} hAlign="end" width="100%">
+            <Button
+              label="취소"
+              variant="secondary"
+              onClick={handleCloseEditNameModal}
+            />
+            <Button
+              label={
+                updateGroupNameMutation.isPending ? '수정 중...' : '수정하기'
+              }
+              variant="primary"
+              isDisabled={
+                !editGroupName.trim() || updateGroupNameMutation.isPending
+              }
+              onClick={handleSubmitEditName}
+            />
+          </HStack>
+        </VStack>
+      </Dialog>
     </VStack>
   )
 }
