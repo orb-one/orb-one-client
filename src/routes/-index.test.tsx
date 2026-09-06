@@ -1,10 +1,7 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import type { ReactNode } from 'react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 
-import { DashboardPage } from '@/routes/index'
+import { LandingPage } from '@/routes/index'
 import { useAppStore } from '@/stores/use-app-store'
 
 vi.mock('@tanstack/react-router', () => ({
@@ -16,77 +13,89 @@ vi.mock('@tanstack/react-router', () => ({
 
 afterEach(() => {
   cleanup()
-  useAppStore.getState().resetLaunchCount()
+  useAppStore.getState().setLocale('ko')
 })
 
-it('renders project summary loading and success states', async () => {
-  renderDashboard()
+it('renders the study landing page with a centered message and real product imagery', () => {
+  render(<LandingPage />)
 
-  expect(screen.getAllByTestId('summary-skeleton')).toHaveLength(3)
+  const heading = screen.getByRole('heading', {
+    name: '같은 문제를 풀고 서로의 풀이에서 함께 배우세요',
+    level: 1,
+  })
+
+  expect(heading).toBeVisible()
+  expect(within(heading).getByText('함께')).toHaveClass(
+    'text-[var(--color-accent)]',
+  )
   expect(
-    screen.getByRole('heading', { name: 'Project foundation' }),
+    screen.getByText(
+      '함께 풀 문제를 정하고 각자의 코드와 풀이를 한곳에서 나누세요',
+    ),
   ).toBeVisible()
 
-  expect(await screen.findByText('React + TypeScript')).toBeVisible()
-  expect(screen.getByText('TanStack Router')).toBeVisible()
-  expect(screen.getByText('TanStack Query')).toBeVisible()
-  expect(screen.queryByTestId('summary-skeleton')).not.toBeInTheDocument()
-})
-
-it('increments and resets the Zustand launch count', async () => {
-  renderDashboard()
-
-  await userEvent.click(screen.getByRole('button', { name: 'Launch count: 0' }))
-
-  expect(screen.getByRole('button', { name: 'Launch count: 1' })).toBeVisible()
-
-  await userEvent.click(screen.getByRole('button', { name: 'Reset' }))
-
-  expect(screen.getByRole('button', { name: 'Launch count: 0' })).toBeVisible()
-})
-
-it('shows an error banner and retries the project summary', async () => {
-  const summaryLoader = vi
-    .fn()
-    .mockRejectedValueOnce(new Error('Summary unavailable'))
-    .mockResolvedValueOnce({
-      framework: 'React + TypeScript',
-      router: 'TanStack Router',
-      serverState: 'TanStack Query',
-    })
-
-  renderWithClient(
-    createQueryClient(),
-    <DashboardPage summaryLoader={summaryLoader} />,
-  )
-
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Project summary unavailable',
-  )
-
-  await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
-
-  expect(await screen.findByText('React + TypeScript')).toBeVisible()
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-  expect(summaryLoader).toHaveBeenCalledTimes(2)
-})
-
-function renderDashboard() {
-  return renderWithClient(createQueryClient(), <DashboardPage />)
-}
-
-function createQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
+  const preview = screen.getByRole('group', {
+    name: '오브원 제품 화면 미리보기',
   })
-}
+  expect(
+    within(preview).getByRole('img', {
+      name: '그룹에서 함께 풀 문제를 정리한 문제집 화면',
+    }),
+  ).toHaveAttribute('fetchpriority', 'high')
+  expect(
+    within(preview).getByRole('img', {
+      name: '코드와 풀이 설명을 함께 보여주는 풀이 상세 화면',
+    }),
+  ).toHaveAttribute('loading', 'eager')
 
-function renderWithClient(queryClient: QueryClient, children: ReactNode) {
-  return render(
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
+  expect(
+    screen.getByRole('heading', {
+      name: '어디서 고르든 한 문제집으로',
+      level: 2,
+    }),
+  ).toBeVisible()
+  expect(
+    screen.getByText(
+      '여러 사이트에서 고른 문제를 한 문제집에 모아 함께 푸세요',
+    ),
+  ).toBeVisible()
+  expect(
+    screen.getByRole('img', { name: 'Baekjoon Online Judge' }),
+  ).toBeVisible()
+  expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  expect(screen.queryByRole('link')).not.toBeInTheDocument()
+})
+
+it('uses the active locale for the hero and provider copy', () => {
+  useAppStore.getState().setLocale('en')
+
+  render(<LandingPage />)
+
+  const heading = screen.getByRole('heading', {
+    name: 'Solve the same problems and learn together',
+    level: 1,
+  })
+
+  expect(within(heading).getByText('together')).toHaveClass(
+    'text-[var(--color-accent)]',
   )
-}
+  expect(
+    screen.getByText(
+      'Pick problems, share code, and compare solutions in one place',
+    ),
+  ).toBeVisible()
+  expect(
+    screen.getByRole('heading', {
+      name: 'One problem set for any site',
+      level: 2,
+    }),
+  ).toBeVisible()
+  expect(
+    screen.getByText(
+      'Collect problems from different sites and solve them with your group',
+    ),
+  ).toBeVisible()
+  expect(
+    screen.getByRole('group', { name: 'Orb One product preview' }),
+  ).toBeVisible()
+})

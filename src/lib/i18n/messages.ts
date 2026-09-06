@@ -5,19 +5,37 @@ export const defaultLocale = 'ko'
 export const messages = {
   ko: {
     common: {
-      productName: 'Orb One',
+      productName: '오브원',
     },
     navigation: {
       mainLabel: '주요 탐색',
       login: '로그인',
-      groups: '그룹',
       solutions: '풀이',
+      groups: '그룹',
+      register: '풀이 기록 시작',
       logout: '로그아웃',
       loggingOut: '로그아웃 중',
       logoutError: '로그아웃에 실패했습니다. 다시 시도해 주세요.',
       currentUser: '현재 로그인한 사용자',
       mypage: '마이페이지',
       loadingUser: '로그인 상태 확인 중',
+    },
+    landing: {
+      hero: {
+        title: '같은 문제를 풀고 서로의 풀이에서 함께 배우세요',
+        highlight: '함께',
+        description:
+          '함께 풀 문제를 정하고 각자의 코드와 풀이를 한곳에서 나누세요',
+      },
+      support: {
+        title: '어디서 고르든 한 문제집으로',
+        description: '여러 사이트에서 고른 문제를 한 문제집에 모아 함께 푸세요',
+      },
+      images: {
+        previewLabel: '오브원 제품 화면 미리보기',
+        solutionAlt: '코드와 풀이 설명을 함께 보여주는 풀이 상세 화면',
+        groupAlt: '그룹에서 함께 풀 문제를 정리한 문제집 화면',
+      },
     },
     auth: {
       sessionExpired: '세션이 만료되었습니다. 다시 로그인해 주세요.',
@@ -322,15 +340,35 @@ export const messages = {
     },
     navigation: {
       mainLabel: 'Main navigation',
-      login: 'Login',
-      groups: 'Groups',
+      login: 'Sign in',
       solutions: 'Solutions',
+      groups: 'Groups',
+      register: 'Start recording',
       logout: 'Log out',
       loggingOut: 'Logging out',
       logoutError: 'Could not log out. Please try again.',
       currentUser: 'Current signed-in user',
       mypage: 'Account',
       loadingUser: 'Checking sign-in status',
+    },
+    landing: {
+      hero: {
+        title: 'Solve the same problems and learn together',
+        highlight: 'together',
+        description:
+          'Pick problems, share code, and compare solutions in one place',
+      },
+      support: {
+        title: 'One problem set for any site',
+        description:
+          'Collect problems from different sites and solve them with your group',
+      },
+      images: {
+        previewLabel: 'Orb One product preview',
+        solutionAlt:
+          'Solution detail showing source code and written reasoning',
+        groupAlt: 'Group problem set organizing problems to solve together',
+      },
     },
     auth: {
       sessionExpired: 'Your session has expired. Please sign in again.',

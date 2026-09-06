@@ -76,7 +76,7 @@ test('keeps the signed-in application navigation usable across viewports', async
 
   const navigation = page.getByRole('navigation', { name: '주요 탐색' })
   const brandLink = navigation.getByRole('link', {
-    name: 'Orb One',
+    name: '오브원',
     exact: true,
   })
   const currentUser = page.getByTestId('current-user')
@@ -418,7 +418,11 @@ test('deletes the account only after explicit consent', async ({ page }) => {
   expect(deletionRequestCount).toBe(1)
   await page.waitForURL((url) => url.pathname === '/')
   await expect(page.getByText('회원탈퇴가 완료되었습니다.')).toBeVisible()
-  await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
+  await expect(
+    page
+      .getByRole('navigation', { name: '주요 탐색' })
+      .getByRole('link', { name: '로그인' }),
+  ).toBeVisible()
 })
 
 test('explains group ownership conflicts without signing the user out', async ({
@@ -609,7 +613,11 @@ test('does not repeat auth requests after the signed-out state becomes stale', a
   })
 
   await page.goto('/')
-  await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
+  await expect(
+    page
+      .getByRole('navigation', { name: '주요 탐색' })
+      .getByRole('link', { name: '로그인' }),
+  ).toBeVisible()
   expect(requestCounts.currentUser).toBeGreaterThan(0)
   expect(requestCounts.csrf).toBe(1)
   expect(requestCounts.refresh).toBe(1)
@@ -668,7 +676,11 @@ test('registers a random account, logs in, and logs out through the auth pages',
   const logoutResponse = await logoutResponsePromise
 
   expect(logoutResponse.status()).toBe(200)
-  await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
+  await expect(
+    page
+      .getByRole('navigation', { name: '주요 탐색' })
+      .getByRole('link', { name: '로그인' }),
+  ).toBeVisible()
   expect(currentUserContract.currentUserRequestCount()).toBe(
     currentUserRequestCountBeforeLogout,
   )
