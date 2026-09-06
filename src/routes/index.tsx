@@ -109,14 +109,6 @@ export function LandingPage() {
           className="mx-auto px-4 py-8 sm:px-6"
         >
           <BrandLogo label={t.common.productName} size="sm" />
-          <Text
-            as="p"
-            type="supporting"
-            color="secondary"
-            className="md:justify-self-end"
-          >
-            {copy.footer}
-          </Text>
         </Grid>
       </footer>
     </VStack>

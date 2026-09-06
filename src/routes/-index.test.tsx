@@ -20,7 +20,7 @@ it('renders the study landing page with a centered message and real product imag
   render(<LandingPage />)
 
   const heading = screen.getByRole('heading', {
-    name: '같은 문제를 풀고, 풀이를 나누며 함께 성장하세요.',
+    name: '같은 문제를 풀고 서로의 풀이에서 함께 배우세요',
     level: 1,
   })
 
@@ -30,7 +30,7 @@ it('renders the study landing page with a centered message and real product imag
   )
   expect(
     screen.getByText(
-      '스터디 목표를 정하고 각자의 코드와 접근을 한곳에서 공유하는 알고리즘 스터디 워크스페이스입니다.',
+      '함께 풀 문제를 정하고 각자의 코드와 풀이를 한곳에서 나누세요',
     ),
   ).toBeVisible()
 
@@ -50,9 +50,14 @@ it('renders the study landing page with a centered message and real product imag
 
   expect(
     screen.getByRole('heading', {
-      name: '어디서 고르든, 한 문제집으로.',
+      name: '어디서 고르든 한 문제집으로',
       level: 2,
     }),
+  ).toBeVisible()
+  expect(
+    screen.getByText(
+      '여러 사이트에서 고른 문제를 한 문제집에 모아 함께 푸세요',
+    ),
   ).toBeVisible()
   expect(
     screen.getByRole('img', { name: 'Baekjoon Online Judge' }),
@@ -67,7 +72,7 @@ it('uses the active locale for the hero and provider copy', () => {
   render(<LandingPage />)
 
   const heading = screen.getByRole('heading', {
-    name: 'Share solutions and grow together.',
+    name: 'Solve the same problems and learn together',
     level: 1,
   })
 
@@ -75,10 +80,20 @@ it('uses the active locale for the hero and provider copy', () => {
     'text-[var(--color-accent)]',
   )
   expect(
+    screen.getByText(
+      'Pick problems, share code, and compare solutions in one place',
+    ),
+  ).toBeVisible()
+  expect(
     screen.getByRole('heading', {
-      name: 'One problem set, whichever site you choose.',
+      name: 'One problem set for any site',
       level: 2,
     }),
+  ).toBeVisible()
+  expect(
+    screen.getByText(
+      'Collect problems from different sites and solve them with your group',
+    ),
   ).toBeVisible()
   expect(
     screen.getByRole('group', { name: 'Orb One product preview' }),

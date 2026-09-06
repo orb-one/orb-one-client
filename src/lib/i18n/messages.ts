@@ -22,22 +22,20 @@ export const messages = {
     },
     landing: {
       hero: {
-        title: '같은 문제를 풀고, 풀이를 나누며 함께 성장하세요.',
+        title: '같은 문제를 풀고 서로의 풀이에서 함께 배우세요',
         highlight: '함께',
         description:
-          '스터디 목표를 정하고 각자의 코드와 접근을 한곳에서 공유하는 알고리즘 스터디 워크스페이스입니다.',
+          '함께 풀 문제를 정하고 각자의 코드와 풀이를 한곳에서 나누세요',
       },
       support: {
-        title: '어디서 고르든, 한 문제집으로.',
-        description:
-          '익숙한 문제 제공자의 문제를 가져와 스터디의 공동 목표로 관리하세요.',
+        title: '어디서 고르든 한 문제집으로',
+        description: '여러 사이트에서 고른 문제를 한 문제집에 모아 함께 푸세요',
       },
       images: {
         previewLabel: '오브원 제품 화면 미리보기',
         solutionAlt: '코드와 풀이 설명을 함께 보여주는 풀이 상세 화면',
         groupAlt: '그룹에서 함께 풀 문제를 정리한 문제집 화면',
       },
-      footer: '알고리즘 문제와 풀이를 함께 기록하고 나누는 서비스',
     },
     auth: {
       sessionExpired: '세션이 만료되었습니다. 다시 로그인해 주세요.',
@@ -355,15 +353,15 @@ export const messages = {
     },
     landing: {
       hero: {
-        title: 'Share solutions and grow together.',
+        title: 'Solve the same problems and learn together',
         highlight: 'together',
         description:
-          'Bring study problems, code, and reasoning into one shared workspace.',
+          'Pick problems, share code, and compare solutions in one place',
       },
       support: {
-        title: 'One problem set, whichever site you choose.',
+        title: 'One problem set for any site',
         description:
-          'Bring familiar problems into one shared goal for your study group.',
+          'Collect problems from different sites and solve them with your group',
       },
       images: {
         previewLabel: 'Orb One product preview',
@@ -371,7 +369,6 @@ export const messages = {
           'Solution detail showing source code and written reasoning',
         groupAlt: 'Group problem set organizing problems to solve together',
       },
-      footer: 'Record solutions and share them with your study group',
     },
     auth: {
       sessionExpired: 'Your session has expired. Please sign in again.',

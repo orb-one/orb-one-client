@@ -87,7 +87,7 @@ test('keeps the public landing page usable on a narrow viewport', async ({
 
   await expect(
     page.getByRole('heading', {
-      name: '같은 문제를 풀고, 풀이를 나누며 함께 성장하세요.',
+      name: '같은 문제를 풀고 서로의 풀이에서 함께 배우세요',
       level: 1,
     }),
   ).toBeVisible()
@@ -189,7 +189,7 @@ test('keeps the sticky navigation above landing page layers', async ({
   const landing = page.locator('.orb-study-landing')
   const navigation = page.getByRole('navigation', { name: '주요 탐색' })
   const heading = page.getByRole('heading', {
-    name: '같은 문제를 풀고, 풀이를 나누며 함께 성장하세요.',
+    name: '같은 문제를 풀고 서로의 풀이에서 함께 배우세요',
     level: 1,
   })
 
