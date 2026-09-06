@@ -37,6 +37,7 @@ body {
   }
 
   .orb-study-landing {
+    isolation: isolate;
     background: var(--color-background-surface);
     color: var(--color-text-primary);
   }

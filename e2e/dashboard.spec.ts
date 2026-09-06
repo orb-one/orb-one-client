@@ -177,3 +177,42 @@ test('follows the system light and dark color schemes', async ({ page }) => {
     )
     .toContain('programmers-light')
 })
+
+test('keeps the sticky navigation above landing page layers', async ({
+  page,
+}) => {
+  await mockPublicSession(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+
+  const landing = page.locator('.orb-study-landing')
+  const navigation = page.getByRole('navigation', { name: '주요 탐색' })
+  const heading = page.getByRole('heading', {
+    name: '같은 문제를 풀고, 풀이를 나누며 함께 성장하세요.',
+    level: 1,
+  })
+
+  await expect(landing).toHaveCSS('isolation', 'isolate')
+  await heading.evaluate((element) => {
+    window.scrollTo({
+      top: window.scrollY + element.getBoundingClientRect().top,
+      behavior: 'instant',
+    })
+  })
+
+  await expect(navigation).toBeInViewport()
+  await expect
+    .poll(() =>
+      navigation.evaluate((element) => {
+        const bounds = element.getBoundingClientRect()
+        const topElement = document.elementFromPoint(
+          bounds.left + bounds.width / 2,
+          bounds.top + bounds.height / 2,
+        )
+
+        return topElement !== null && element.contains(topElement)
+      }),
+    )
+    .toBe(true)
+})
