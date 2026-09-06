@@ -2,14 +2,14 @@
   <title id="title">Orb One</title>
   <desc id="desc">The Orb One symbol: six connected study members form an O around the numeral one.</desc>
   <style>
-    .ink-stroke { stroke: #0f172a; }
-    .ink-fill { fill: #0f172a; }
-    .accent-fill { fill: #0ea5e9; }
+    .ink-stroke { stroke: #171717; }
+    .ink-fill,
+    .accent-fill { fill: #171717; }
 
     @media (prefers-color-scheme: dark) {
-      .ink-stroke { stroke: #f8fafc; }
-      .ink-fill { fill: #f8fafc; }
-      .accent-fill { fill: #38bdf8; }
+      .ink-stroke { stroke: #fafafa; }
+      .ink-fill,
+      .accent-fill { fill: #fafafa; }
     }
   </style>
 

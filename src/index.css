@@ -28,12 +28,120 @@ body {
 
 @layer components {
   .orb-brand-accent {
-    --color-accent: light-dark(#075985, #38bdf8);
-    --color-accent-muted: light-dark(#e0f2fe, #0c4a6e);
-    --color-on-accent: light-dark(#fafafa, #171717);
+    --color-accent: light-dark(
+      var(--color-text-blue),
+      var(--color-border-blue)
+    );
+    --color-accent-muted: var(--color-background-blue);
+    --color-on-accent: light-dark(var(--color-on-dark), var(--color-on-light));
+  }
+
+  .orb-study-landing {
+    background: var(--color-background-surface);
+    color: var(--color-text-primary);
+  }
+
+  .landing-study-hero-copy {
+    position: relative;
+    z-index: 2;
+    width: min(920px, calc(100% - 3rem));
+    margin-inline: auto;
+    padding-top: clamp(4rem, 10vh, 6rem);
+    padding-bottom: clamp(20rem, 40vh, 27rem);
+    text-align: center;
+  }
+
+  #landing-hero-title {
+    max-width: 18ch;
+    margin-inline: auto;
+    font-size: clamp(3.5rem, 5.2vw, 4.25rem);
+    line-height: 1.14;
+    letter-spacing: -0.045em;
+    word-break: keep-all;
+  }
+
+  #landing-hero-description {
+    max-width: 580px;
+    margin-inline: auto;
+    font-size: 1.25rem;
+    line-height: 1.7;
+    word-break: keep-all;
+  }
+
+  .landing-study-product-stage {
+    position: absolute;
+    z-index: 1;
+    bottom: 0;
+    left: 50%;
+    width: min(1200px, calc(100% - 3rem));
+    height: clamp(20rem, 43vh, 30rem);
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .landing-product-window {
+    color-scheme: light;
+    position: absolute;
+    overflow: hidden;
+    margin: 0;
+    border: var(--border-width) solid var(--color-border-emphasized);
+    border-bottom: 0;
+    border-radius: var(--radius-container) var(--radius-container) 0 0;
+    background: var(--color-background-surface);
+    box-shadow: var(--shadow-high);
+  }
+
+  .landing-product-window img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .landing-window-bar {
+    display: flex;
+    height: 2.375rem;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding-inline: var(--spacing-4);
+    border-bottom: var(--border-width) solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-family: var(--font-family-code);
+    font-size: var(--font-size-sm);
+  }
+
+  .landing-window-bar::before {
+    color: var(--color-text-primary);
+    content: '>_';
+    font-weight: var(--font-weight-medium);
+  }
+
+  .landing-product-window-main {
+    bottom: -7.5rem;
+    left: 50%;
+    width: 80%;
+    transform: translateX(-50%);
+  }
+
+  .landing-product-window-main img {
+    aspect-ratio: 2.25 / 1;
+    object-fit: cover;
+    object-position: top;
+  }
+
+  .landing-product-window-detail {
+    right: 0;
+    bottom: -2.5rem;
+    width: 41%;
+  }
+
+  .landing-product-window-detail img {
+    aspect-ratio: 1.62 / 1;
+    object-fit: cover;
+    object-position: top;
   }
 
   .landing-provider-marquee {
+    overflow: hidden;
     mask-image: linear-gradient(
       to right,
       transparent,
@@ -52,48 +160,44 @@ body {
   .landing-provider-group {
     display: flex;
     align-items: center;
-    gap: clamp(3.5rem, 8vw, 7rem);
-    padding-right: clamp(3.5rem, 8vw, 7rem);
+    gap: clamp(3rem, 7vw, 5.5rem);
+    padding-inline: 2rem;
+    padding-right: clamp(3rem, 7vw, 5.5rem);
   }
 
   .landing-provider-logo {
     display: block;
-    max-height: 2rem;
-    opacity: 0.72;
+    max-height: 1.75rem;
+    opacity: 0.58;
+    filter: grayscale(1);
   }
 
   @media (prefers-color-scheme: dark) {
+    .landing-provider-logo {
+      opacity: 0.68;
+    }
+
     .landing-provider-logo-contrast {
-      filter: brightness(0) invert(1);
+      filter: grayscale(1) brightness(0) invert(1);
     }
   }
 
   @media (prefers-reduced-motion: no-preference) {
     .landing-hero-copy {
-      animation: landing-rise 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation: landing-rise var(--duration-slow-min) var(--ease-standard) both;
     }
 
     .landing-hero-visual {
-      animation: landing-rise 760ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both;
-    }
-
-    .landing-section-reveal {
-      animation: landing-rise 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation: landing-stage-rise var(--duration-slow) var(--duration-fast)
+        var(--ease-standard) both;
     }
 
     .landing-provider-track {
-      animation: landing-provider-scroll 30s linear infinite;
+      animation: landing-provider-scroll 26s linear infinite;
     }
 
     .landing-provider-marquee:hover .landing-provider-track {
       animation-play-state: paused;
-    }
-
-    @supports (animation-timeline: view()) {
-      .landing-section-reveal {
-        animation-timeline: view();
-        animation-range: entry 8% cover 28%;
-      }
     }
   }
 
@@ -111,17 +215,135 @@ body {
       padding-inline: 1rem;
     }
   }
+
+  @media (max-width: 920px) {
+    .landing-study-hero-copy {
+      width: min(760px, calc(100% - 2rem));
+      padding-top: 4.5rem;
+      padding-bottom: 20.625rem;
+    }
+
+    .landing-study-product-stage {
+      width: min(900px, calc(100% - 2rem));
+      height: 20.625rem;
+    }
+
+    .landing-product-window-main {
+      bottom: -4rem;
+      width: 92%;
+    }
+
+    .landing-product-window-detail {
+      right: 1%;
+      bottom: -0.75rem;
+      width: 48%;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .landing-study-hero-copy {
+      width: calc(100% - 1.5rem);
+      padding-top: 3.5rem;
+      padding-bottom: 17.5rem;
+    }
+
+    #landing-hero-title {
+      max-width: 15ch;
+      font-size: clamp(2.375rem, 10.5vw, 3rem);
+      line-height: 1.18;
+      letter-spacing: -0.04em;
+    }
+
+    #landing-hero-description {
+      max-width: 34ch;
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .landing-study-product-stage {
+      width: calc(100% - 1.5rem);
+      height: 16.875rem;
+    }
+
+    .landing-product-window-main {
+      bottom: -1.5rem;
+      width: 96%;
+    }
+
+    .landing-product-window-detail {
+      right: 0;
+      bottom: 1.125rem;
+      width: 58%;
+    }
+
+    .landing-window-bar {
+      height: 2rem;
+      padding-inline: 0.75rem;
+      font-size: 0.625rem;
+    }
+
+    .landing-provider-group {
+      gap: 3rem;
+      padding-inline: 1.5rem;
+      padding-right: 3rem;
+    }
+
+    .landing-provider-logo {
+      max-height: 1.5625rem;
+    }
+  }
+
+  @media (max-width: 600px) and (max-height: 720px) {
+    .landing-study-hero-copy {
+      padding-top: 3rem;
+      padding-bottom: 13rem;
+    }
+
+    #landing-hero-title {
+      font-size: 2.25rem;
+      line-height: 1.16;
+    }
+
+    #landing-hero-description {
+      font-size: 0.875rem;
+      line-height: 1.55;
+    }
+
+    .landing-study-product-stage {
+      height: 12.5rem;
+    }
+
+    .landing-product-window-main {
+      bottom: -1.125rem;
+    }
+
+    .landing-product-window-detail {
+      bottom: 0.625rem;
+    }
+  }
 }
 
 @keyframes landing-rise {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(var(--spacing-5));
   }
 
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes landing-stage-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, var(--spacing-5));
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
 }
 

@@ -22,75 +22,22 @@ export const messages = {
     },
     landing: {
       hero: {
-        title: '문제를 모아 풀이를 나눠 보세요',
+        title: '같은 문제를 풀고, 풀이를 나누며 함께 성장하세요.',
+        highlight: '함께',
         description:
-          '여러 사이트의 문제를 스터디 문제집에 담고 문제별로 스터디원의 코드와 풀이를 확인할 수 있습니다',
-      },
-      preview: {
-        ariaLabel:
-          '여러 사이트의 문제와 스터디원의 풀이를 보여주는 문제집 예시',
-        collectionLabel: '스터디 문제집',
-        collectionTitle: '이번 주 문제',
-        linkedLabel: '등록된 풀이',
-        linkedProblem: 'BOJ 1260',
-        linkedTitle: 'DFS와 BFS',
-        groupSolution: '스터디원 풀이',
-        solved: '풀이 완료',
-        javaSummary: 'DFS는 재귀로 구현하고 BFS는 큐로 순서를 관리했습니다',
-        pythonSummary: '인접 리스트를 정렬해 번호가 작은 정점부터 방문했습니다',
-      },
-      cta: {
-        startRecording: '풀이 기록 시작',
-        signIn: '로그인',
-        viewSolutions: '내 풀이 보기',
-        viewGroups: '그룹 보기',
-      },
-      workflow: {
-        title: '문제를 고른 뒤 이렇게 기록합니다',
-        description:
-          '문제와 코드를 저장하고 풀이 과정을 적은 뒤 같은 문제에 등록된 다른 풀이를 확인할 수 있습니다',
-        choose: {
-          title: '문제를 고릅니다',
-          description: '지원하는 사이트에서 문제를 찾아 선택합니다',
-        },
-        record: {
-          title: '코드를 올립니다',
-          description: '사용한 언어와 소스 코드를 저장합니다',
-        },
-        explain: {
-          title: '풀이를 적습니다',
-          description: '어떻게 풀었는지 Markdown으로 남깁니다',
-        },
-        find: {
-          title: '다른 풀이도 봅니다',
-          description: '같은 문제에 등록된 스터디원의 풀이를 확인합니다',
-        },
-      },
-      solutions: {
-        title: '코드 옆에 풀이도 남겨두세요',
-        description:
-          '코드와 함께 접근 방법과 해결 여부를 남기고 실행 시간과 메모리도 저장할 수 있습니다',
-        cta: '풀이 보기',
-      },
-      groups: {
-        title: '스터디 문제는 한 문제집에',
-        description:
-          '여러 사이트에서 고른 문제를 문제집에 담고 문제마다 등록된 풀이를 확인할 수 있습니다',
-        cta: '그룹 보기',
+          '스터디 목표를 정하고 각자의 코드와 접근을 한곳에서 공유하는 알고리즘 스터디 워크스페이스입니다.',
       },
       support: {
-        title: '지원하는 문제 사이트',
-      },
-      finalCta: {
-        title: '오늘 푼 문제부터 남겨보세요',
+        title: '어디서 고르든, 한 문제집으로.',
         description:
-          '문제와 코드를 저장하고 풀이 과정도 남겨두면 필요할 때 다시 찾아볼 수 있습니다',
+          '익숙한 문제 제공자의 문제를 가져와 스터디의 공동 목표로 관리하세요.',
       },
       images: {
+        previewLabel: '오브원 제품 화면 미리보기',
         solutionAlt: '코드와 풀이 설명을 함께 보여주는 풀이 상세 화면',
         groupAlt: '그룹에서 함께 풀 문제를 정리한 문제집 화면',
       },
-      footer: '알고리즘 문제와 풀이를 기록하고 나누는 서비스',
+      footer: '알고리즘 문제와 풀이를 함께 기록하고 나누는 서비스',
     },
     auth: {
       sessionExpired: '세션이 만료되었습니다. 다시 로그인해 주세요.',
@@ -408,73 +355,18 @@ export const messages = {
     },
     landing: {
       hero: {
-        title: 'Share solutions for the problems you study',
+        title: 'Share solutions and grow together.',
+        highlight: 'together',
         description:
-          'Add problems from different sites to a shared problem set and review the code and notes your group saved for each one',
-      },
-      preview: {
-        ariaLabel:
-          'Example of problems from several sites and the solutions saved by a study group',
-        collectionLabel: 'Study problem set',
-        collectionTitle: 'Problems for this week',
-        linkedLabel: 'Saved solutions',
-        linkedProblem: 'BOJ 1260',
-        linkedTitle: 'DFS와 BFS',
-        groupSolution: 'Group solution',
-        solved: 'Solved',
-        javaSummary:
-          'Used recursion for DFS and a queue to control the BFS order',
-        pythonSummary:
-          'Sorted each adjacency list to visit lower-numbered vertices first',
-      },
-      cta: {
-        startRecording: 'Start recording',
-        signIn: 'Sign in',
-        viewSolutions: 'View my solutions',
-        viewGroups: 'View groups',
-      },
-      workflow: {
-        title: 'Keep each problem with its solution',
-        description:
-          'Save the code and reasoning then review how others solved the same problem',
-        choose: {
-          title: 'Choose a problem',
-          description: 'Find it by site and problem number',
-        },
-        record: {
-          title: 'Upload the code',
-          description: 'Save the language and source code',
-        },
-        explain: {
-          title: 'Write down the approach',
-          description: 'Explain how you solved it in Markdown',
-        },
-        find: {
-          title: 'Review other solutions',
-          description: 'See the notes your group saved for the same problem',
-        },
-      },
-      solutions: {
-        title: 'Keep the reasoning next to the code',
-        description:
-          'Save the approach and status with the code then add runtime and memory when you have them',
-        cta: 'View solutions',
-      },
-      groups: {
-        title: 'Build one problem set from different sites',
-        description:
-          'Add problems from different sites and review the solutions saved for each one',
-        cta: 'View groups',
+          'Bring study problems, code, and reasoning into one shared workspace.',
       },
       support: {
-        title: 'Problem sites currently supported',
-      },
-      finalCta: {
-        title: 'Save the next problem you solve',
+        title: 'One problem set, whichever site you choose.',
         description:
-          'Save the problem with its code and reasoning so you can find it again',
+          'Bring familiar problems into one shared goal for your study group.',
       },
       images: {
+        previewLabel: 'Orb One product preview',
         solutionAlt:
           'Solution detail showing source code and written reasoning',
         groupAlt: 'Group problem set organizing problems to solve together',
