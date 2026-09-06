@@ -9,12 +9,14 @@ import {
 } from '@/mocks/auth-session'
 import { problemHandlers } from '@/mocks/problem-handlers'
 import { solutionHandlers } from '@/mocks/solution-handlers'
+import { practiceHandlers } from '@/mocks/practice-handlers'
 import { groupHandlers } from '@/mocks/groups-handlers'
 import { problemSetHandlers } from '@/mocks/problem-sets-handlers'
 
 export const handlers = [
   ...problemHandlers,
   ...solutionHandlers,
+  ...practiceHandlers,
   ...groupHandlers,
   ...problemSetHandlers,
   http.get('*/auth/csrf', () =>

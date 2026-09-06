@@ -76,7 +76,7 @@ test('keeps the signed-in application navigation usable across viewports', async
 
   const navigation = page.getByRole('navigation', { name: '주요 탐색' })
   const brandLink = navigation.getByRole('link', {
-    name: 'O(1)',
+    name: '오브원',
     exact: true,
   })
   const currentUser = page.getByTestId('current-user')

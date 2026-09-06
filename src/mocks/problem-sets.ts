@@ -1,50 +1,55 @@
 import type {
-  ProblemSetDetailResponse,
+  ProblemResponse,
   ProblemSetResponse,
 } from '@/lib/api/problem-sets'
 
-// 1. 문제집 목록 목 데이터 (GET /groups/:groupId/problem-sets)
+export interface MockProblemSetDetailItem {
+  problemSetId: string
+  groupId: string
+  name: string
+  problems: ProblemResponse[]
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+// 1. 문제집 목록 Mock 데이터 (GET /groups/:groupId/problem-sets)
 export const mockProblemSetList: ProblemSetResponse[] = [
   {
-    problemSetId: '541549f4-4b5f-467f-9434-a0309b171bc1',
-    name: '테스트001',
+    problemSetId: '4455f522-c5e7-4567-b96d-8b32b2c85de2',
+    name: '1주차 - 배열/문자열',
     problemCount: 2,
     createdBy: 'a0e2d4de-b268-44b1-bf8a-fb49d725deb4',
-    createdAt: '2026-08-09T17:13:30',
-  },
-  {
-    problemSetId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-    name: 'SWEA 필수 기출 문제집',
-    problemCount: 2,
-    createdBy: '3f2504e0-4f89-11d3-9a0c-0305e82c3301',
-    createdAt: '2026-08-16T09:47:00.292Z',
+    createdAt: '2026-07-31T15:48:14',
   },
 ]
 
-// 2. 문제집 상세 목 데이터 (GET /groups/:groupId/problem-sets/:problemSetId)
-export const mockProblemSetDetail: ProblemSetDetailResponse = {
-  problemSetId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-  groupId: '6f9619ff-8b86-d011-b42d-00c04fc964ff',
-  name: 'SWEA 필수 기출 문제집',
-  problems: [
-    {
-      problemId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-      provider: 'SWEA',
-      externalProblemId: '1204',
-      name: '최빈수 구하기',
-      url: 'https://swexpertacademy.com/main/code/problem/problemDetail.do?contestProbId=AV13zo1KAAACFAYh',
-      difficulty: 'GOLD_3',
-    },
-    {
-      problemId: '4fa85f64-5717-4562-b3fc-2c963f66afa7',
-      provider: 'SWEA',
-      externalProblemId: '1206',
-      name: 'View',
-      url: 'https://swexpertacademy.com/main/code/problem/problemDetail.do?contestProbId=AV134166AA8CFAYh',
-      difficulty: 'GOLD_3',
-    },
-  ],
-  createdBy: '3f2504e0-4f89-11d3-9a0c-0305e82c3301',
-  createdAt: '2026-08-16T09:47:00.292Z',
-  updatedAt: '2026-08-16T09:47:00.292Z',
+// 2. 문제집 상세 Mock 데이터 (GET /groups/:groupId/problem-sets/:problemSetId)
+export const mockProblemSetDetails: Record<string, MockProblemSetDetailItem> = {
+  '4455f522-c5e7-4567-b96d-8b32b2c85de2': {
+    problemSetId: '4455f522-c5e7-4567-b96d-8b32b2c85de2',
+    groupId: '54f2cc6b-c10b-4e79-96d2-e933297fe748',
+    name: '1주차 - 배열/문자열',
+    createdBy: 'a0e2d4de-b268-44b1-bf8a-fb49d725deb4',
+    createdAt: '2026-07-31T15:48:14',
+    updatedAt: '2026-07-31T15:48:14',
+    problems: [
+      {
+        problemId: '64118996-0b1e-404c-8e5a-816ffcbf4899',
+        provider: 'BOJ',
+        externalProblemId: '1000',
+        name: 'A+B',
+        url: 'https://www.acmicpc.net/problem/1000',
+        difficulty: null,
+      },
+      {
+        problemId: 'c7fcb4ff-2f6f-400f-8cee-6c88cab9edbb',
+        provider: 'BOJ',
+        externalProblemId: '1016',
+        name: '제곱 ㄴㄴ 수',
+        url: 'https://www.acmicpc.net/problem/1016',
+        difficulty: null,
+      },
+    ],
+  },
 }
