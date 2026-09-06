@@ -144,11 +144,33 @@ test('follows the system light and dark color schemes', async ({ page }) => {
   const landing = page.locator('.orb-study-landing')
   const navigation = page.getByRole('navigation', { name: '주요 탐색' })
   const registerLink = navigation.getByRole('link', { name: '풀이 기록 시작' })
+  const baekjoonLogo = page.getByRole('img', {
+    name: 'Baekjoon Online Judge',
+  })
   const programmersLogo = page.getByRole('img', { name: 'Programmers' })
+  const jungolLogo = page.getByRole('img', { name: 'JUNGOL' })
 
   await expect(landing).toHaveCSS('background-color', 'rgb(255, 255, 255)')
   await expect(registerLink).toHaveCSS('color', 'rgb(255, 255, 255)')
   expect(await getContrastRatio(registerLink)).toBeGreaterThanOrEqual(4.5)
+  await expect(baekjoonLogo).toHaveCSS('filter', 'grayscale(1)')
+  await baekjoonLogo.hover()
+  await expect(baekjoonLogo).toHaveCSS('filter', 'none')
+  await expect(baekjoonLogo).toHaveCSS('opacity', '1')
+  const jungolIntrinsicSize = await jungolLogo.evaluate((element) => {
+    const image = element as HTMLImageElement
+
+    return {
+      height: image.naturalHeight,
+      width: image.naturalWidth,
+    }
+  })
+  expect(
+    jungolIntrinsicSize.width / jungolIntrinsicSize.height,
+  ).toBeGreaterThan(2.3)
+  await jungolLogo.hover()
+  await expect(jungolLogo).toHaveCSS('filter', 'none')
+  await expect(jungolLogo).toHaveCSS('opacity', '1')
   const lightNavigationBackground = await navigation.evaluate(
     (element) => getComputedStyle(element).backgroundColor,
   )
@@ -165,6 +187,16 @@ test('follows the system light and dark color schemes', async ({ page }) => {
   await expect(landing).toHaveCSS('background-color', 'rgb(38, 38, 38)')
   await expect(registerLink).toHaveCSS('color', 'rgb(23, 23, 23)')
   expect(await getContrastRatio(registerLink)).toBeGreaterThanOrEqual(4.5)
+  await expect(jungolLogo).toHaveCSS(
+    'filter',
+    'grayscale(1) brightness(0) invert(1)',
+  )
+  await jungolLogo.hover()
+  await expect(jungolLogo).toHaveCSS(
+    'filter',
+    'grayscale(1) brightness(0) invert(1)',
+  )
+  await expect(jungolLogo).toHaveCSS('opacity', '1')
   const darkNavigationBackground = await navigation.evaluate(
     (element) => getComputedStyle(element).backgroundColor,
   )

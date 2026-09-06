@@ -83,7 +83,10 @@ export function ProviderLogoMarquee({
                 className="landing-provider-group"
               >
                 {providers.map((provider) => (
-                  <picture key={provider.name} className="shrink-0">
+                  <picture
+                    key={provider.name}
+                    className="landing-provider-item shrink-0"
+                  >
                     {'darkSrc' in provider ? (
                       <source
                         media="(prefers-color-scheme: dark)"

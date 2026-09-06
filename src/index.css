@@ -173,12 +173,21 @@ body {
     filter: grayscale(1);
   }
 
+  .landing-provider-item:hover .landing-provider-logo {
+    opacity: 1;
+    filter: none;
+  }
+
   @media (prefers-color-scheme: dark) {
     .landing-provider-logo {
       opacity: 0.68;
     }
 
     .landing-provider-logo-contrast {
+      filter: grayscale(1) brightness(0) invert(1);
+    }
+
+    .landing-provider-item:hover .landing-provider-logo-contrast {
       filter: grayscale(1) brightness(0) invert(1);
     }
   }
@@ -195,6 +204,12 @@ body {
 
     .landing-provider-track {
       animation: landing-provider-scroll 26s linear infinite;
+    }
+
+    .landing-provider-logo {
+      transition:
+        filter var(--duration-fast) var(--ease-standard),
+        opacity var(--duration-fast) var(--ease-standard);
     }
 
     .landing-provider-marquee:hover .landing-provider-track {
