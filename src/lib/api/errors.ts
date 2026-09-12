@@ -32,6 +32,13 @@ export function parseApiErrorResponse(value: unknown): ApiErrorResponse | null {
   return { code, message, timestamp }
 }
 
+/** 서버 오류 본문 유무와 관계없이 HTTP 429를 Rate Limit 오류로 판별합니다. */
+export function isRateLimitError(value: unknown) {
+  return (
+    isRecord(value) && (value.status === 429 || value.code === 'RATE_LIMITED')
+  )
+}
+
 function isApiErrorCode(value: unknown): value is ApiErrorCode {
   return (
     typeof value === 'string' &&

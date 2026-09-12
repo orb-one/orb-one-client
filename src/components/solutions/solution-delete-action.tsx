@@ -4,7 +4,10 @@ import { useToast } from '@astryxdesign/core/Toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
-import { handleAuthSessionExpiredError } from '@/app/query-client'
+import {
+  handleAuthSessionExpiredError,
+  handleRateLimitError,
+} from '@/app/query-client'
 import { ApiError, AuthSessionExpiredError } from '@/lib/api/client'
 import { useI18n } from '@/lib/i18n/use-translations'
 import {
@@ -53,6 +56,8 @@ export function SolutionDeleteAction({
           handleAuthSessionExpiredError(error, queryClient, showToast)
           return 'terminal-error'
         }
+
+        handleRateLimitError(error, showToast)
 
         if (error instanceof ApiError && error.status === 404) {
           dismissDeleteToast?.()
