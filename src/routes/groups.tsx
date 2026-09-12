@@ -119,7 +119,11 @@ export function GroupListPage() {
       setIsCheckingGroupId(group.groupId)
 
       // 그룹 상세 정보 및 접근 권한 사전 검증
-      await getGroup(group.groupId)
+      await queryClient.fetchQuery({
+        queryKey: ['group', group.groupId],
+        queryFn: () => getGroup(group.groupId),
+        staleTime: 0,
+      })
 
       // 성공 시 상세 페이지로 이동
       void navigate({
@@ -127,7 +131,7 @@ export function GroupListPage() {
         params: { groupId: group.groupId },
       })
     } catch {
-      alert('그룹에 접근할 수 있는 권한이 없습니다.')
+      alert('그룹 정보를 확인하지 못했습니다.')
     } finally {
       setIsCheckingGroupId(null)
     }
