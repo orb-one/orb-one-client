@@ -1,4 +1,4 @@
-import type { RegisterRequest } from '@/lib/api/auth'
+import type { RegisterCredentials } from '@/lib/api/auth'
 import { getStringFormValue, isEmailFormat } from '@/lib/auth/form-validation'
 
 export type RegisterFormError =
@@ -15,7 +15,7 @@ export const REGISTER_PASSWORD_MIN_LENGTH = 8
 export type RegisterFormValidationResult =
   | {
       ok: true
-      request: RegisterRequest
+      request: RegisterCredentials
     }
   | {
       ok: false

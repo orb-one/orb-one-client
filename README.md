@@ -94,6 +94,7 @@ cp .env.example .env.local
 
 ```txt
 VITE_API_BASE_URL=http://localhost:8080
+VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA
 ```
 
 로컬에서 실제 개발 API를 같은 origin처럼 호출하려면 proxy mode를 사용할 수 있습니다.
@@ -119,6 +120,7 @@ VITE_MSW_USER_NICKNAME=dev-user
 
 - `VITE_` prefix 환경변수는 browser bundle에 노출됩니다.
 - `VITE_API_BASE_URL`은 필수 값이며 fallback URL은 사용하지 않습니다.
+- `VITE_TURNSTILE_SITE_KEY`는 공개 가능한 widget 식별자입니다. 서버 검증용 Secret Key를 클라이언트 환경변수에 넣지 않습니다.
 - `API_PROXY_TARGET`은 Vite dev server 전용 값이며 browser bundle에 노출되지 않습니다.
 - `VITE_ENABLE_MSW`는 개발용 browser mock switch입니다.
 - `.env`, `.env.*` 파일은 커밋하지 않습니다.
@@ -202,6 +204,7 @@ E2E_REUSE_SERVER=true pnpm test:e2e
 사용 환경변수:
 
 - `VITE_API_BASE_URL`: 실제 API 서버 URL. `.env`에서 로드됩니다.
+- `VITE_TURNSTILE_SITE_KEY`: 로그인·회원가입 Turnstile widget의 공개 sitekey입니다. 로컬 및 자동화 테스트에서는 Cloudflare 공식 테스트 sitekey를 사용합니다.
 - `API_PROXY_TARGET`: 로컬 proxy 대상 API URL입니다. 설정하면 `/auth`, `/users` 요청을 이 URL로 전달합니다.
 - `VITE_ENABLE_MSW`: `true`이면 browser MSW mock layer를 시작합니다. 기본값은 비활성 상태입니다.
 - `VITE_MSW_USER_NICKNAME`: `/users/me` mock 응답의 nickname입니다. 기본값은 `dev-user`입니다.

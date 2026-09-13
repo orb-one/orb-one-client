@@ -1,14 +1,22 @@
 import { apiClient } from '@/lib/api/client'
 
-export interface LoginRequest {
+export interface LoginCredentials {
   email: string
   password: string
 }
 
-export interface RegisterRequest {
+export interface LoginRequest extends LoginCredentials {
+  captchaToken: string
+}
+
+export interface RegisterCredentials {
   email: string
   password: string
   nickname: string
+}
+
+export interface RegisterRequest extends RegisterCredentials {
+  captchaToken: string
 }
 
 export interface NicknameUpdateRequest {

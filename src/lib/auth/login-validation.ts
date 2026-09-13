@@ -1,4 +1,4 @@
-import type { LoginRequest } from '@/lib/api/auth'
+import type { LoginCredentials } from '@/lib/api/auth'
 import { getStringFormValue, isEmailFormat } from '@/lib/auth/form-validation'
 
 export type LoginFormError =
@@ -9,7 +9,7 @@ export type LoginFormError =
 export type LoginFormValidationResult =
   | {
       ok: true
-      request: LoginRequest
+      request: LoginCredentials
     }
   | {
       ok: false

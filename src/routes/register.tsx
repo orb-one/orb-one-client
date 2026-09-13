@@ -20,6 +20,10 @@ import {
 } from 'lucide-react'
 import { useRef, useState, type ComponentProps } from 'react'
 
+import {
+  TurnstileCaptcha,
+  type TurnstileCaptchaHandle,
+} from '@/components/auth/turnstile-captcha'
 import { registerAccount, type RegisterRequest } from '@/lib/api/auth'
 import { getAuthErrorMessage } from '@/lib/auth/auth-errors'
 import { rememberMockRegisteredUser } from '@/lib/auth/mock-auth-session'
@@ -44,14 +48,17 @@ export function RegisterPage() {
   const [nickname, setNickname] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const emailInputRef = useRef<HTMLInputElement>(null)
   const nicknameInputRef = useRef<HTMLInputElement>(null)
   const passwordInputRef = useRef<HTMLInputElement>(null)
   const passwordConfirmInputRef = useRef<HTMLInputElement>(null)
+  const captchaRef = useRef<TurnstileCaptchaHandle>(null)
   const [formError, setFormError] = useState<RegisterFormError | null>(null)
   const registerMutation = useMutation({
     mutationFn: registerAccount,
     onSuccess: handleRegisterSuccess,
+    onError: resetCaptcha,
   })
 
   const mutationError = registerMutation.isError
@@ -65,6 +72,7 @@ export function RegisterPage() {
   const isPasswordInvalid =
     formError === 'passwordRequired' || formError === 'passwordTooShort'
   const isSubmitting = registerMutation.isPending
+  const isCaptchaVerified = captchaToken !== null
 
   async function handleRegisterSuccess(
     _response: unknown,
@@ -79,6 +87,11 @@ export function RegisterPage() {
     // 이전 제출의 server/form 오류가 다음 제출 결과와 섞이지 않도록 초기화
     registerMutation.reset()
     setFormError(null)
+  }
+
+  function resetCaptcha() {
+    setCaptchaToken(null)
+    captchaRef.current?.reset()
   }
 
   function clearRegisterFeedback(...errors: RegisterFormError[]) {
@@ -120,7 +133,11 @@ export function RegisterPage() {
       return
     }
 
-    registerMutation.mutate(validation.request)
+    if (!captchaToken) {
+      return
+    }
+
+    registerMutation.mutate({ ...validation.request, captchaToken })
   }
 
   return (
@@ -281,6 +298,12 @@ export function RegisterPage() {
                   />
                 </FormLayout>
 
+                <TurnstileCaptcha
+                  ref={captchaRef}
+                  action="register"
+                  onTokenChange={setCaptchaToken}
+                />
+
                 {registerMutation.isSuccess ? (
                   <Banner status="success" title={copy.successMessage} />
                 ) : null}
@@ -291,7 +314,7 @@ export function RegisterPage() {
                   variant="primary"
                   size="lg"
                   isLoading={isSubmitting}
-                  isDisabled={isSubmitting}
+                  isDisabled={isSubmitting || !isCaptchaVerified}
                   icon={<Icon icon={UserPlus} color="inherit" />}
                   className="w-full"
                 />
