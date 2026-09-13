@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 import type { ApiError as ApiErrorType } from '@/lib/api/client'
+import { isRateLimitError } from '@/lib/api/errors'
 
 let ApiError: typeof import('@/lib/api/client').ApiError
 let apiClient: typeof import('@/lib/api/client').apiClient
@@ -279,6 +280,21 @@ it('does not expose unrecognized server error codes', async () => {
   } satisfies Partial<ApiErrorType>)
 })
 
+it('preserves the status needed to recognize bodyless rate limit responses', async () => {
+  mockFetch(
+    new Response(null, {
+      status: 429,
+      statusText: 'Too Many Requests',
+    }),
+  )
+
+  const error = await apiClient('/users/me').catch((caught: unknown) => caught)
+
+  expect(error).toBeInstanceOf(ApiError)
+  expect(error).toMatchObject({ status: 429, code: undefined })
+  expect(isRateLimitError(error)).toBe(true)
+})
+
 it('refreshes the auth session and retries once after 401 responses', async () => {
   const fetchMock = mockFetch(
     new Response(JSON.stringify({ message: 'Expired' }), {
@@ -399,26 +415,29 @@ it('preserves invalid CSRF responses while preparing a refresh request', async (
   expect(fetchMock).toHaveBeenCalledTimes(2)
 })
 
-it.each([403, 500])('preserves refresh endpoint %s errors', async (status) => {
-  const fetchMock = mockFetch(
-    new Response(JSON.stringify({ message: 'Expired' }), {
-      ...jsonResponseInit(),
-      status: 401,
-      statusText: 'Unauthorized',
-    }),
-    csrfResponse(),
-    new Response(JSON.stringify({ message: 'Refresh failed' }), {
-      ...jsonResponseInit(),
-      status,
-    }),
-  )
+it.each([403, 429, 500])(
+  'preserves refresh endpoint %s errors',
+  async (status) => {
+    const fetchMock = mockFetch(
+      new Response(JSON.stringify({ message: 'Expired' }), {
+        ...jsonResponseInit(),
+        status: 401,
+        statusText: 'Unauthorized',
+      }),
+      csrfResponse(),
+      new Response(JSON.stringify({ message: 'Refresh failed' }), {
+        ...jsonResponseInit(),
+        status,
+      }),
+    )
 
-  await expect(apiClient('/users/me')).rejects.toMatchObject({
-    message: 'Refresh failed',
-    status,
-  } satisfies Partial<ApiErrorType>)
-  expect(fetchMock).toHaveBeenCalledTimes(3)
-})
+    await expect(apiClient('/users/me')).rejects.toMatchObject({
+      message: 'Refresh failed',
+      status,
+    } satisfies Partial<ApiErrorType>)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  },
+)
 
 it('shares one refresh request across concurrent 401 responses', async () => {
   let usersMeRequests = 0

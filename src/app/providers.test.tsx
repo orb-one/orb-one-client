@@ -3,7 +3,10 @@ import { cleanup } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 
 import {
+  createAppQueryClient,
   handleAuthSessionExpiredError,
+  handleRateLimitError,
+  rateLimitToastId,
   sessionExpiredToastId,
 } from '@/app/query-client'
 import { AuthSessionExpiredError, ApiError } from '@/lib/api/client'
@@ -106,3 +109,63 @@ it('ignores non-session API errors', () => {
   })
   expect(showToast).not.toHaveBeenCalled()
 })
+
+it('shows a localized rate limit toast without clearing the session', () => {
+  const queryClient = new QueryClient()
+  const currentUser = {
+    id: 'user-1',
+    email: 'user@example.com',
+    nickname: 'orb-user',
+  }
+  const error = rateLimitError()
+
+  queryClient.setQueryData(currentUserQueryKey, currentUser)
+  handleRateLimitError(error, showToast)
+
+  expect(queryClient.getQueryData(currentUserQueryKey)).toEqual(currentUser)
+  expect(showToast).toHaveBeenCalledWith({
+    body: messages.ko.common.rateLimitError,
+    type: 'error',
+    isAutoHide: true,
+    autoHideDuration: 5000,
+    uniqueID: rateLimitToastId,
+    collisionBehavior: 'overwrite',
+  })
+})
+
+it('handles rate-limited mutations through the global mutation cache', async () => {
+  const queryClient = createAppQueryClient(showToast)
+  const error = rateLimitError()
+  const mutation = queryClient.getMutationCache().build(queryClient, {
+    mutationFn: () => Promise.reject(error),
+  })
+
+  await expect(mutation.execute(undefined)).rejects.toBe(error)
+
+  expect(showToast).toHaveBeenCalledWith(
+    expect.objectContaining({ uniqueID: rateLimitToastId }),
+  )
+})
+
+it('does not retry rate-limited queries', async () => {
+  const queryClient = createAppQueryClient(showToast)
+  const queryFn = vi.fn().mockRejectedValue(rateLimitError())
+
+  await expect(
+    queryClient.fetchQuery({ queryKey: ['rate-limited'], queryFn }),
+  ).rejects.toMatchObject({ status: 429 })
+
+  expect(queryFn).toHaveBeenCalledOnce()
+  expect(showToast).toHaveBeenCalledWith(
+    expect.objectContaining({ uniqueID: rateLimitToastId }),
+  )
+})
+
+function rateLimitError() {
+  return new ApiError(
+    'Too Many Requests',
+    429,
+    new Response(null, { status: 429 }),
+    undefined,
+  )
+}

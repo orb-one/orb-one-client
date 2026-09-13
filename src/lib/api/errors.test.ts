@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 
-import { parseApiErrorResponse } from '@/lib/api/errors'
+import { isRateLimitError, parseApiErrorResponse } from '@/lib/api/errors'
 
 it.each(['DUPLICATE_EMAIL', 'USER_OWNS_GROUP'] as const)(
   'parses the recognized %s API error response',
@@ -22,4 +22,13 @@ it.each([
   { code: 'UNAUTHENTICATED', message: 'Unauthorized' },
 ])('rejects malformed or unrecognized API error responses', (response) => {
   expect(parseApiErrorResponse(response)).toBeNull()
+})
+
+it('recognizes rate limit errors by HTTP status or API error code', () => {
+  expect(isRateLimitError({ status: 429 })).toBe(true)
+  expect(isRateLimitError({ code: 'RATE_LIMITED' })).toBe(true)
+  expect(isRateLimitError({ status: 500, code: 'INTERNAL_SERVER_ERROR' })).toBe(
+    false,
+  )
+  expect(isRateLimitError(new Error('Network error'))).toBe(false)
 })

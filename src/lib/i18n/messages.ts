@@ -6,6 +6,7 @@ export const messages = {
   ko: {
     common: {
       productName: '오브원',
+      rateLimitError: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
     },
     navigation: {
       mainLabel: '주요 탐색',
@@ -337,6 +338,7 @@ export const messages = {
   en: {
     common: {
       productName: 'Orb One',
+      rateLimitError: 'Too many requests. Please try again shortly.',
     },
     navigation: {
       mainLabel: 'Main navigation',
