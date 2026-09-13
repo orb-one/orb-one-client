@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 
 import { isRateLimitError, parseApiErrorResponse } from '@/lib/api/errors'
 
-it.each(['DUPLICATE_EMAIL', 'USER_OWNS_GROUP'] as const)(
+it.each(['DUPLICATE_EMAIL', 'CAPTCHA_INVALID', 'USER_OWNS_GROUP'] as const)(
   'parses the recognized %s API error response',
   (code) => {
     const response = {

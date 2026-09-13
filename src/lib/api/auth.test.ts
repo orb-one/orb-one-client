@@ -38,6 +38,7 @@ it('posts register requests to the auth API', async () => {
     email: 'user@example.com',
     password: 'password123!',
     nickname: 'orbone-user',
+    captchaToken: 'turnstile-register-token',
   }
   const fetchMock = mockFetch(
     csrfResponse(),
@@ -68,6 +69,7 @@ it('posts login requests to the auth API', async () => {
   const request = {
     email: 'user@example.com',
     password: 'password123!',
+    captchaToken: 'turnstile-login-token',
   }
   const fetchMock = mockFetch(
     csrfResponse(),

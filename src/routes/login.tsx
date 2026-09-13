@@ -14,6 +14,10 @@ import { createFileRoute } from '@tanstack/react-router'
 import { LogIn, Mail, ShieldCheck } from 'lucide-react'
 import { useRef, useState, type ComponentProps } from 'react'
 
+import {
+  TurnstileCaptcha,
+  type TurnstileCaptchaHandle,
+} from '@/components/auth/turnstile-captcha'
 import { loginAccount, type LoginRequest } from '@/lib/api/auth'
 import { getAuthErrorMessage } from '@/lib/auth/auth-errors'
 import { signInMockUser } from '@/lib/auth/mock-auth-session'
@@ -47,12 +51,15 @@ export function LoginPage() {
   const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const emailInputRef = useRef<HTMLInputElement>(null)
   const passwordInputRef = useRef<HTMLInputElement>(null)
+  const captchaRef = useRef<TurnstileCaptchaHandle>(null)
   const [formError, setFormError] = useState<LoginFormError | null>(null)
   const loginMutation = useMutation({
     mutationFn: loginAccount,
     onSuccess: handleLoginSuccess,
+    onError: resetCaptcha,
   })
 
   const mutationError = loginMutation.isError
@@ -63,6 +70,7 @@ export function LoginPage() {
     formError === 'emailRequired' || formError === 'emailInvalid'
   const isPasswordInvalid = formError === 'passwordRequired'
   const isSubmitting = loginMutation.isPending
+  const isCaptchaVerified = captchaToken !== null
 
   async function handleLoginSuccess(_response: unknown, request: LoginRequest) {
     // 실제 로그인 성공 후 /users/me mock이 현재 사용자를 반환하도록 dev-only 세션을 맞춘다.
@@ -75,6 +83,11 @@ export function LoginPage() {
     // 이전 제출의 server/form 오류가 다음 제출 결과와 섞이지 않도록 초기화
     loginMutation.reset()
     setFormError(null)
+  }
+
+  function resetCaptcha() {
+    setCaptchaToken(null)
+    captchaRef.current?.reset()
   }
 
   function clearLoginFeedback(...errors: LoginFormError[]) {
@@ -113,7 +126,11 @@ export function LoginPage() {
       return
     }
 
-    loginMutation.mutate(validation.request)
+    if (!captchaToken) {
+      return
+    }
+
+    loginMutation.mutate({ ...validation.request, captchaToken })
   }
 
   return (
@@ -220,6 +237,12 @@ export function LoginPage() {
                   />
                 </FormLayout>
 
+                <TurnstileCaptcha
+                  ref={captchaRef}
+                  action="login"
+                  onTokenChange={setCaptchaToken}
+                />
+
                 {loginMutation.isSuccess ? (
                   <Banner status="success" title={copy.successMessage} />
                 ) : null}
@@ -230,7 +253,7 @@ export function LoginPage() {
                   variant="primary"
                   size="lg"
                   isLoading={isSubmitting}
-                  isDisabled={isSubmitting}
+                  isDisabled={isSubmitting || !isCaptchaVerified}
                   icon={<Icon icon={LogIn} color="inherit" />}
                   className="w-full"
                 />

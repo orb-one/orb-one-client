@@ -2,16 +2,50 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, expect, it, type Mock, vi } from 'vitest'
 
 import { REGISTER_PASSWORD_MIN_LENGTH } from '@/lib/auth/register-validation'
 import { LoginPage } from '@/routes/login'
 import { RegisterPage } from '@/routes/register'
 import { useAppStore } from '@/stores/use-app-store'
 
-const { routeSearch } = vi.hoisted(() => ({
-  routeSearch: { current: {} },
-}))
+interface CaptchaMockState {
+  reset: Mock
+  token: string | null
+}
+
+const { captchaMock, routeSearch } = vi.hoisted(() => {
+  const captchaMock: CaptchaMockState = {
+    reset: vi.fn(),
+    token: 'turnstile-test-token',
+  }
+
+  return {
+    captchaMock,
+    routeSearch: { current: {} },
+  }
+})
+
+vi.mock('@/components/auth/turnstile-captcha', async () => {
+  const { createElement, forwardRef, useEffect, useImperativeHandle } =
+    await import('react')
+
+  return {
+    TurnstileCaptcha: forwardRef<
+      { reset: () => void },
+      { onTokenChange: (token: string | null) => void }
+    >(function MockTurnstileCaptcha({ onTokenChange }, ref) {
+      useImperativeHandle(ref, () => ({ reset: captchaMock.reset }))
+      useEffect(() => {
+        if (captchaMock.token) {
+          onTokenChange(captchaMock.token)
+        }
+      }, [onTokenChange])
+
+      return createElement('span', { 'data-testid': 'turnstile-captcha' })
+    }),
+  }
+})
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute:
@@ -28,6 +62,8 @@ vi.mock('@tanstack/react-router', () => ({
 
 afterEach(() => {
   cleanup()
+  captchaMock.reset.mockReset()
+  captchaMock.token = 'turnstile-test-token'
   routeSearch.current = {}
   useAppStore.getState().setLocale('ko')
   vi.unstubAllEnvs()
@@ -47,6 +83,7 @@ it('shows the Korean server message for invalid login credentials', async () => 
   await userEvent.click(screen.getByRole('button', { name: '로그인' }))
 
   expect(await screen.findByRole('alert')).toHaveTextContent(serverMessage)
+  expect(captchaMock.reset).toHaveBeenCalledOnce()
 
   await userEvent.clear(emailInput)
   await userEvent.type(emailInput, 'another@example.com')
@@ -66,6 +103,24 @@ it('keeps native login field semantics', () => {
   expect(passwordInput).toHaveAttribute('name', 'password')
   expect(passwordInput).toHaveAttribute('autocomplete', 'current-password')
   expect(passwordInput).toBeRequired()
+})
+
+it('does not submit login credentials before captcha verification', async () => {
+  captchaMock.token = null
+  const fetchMock = vi.fn<typeof fetch>()
+  vi.stubGlobal('fetch', fetchMock)
+  renderRoute(<LoginPage />)
+
+  await fillLoginForm({
+    email: 'user@example.com',
+    password: 'password123!',
+  })
+
+  const submitButton = screen.getByRole('button', { name: '로그인' })
+
+  expect(submitButton).toBeDisabled()
+  await userEvent.type(screen.getByLabelText('비밀번호'), '{enter}')
+  expect(fetchMock).not.toHaveBeenCalled()
 })
 
 it('shows a password change confirmation on the login page', () => {
@@ -133,6 +188,7 @@ it('shows the Korean server message for duplicate registration emails', async ()
   await userEvent.click(screen.getByRole('button', { name: '회원가입' }))
 
   expect(await screen.findByRole('alert')).toHaveTextContent(serverMessage)
+  expect(captchaMock.reset).toHaveBeenCalledOnce()
 
   await userEvent.clear(emailInput)
   await userEvent.type(emailInput, 'another@example.com')

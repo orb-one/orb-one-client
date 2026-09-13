@@ -40,6 +40,15 @@ export const messages = {
     },
     auth: {
       sessionExpired: '세션이 만료되었습니다. 다시 로그인해 주세요.',
+      captcha: {
+        configurationError: '보안 인증 설정을 불러오지 못했습니다.',
+        loadError:
+          '보안 인증을 불러오지 못했습니다. 페이지를 새로고침해 주세요.',
+        verificationError:
+          '보안 인증을 완료하지 못했습니다. 다시 시도해 주세요.',
+        expired: '보안 인증 시간이 만료되었습니다. 다시 인증해 주세요.',
+        reload: '새로고침',
+      },
       login: {
         eyebrow: '계정 접근',
         title: '로그인',
@@ -374,6 +383,14 @@ export const messages = {
     },
     auth: {
       sessionExpired: 'Your session has expired. Please sign in again.',
+      captcha: {
+        configurationError: 'Security verification is not configured.',
+        loadError:
+          'Security verification did not load. Please reload the page.',
+        verificationError: 'Security verification failed. Please try again.',
+        expired: 'Security verification expired. Please verify again.',
+        reload: 'Reload',
+      },
       login: {
         eyebrow: 'Account access',
         title: 'Log in',
@@ -682,6 +699,7 @@ export const authErrorTranslations = {
     INVALID_CREDENTIALS: 'The email or password is incorrect.',
     INVALID_REFRESH_TOKEN: 'Please sign in again.',
     DUPLICATE_EMAIL: 'An account already exists for this email.',
+    CAPTCHA_INVALID: 'Security verification failed. Please try again.',
     USER_OWNS_GROUP:
       'Transfer ownership or close your groups before deleting your account.',
   },
