@@ -9,6 +9,7 @@ for (const [key, value] of Object.entries(env)) {
 }
 
 process.env.VITE_ENABLE_MSW = process.env.E2E_ENABLE_MSW ?? 'false'
+process.env.VITE_TURNSTILE_SITE_KEY ??= '1x00000000000000000000AA'
 
 const host = process.env.E2E_HOST ?? 'localhost'
 const port = process.env.E2E_PORT ?? '5173'
