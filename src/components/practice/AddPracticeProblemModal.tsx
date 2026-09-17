@@ -19,7 +19,7 @@ export function AddPracticeProblemModal({
   isOpen,
   onClose,
 }: AddPracticeProblemModalProps) {
-  const [provider, setProvider] = useState('BOJ')
+  const [provider, setProvider] = useState('')
   const [externalProblemId, setExternalProblemId] = useState('')
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')

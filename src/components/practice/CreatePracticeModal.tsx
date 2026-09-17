@@ -26,7 +26,7 @@ export function CreatePracticeModal({
   const [endDate, setEndDate] = useState('')
 
   // 첫 문제 등록을 위한 필수 상태들
-  const [provider, setProvider] = useState('BOJ')
+  const [provider, setProvider] = useState('')
   const [externalProblemId, setExternalProblemId] = useState('')
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
