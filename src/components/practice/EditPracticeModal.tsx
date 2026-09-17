@@ -2,7 +2,6 @@ import { Button } from '@astryxdesign/core/Button'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
 import { DateInput } from '@astryxdesign/core/DateInput'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
-import { Stack } from '@astryxdesign/core/Stack'
 
 type ISODateString =
   `${number}${number}${number}${number}-${number}${number}-${number}${number}`
@@ -54,8 +53,8 @@ export function EditPracticeModal({
     updatePractice.mutate(
       {
         title,
-        startDate: new Date(startDate).toISOString(),
-        endDate: new Date(endDate).toISOString(),
+        startDate: `${startDate}T00:00:00`,
+        endDate: `${endDate}T23:59:59`,
       },
       {
         onSuccess: () => {
@@ -94,8 +93,7 @@ export function EditPracticeModal({
             }}
             placeholder="1주차"
           />
-          <Stack gap={4} direction="horizontal">
-            {}
+          <div className="grid grid-cols-2 gap-4">
             <DateInput
               label="시작 일시"
               value={startDate as ISODateString}
@@ -104,7 +102,6 @@ export function EditPracticeModal({
               }}
               placeholder="YYYY-MM-DD"
             />
-            {}
             <DateInput
               label="종료 일시"
               value={endDate as ISODateString}
@@ -113,7 +110,7 @@ export function EditPracticeModal({
               }}
               placeholder="YYYY-MM-DD"
             />
-          </Stack>
+          </div>
         </FormLayout>
         <div className="mt-6 flex justify-end gap-2">
           <Button label="취소" variant="secondary" onClick={onClose} />
