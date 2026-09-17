@@ -113,7 +113,7 @@ export function CreatePracticeModal({
             }}
             placeholder="1주차"
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             <DateInput
               label="시작 일시"
               value={startDate as ISODateString}
