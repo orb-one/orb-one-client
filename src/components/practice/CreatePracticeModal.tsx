@@ -2,7 +2,6 @@ import { Button } from '@astryxdesign/core/Button'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
 import { DateInput } from '@astryxdesign/core/DateInput'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
-import { Stack } from '@astryxdesign/core/Stack'
 
 type ISODateString =
   `${number}${number}${number}${number}-${number}${number}-${number}${number}`
@@ -114,7 +113,7 @@ export function CreatePracticeModal({
             }}
             placeholder="1주차"
           />
-          <Stack gap={4} direction="horizontal">
+          <div className="flex flex-col gap-4">
             <DateInput
               label="시작 일시"
               value={startDate as ISODateString}
@@ -131,7 +130,7 @@ export function CreatePracticeModal({
               }}
               placeholder="YYYY-MM-DD"
             />
-          </Stack>
+          </div>
 
           <hr className="my-4 border-gray-200" />
 

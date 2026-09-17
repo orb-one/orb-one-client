@@ -44,16 +44,6 @@ export function PracticeList({
       idKey="id"
       columns={[
         {
-          key: 'id',
-          header: '연습 ID',
-          width: proportional(1),
-          renderCell: (p: Practice) => (
-            <Text type="supporting" color="secondary">
-              {p.id}
-            </Text>
-          ),
-        },
-        {
           key: 'title',
           header: '제목',
           width: proportional(2),
