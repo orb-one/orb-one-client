@@ -2,7 +2,8 @@ import { Button } from '@astryxdesign/core/Button'
 import { Icon } from '@astryxdesign/core/Icon'
 import { Table } from '@astryxdesign/core/Table'
 import { Text } from '@astryxdesign/core/Text'
-import { Trash2 } from 'lucide-react'
+import { Trash2, ExternalLink, List } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 import type { Practice, PracticeProblem } from '@/lib/api/practice'
 
 interface PracticeDetailTableProps {
@@ -52,7 +53,7 @@ export function PracticeDetailTable({
         },
         {
           key: 'action',
-          header: isDeleteMode ? '삭제' : '풀이 이동',
+          header: isDeleteMode ? '삭제' : '이동',
           renderCell: (prob: PracticeProblem) =>
             isDeleteMode ? (
               <Button
@@ -63,19 +64,34 @@ export function PracticeDetailTable({
                 onClick={() => onDeleteProblem?.(prob.problemId)}
               />
             ) : (
-              <Button
-                size="sm"
-                variant="secondary"
-                label="> 풀이로 이동"
-                href={prob.url ?? ''}
-                target={prob.url ? '_blank' : ''}
-                isDisabled={!prob.url}
-                onClick={(e) => {
-                  if (!prob.url) {
-                    e.preventDefault()
-                  }
-                }}
-              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  label="문제 열기"
+                  icon={<Icon icon={ExternalLink} size="sm" />}
+                  href={prob.url ?? ''}
+                  target={prob.url ? '_blank' : ''}
+                  isDisabled={!prob.url}
+                  onClick={(e) => {
+                    if (!prob.url) {
+                      e.preventDefault()
+                    }
+                  }}
+                />
+                <Link
+                  to="/solutions"
+                  search={{ problemId: prob.problemId }}
+                  className="block"
+                >
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    label="풀이 목록"
+                    icon={<Icon icon={List} size="sm" />}
+                  />
+                </Link>
+              </div>
             ),
         },
       ]}
