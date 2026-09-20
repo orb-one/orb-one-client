@@ -30,27 +30,32 @@ export function AddPracticeProblemModal({
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!provider || !externalProblemId || !name) {
+    if (!provider || !externalProblemId || !name || !url) {
       showToast({
-        body: '플랫폼, 문제 ID, 문제 이름을 모두 입력해주세요.',
+        body: '모든 문제 정보를 입력해주세요.',
         type: 'error',
       })
       return
     }
 
     addProblem.mutate(
-      { provider, externalProblemId, name, url },
+      {
+        provider,
+        externalProblemId,
+        name,
+        url,
+      },
       {
         onSuccess: () => {
-          showToast({ body: '문제가 성공적으로 추가되었습니다.' })
-          setProvider('BOJ')
+          showToast({ body: '문제가 성공적으로 등록되었습니다.' })
+          setProvider('')
           setExternalProblemId('')
           setName('')
           setUrl('')
           onClose()
         },
         onError: () => {
-          showToast({ body: '문제 추가에 실패했습니다.', type: 'error' })
+          showToast({ body: '문제 등록에 실패했습니다.', type: 'error' })
         },
       },
     )
@@ -73,17 +78,17 @@ export function AddPracticeProblemModal({
         <FormLayout>
           <TextInput
             htmlName="provider"
-            label="플랫폼 (예: BOJ, PROGRAMMERS)"
+            label="플랫폼"
             hasAutoFocus
             value={provider}
             onChange={(val) => {
               setProvider(val)
             }}
-            placeholder="BOJ"
+            placeholder="플랫폼"
           />
           <TextInput
             htmlName="externalProblemId"
-            label="문제 ID (예: 1000)"
+            label="문제 ID"
             value={externalProblemId}
             onChange={(val) => {
               setExternalProblemId(val.replace(/\D/g, ''))
@@ -101,19 +106,19 @@ export function AddPracticeProblemModal({
           />
           <TextInput
             htmlName="url"
-            label="문제 링크 (선택)"
+            label="문제 링크"
             value={url}
             onChange={(val) => {
               setUrl(val)
             }}
-            placeholder="https://acmicpc.net/problem/1000"
+            placeholder="https://"
           />
         </FormLayout>
         <div className="mt-6 flex justify-end gap-2">
           <Button label="취소" variant="secondary" onClick={onClose} />
           <Button
             type="submit"
-            label="문제 추가"
+            label="추가하기"
             variant="primary"
             isLoading={addProblem.isPending}
           />
