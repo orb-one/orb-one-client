@@ -65,9 +65,9 @@ export function CreatePracticeModal({
       return
     }
 
-    if (!provider || !externalProblemId || !name) {
+    if (!provider || !externalProblemId || !name || !url) {
       showToast({
-        body: '플랫폼, 문제 ID, 문제 이름은 필수입니다.',
+        body: '모든 문제 정보를 입력해주세요.',
         type: 'error',
       })
       return
@@ -160,16 +160,16 @@ export function CreatePracticeModal({
 
           <TextInput
             htmlName="provider"
-            label="플랫폼 (예: BOJ, PROGRAMMERS)"
+            label="플랫폼"
             value={provider}
             onChange={(val) => {
               setProvider(val)
             }}
-            placeholder="BOJ"
+            placeholder="플랫폼"
           />
           <TextInput
             htmlName="externalProblemId"
-            label="문제 ID (예: 1000)"
+            label="문제 ID"
             value={externalProblemId}
             onChange={(val) => {
               setExternalProblemId(val.replace(/\D/g, ''))
@@ -187,12 +187,12 @@ export function CreatePracticeModal({
           />
           <TextInput
             htmlName="url"
-            label="문제 링크 (선택)"
+            label="문제 링크"
             value={url}
             onChange={(val) => {
               setUrl(val)
             }}
-            placeholder="https://acmicpc.net/problem/1000"
+            placeholder="https://"
           />
         </FormLayout>
         <div className="mt-6 flex justify-end gap-2">
