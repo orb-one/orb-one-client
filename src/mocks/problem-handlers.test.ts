@@ -30,12 +30,94 @@ it('returns a paginated problem list and problem detail', async () => {
     totalElements: 3,
     totalPages: 2,
   })
-  expect(firstPage.problems).toHaveLength(2)
-  expect(secondPage.problems).toHaveLength(1)
+  expect(firstPage.problems.map((problem) => problem.externalId)).toEqual([
+    '1000',
+    '1204',
+  ])
+  expect(secondPage.problems.map((problem) => problem.externalId)).toEqual([
+    '2557',
+  ])
   const firstProblem = firstPage.problems[0]
 
   expect(firstProblem).toBeDefined()
   if (firstProblem) {
     await expect(getProblem(firstProblem.id)).resolves.toEqual(firstProblem)
   }
+})
+
+it('returns the server problem list response shape', async () => {
+  const response = await fetch('http://localhost:8080/problems?page=0&size=1', {
+    credentials: 'include',
+  })
+
+  await expect(response.json()).resolves.toEqual({
+    problems: [
+      {
+        problemId: '10000000-0000-4000-8000-000000000001',
+        provider: 'BOJ',
+        externalProblemId: '1000',
+        name: 'A+B',
+        url: 'https://www.acmicpc.net/problem/1000',
+        difficulty: 'BRONZE_5',
+      },
+    ],
+    page: 0,
+    size: 1,
+    totalElements: 3,
+    totalPages: 3,
+  })
+})
+
+it('filters problems by name or external problem number', async () => {
+  const nameResult = await getProblems({
+    keyword: '최빈수',
+    page: 0,
+    size: 10,
+  })
+  const numberResult = await getProblems({
+    keyword: '2557',
+    page: 0,
+    size: 10,
+  })
+
+  expect(nameResult.problems.map((problem) => problem.name)).toEqual([
+    '최빈수 구하기',
+  ])
+  expect(numberResult.problems.map((problem) => problem.externalId)).toEqual([
+    '2557',
+  ])
+})
+
+it('filters problems by provider and difficulty', async () => {
+  const result = await getProblems({
+    difficulty: 'bronze_5',
+    page: 0,
+    provider: 'BOJ',
+    size: 10,
+  })
+
+  expect(result).toEqual({
+    problems: [
+      {
+        id: '10000000-0000-4000-8000-000000000001',
+        provider: 'BOJ',
+        externalId: '1000',
+        name: 'A+B',
+        url: 'https://www.acmicpc.net/problem/1000',
+        difficulty: 'BRONZE_5',
+      },
+      {
+        id: '10000000-0000-4000-8000-000000000002',
+        provider: 'BOJ',
+        externalId: '2557',
+        name: 'Hello World',
+        url: 'https://www.acmicpc.net/problem/2557',
+        difficulty: 'BRONZE_5',
+      },
+    ],
+    page: 0,
+    size: 10,
+    totalElements: 2,
+    totalPages: 1,
+  })
 })

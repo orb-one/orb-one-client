@@ -143,10 +143,36 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
     '풀이를 등록할 문제를 선택해 주세요.',
     { exact: true },
   )
+  const problemSearchInput = page.getByRole('textbox', { name: '문제 검색' })
   const problemPickerPagination = page.getByText('Page 1 of 2', {
     exact: true,
   })
   const problemScrollArea = page.getByTestId('problem-picker-list-scroll-area')
+
+  await page.setViewportSize({ width: 320, height: 320 })
+  await problemScrollArea.scrollIntoViewIfNeeded()
+  await expect(problemScrollArea).toBeInViewport()
+  await expect
+    .poll(() =>
+      problemScrollArea.evaluate(
+        (element) => element.getBoundingClientRect().height,
+      ),
+    )
+    .toBeGreaterThanOrEqual(128)
+  await page.setViewportSize({ width: 320, height: 667 })
+
+  await page.getByRole('button', { name: 'Go to next page' }).click()
+  await expect(
+    page
+      .getByRole('navigation', { name: '문제 목록 페이지' })
+      .getByText('Page 2 of 2', { exact: true }),
+  ).toBeVisible()
+  await problemSearchInput.fill('1009')
+  await expect(page.getByRole('button', { name: /E2E 문제 9/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /A\+B/ })).toHaveCount(0)
+  await problemSearchInput.fill('')
+  await expect(page.getByRole('button', { name: /A\+B/ })).toBeVisible()
+  await expect(problemPickerPagination).toBeVisible()
 
   await expect
     .poll(() =>
@@ -429,30 +455,44 @@ async function mockSolutionApi(
       return
     }
 
+    const requestUrl = new URL(route.request().url())
+    const keyword = requestUrl.searchParams.get('keyword')?.trim().toLowerCase()
+    const page = Number(requestUrl.searchParams.get('page') ?? 0)
+    const size = Number(requestUrl.searchParams.get('size') ?? 10)
+    const problems = Array.from({ length: 12 }, (_, index) =>
+      index === 0
+        ? {
+            problemId: initialSeededSolution.problemId,
+            provider: 'BOJ',
+            externalProblemId: '1000',
+            name: 'A+B',
+            url: 'https://www.acmicpc.net/problem/1000',
+            difficulty: 'BRONZE_5',
+          }
+        : {
+            problemId: `problem-e2e-${String(index)}`,
+            provider: 'BOJ',
+            externalProblemId: String(1000 + index),
+            name: `E2E 문제 ${String(index)}`,
+            url: `https://www.acmicpc.net/problem/${String(1000 + index)}`,
+            difficulty: 'BRONZE_5',
+          },
+    )
+    const filteredProblems = keyword
+      ? problems.filter(
+          (problem) =>
+            problem.name.toLowerCase().includes(keyword) ||
+            problem.externalProblemId.toLowerCase().includes(keyword),
+        )
+      : problems
+    const start = page * size
+
     await fulfillJson(route, {
-      problems: Array.from({ length: 10 }, (_, index) =>
-        index === 0
-          ? {
-              problemId: initialSeededSolution.problemId,
-              provider: 'BOJ',
-              externalProblemId: '1000',
-              name: 'A+B',
-              url: 'https://www.acmicpc.net/problem/1000',
-              difficulty: 'BRONZE_5',
-            }
-          : {
-              problemId: `problem-e2e-${String(index)}`,
-              provider: 'BOJ',
-              externalProblemId: String(1000 + index),
-              name: `E2E 문제 ${String(index)}`,
-              url: `https://www.acmicpc.net/problem/${String(1000 + index)}`,
-              difficulty: 'BRONZE_5',
-            },
-      ),
-      page: 0,
-      size: 10,
-      totalElements: 12,
-      totalPages: 2,
+      problems: filteredProblems.slice(start, start + size),
+      page,
+      size,
+      totalElements: filteredProblems.length,
+      totalPages: Math.ceil(filteredProblems.length / size),
     })
   })
 

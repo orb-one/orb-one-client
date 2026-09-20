@@ -9,11 +9,12 @@ import { Pagination } from '@astryxdesign/core/Pagination'
 import { Section } from '@astryxdesign/core/Section'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
+import { TextInput } from '@astryxdesign/core/TextInput'
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useQuery } from '@tanstack/react-query'
-import { Check, ListChecks } from 'lucide-react'
-import { useState } from 'react'
+import { Check, ListChecks, Search, SearchX } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import { useI18n } from '@/lib/i18n/use-translations'
@@ -21,6 +22,7 @@ import type { Problem } from '@/lib/problems/problem-model'
 import { problemListQueryOptions } from '@/lib/problems/problem-queries'
 
 const PAGE_SIZE = 10
+const SEARCH_DEBOUNCE_MS = 300
 
 export function ProblemPickerDialog({
   isOpen,
@@ -31,15 +33,30 @@ export function ProblemPickerDialog({
   const { t } = useI18n()
   const copy = t.solutions.create
   const [page, setPage] = useState(0)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [keyword, setKeyword] = useState('')
   const problemsQuery = useQuery({
-    ...problemListQueryOptions({ page, size: PAGE_SIZE }),
+    ...problemListQueryOptions({ keyword, page, size: PAGE_SIZE }),
     enabled: isOpen,
   })
   const isAuthRequired = problemsQuery.error instanceof AuthSessionExpiredError
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setPage(0)
+      setKeyword(searchQuery.trim())
+    }, SEARCH_DEBOUNCE_MS)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [searchQuery])
+
   function handleOpenChange(nextIsOpen: boolean) {
     if (!nextIsOpen) {
       setPage(0)
+      setSearchQuery('')
+      setKeyword('')
     }
 
     onOpenChange(nextIsOpen)
@@ -55,7 +72,7 @@ export function ProblemPickerDialog({
       isOpen={isOpen}
       onOpenChange={handleOpenChange}
       width={640}
-      maxHeight="80vh"
+      maxHeight="calc(100dvh - 1rem)"
       purpose="info"
     >
       <Layout
@@ -68,11 +85,21 @@ export function ProblemPickerDialog({
           />
         }
         content={
-          <LayoutContent isScrollable={false}>
+          <LayoutContent>
             <VStack gap={3} width="100%">
               <Text type="body" size="sm" color="secondary">
                 {copy.problemPickerDescription}
               </Text>
+              <TextInput
+                label={copy.problemSearchLabel}
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder={copy.problemSearchPlaceholder}
+                startIcon={Search}
+                hasClear
+                hasAutoFocus
+                isLoading={problemsQuery.isFetching}
+              />
               {problemsQuery.isPending ? (
                 <ProblemPickerSkeleton label={copy.problemPickerLoading} />
               ) : problemsQuery.isError ? (
@@ -101,16 +128,30 @@ export function ProblemPickerDialog({
                 />
               ) : problemsQuery.data.problems.length === 0 ? (
                 <EmptyState
-                  title={copy.problemPickerEmptyTitle}
-                  description={copy.problemPickerEmptyDescription}
-                  icon={<Icon icon={ListChecks} size="lg" color="secondary" />}
+                  title={
+                    keyword
+                      ? copy.problemSearchEmptyTitle
+                      : copy.problemPickerEmptyTitle
+                  }
+                  description={
+                    keyword
+                      ? copy.problemSearchEmptyDescription
+                      : copy.problemPickerEmptyDescription
+                  }
+                  icon={
+                    <Icon
+                      icon={keyword ? SearchX : ListChecks}
+                      size="lg"
+                      color="secondary"
+                    />
+                  }
                   headingLevel={2}
                 />
               ) : (
                 <VStack
                   width="100%"
                   isScrollable
-                  className="max-h-[calc(80dvh-11rem)] overscroll-contain"
+                  className="max-h-[max(8rem,calc(80dvh-16rem))] overscroll-contain"
                   data-testid="problem-picker-list-scroll-area"
                 >
                   <List density="balanced" hasDividers>

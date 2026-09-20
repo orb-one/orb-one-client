@@ -43,15 +43,38 @@ export const problemHandlers = [
     }
 
     const requestUrl = new URL(request.url)
+    const keyword = requestUrl.searchParams.get('keyword')?.trim().toLowerCase()
+    const provider = requestUrl.searchParams.get('provider')?.trim()
+    const difficulty = requestUrl.searchParams
+      .get('difficulty')
+      ?.trim()
+      .toLowerCase()
     const page = Number(requestUrl.searchParams.get('page') ?? 0)
     const size = Number(requestUrl.searchParams.get('size') ?? 20)
     const start = page * size
+    const filteredProblems = mockProblems
+      .filter(
+        (problem) =>
+          !keyword ||
+          problem.name.toLowerCase().includes(keyword) ||
+          problem.externalProblemId.toLowerCase().includes(keyword),
+      )
+      .filter((problem) => !provider || problem.provider === provider)
+      .filter(
+        (problem) =>
+          !difficulty || problem.difficulty?.toLowerCase() === difficulty,
+      )
+      .sort(
+        (left, right) =>
+          compareStrings(left.externalProblemId, right.externalProblemId) ||
+          compareStrings(left.provider, right.provider),
+      )
     const response: ProblemListResponse = {
-      problems: mockProblems.slice(start, start + size),
+      problems: filteredProblems.slice(start, start + size),
       page,
       size,
-      totalElements: mockProblems.length,
-      totalPages: Math.ceil(mockProblems.length / size),
+      totalElements: filteredProblems.length,
+      totalPages: Math.ceil(filteredProblems.length / size),
     }
 
     return HttpResponse.json(response)
@@ -80,3 +103,11 @@ export const problemHandlers = [
       : HttpResponse.json({ message: 'Problem not found' }, { status: 404 })
   }),
 ]
+
+function compareStrings(left: string, right: string) {
+  if (left === right) {
+    return 0
+  }
+
+  return left < right ? -1 : 1
+}
