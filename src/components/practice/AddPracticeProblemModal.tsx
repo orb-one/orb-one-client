@@ -86,7 +86,7 @@ export function AddPracticeProblemModal({
             label="문제 ID (예: 1000)"
             value={externalProblemId}
             onChange={(val) => {
-              setExternalProblemId(val)
+              setExternalProblemId(val.replace(/\D/g, ''))
             }}
             placeholder="1000"
           />

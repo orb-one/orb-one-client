@@ -1,10 +1,6 @@
 import { Button } from '@astryxdesign/core/Button'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
-import { DateInput } from '@astryxdesign/core/DateInput'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
-
-type ISODateString =
-  `${number}${number}${number}${number}-${number}${number}-${number}${number}`
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { useToast } from '@astryxdesign/core/Toast'
 import { useState } from 'react'
@@ -14,6 +10,16 @@ interface CreatePracticeModalProps {
   groupId: string
   isOpen: boolean
   onClose: () => void
+}
+
+const formatDateInput = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 8)
+  if (digits.length >= 7) {
+    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`
+  } else if (digits.length >= 5) {
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`
+  }
+  return digits
 }
 
 export function CreatePracticeModal({
@@ -40,6 +46,22 @@ export function CreatePracticeModal({
 
     if (!title || !startDate || !endDate) {
       showToast({ body: '연습 기본 정보를 모두 입력해주세요.', type: 'error' })
+      return
+    }
+
+    if (startDate.length !== 10 || endDate.length !== 10) {
+      showToast({
+        body: '날짜를 끝까지 올바르게 입력해주세요. (예: 2023-01-01)',
+        type: 'error',
+      })
+      return
+    }
+
+    if (startDate > endDate) {
+      showToast({
+        body: '종료 일시는 시작 일시보다 빠를 수 없습니다.',
+        type: 'error',
+      })
       return
     }
 
@@ -71,7 +93,7 @@ export function CreatePracticeModal({
           setTitle('')
           setStartDate('')
           setEndDate('')
-          setProvider('BOJ')
+          setProvider('')
           setExternalProblemId('')
           setName('')
           setUrl('')
@@ -114,21 +136,23 @@ export function CreatePracticeModal({
             placeholder="1주차"
           />
           <div className="flex flex-col gap-4">
-            <DateInput
+            <TextInput
+              htmlName="startDate"
               label="시작 일시"
-              value={startDate as ISODateString}
+              value={startDate}
               onChange={(val) => {
-                setStartDate(val ?? '')
+                setStartDate(formatDateInput(val))
               }}
-              placeholder="YYYY-MM-DD"
+              placeholder="YYYYMMDD"
             />
-            <DateInput
+            <TextInput
+              htmlName="endDate"
               label="종료 일시"
-              value={endDate as ISODateString}
+              value={endDate}
               onChange={(val) => {
-                setEndDate(val ?? '')
+                setEndDate(formatDateInput(val))
               }}
-              placeholder="YYYY-MM-DD"
+              placeholder="YYYYMMDD"
             />
           </div>
 
@@ -148,7 +172,7 @@ export function CreatePracticeModal({
             label="문제 ID (예: 1000)"
             value={externalProblemId}
             onChange={(val) => {
-              setExternalProblemId(val)
+              setExternalProblemId(val.replace(/\D/g, ''))
             }}
             placeholder="1000"
           />
