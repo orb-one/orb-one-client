@@ -10,7 +10,14 @@ export const problemQueryKeys = {
   all: ['problems'] as const,
   lists: () => [...problemQueryKeys.all, 'list'] as const,
   list: (params: GetProblemsParams) =>
-    [...problemQueryKeys.lists(), params.page, params.size] as const,
+    [
+      ...problemQueryKeys.lists(),
+      params.keyword?.trim() ?? '',
+      params.provider ?? '',
+      params.difficulty?.trim().toLowerCase() ?? '',
+      params.page,
+      params.size,
+    ] as const,
   detail: (problemId: string) =>
     [...problemQueryKeys.all, 'detail', problemId] as const,
 }

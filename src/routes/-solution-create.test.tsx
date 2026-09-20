@@ -169,6 +169,72 @@ it('prefills a problem from the route search parameter', async () => {
   expect(getProblem).toHaveBeenCalledWith('problem-1')
 })
 
+it('searches for a problem number and selects a result', async () => {
+  vi.mocked(getProblems).mockImplementation(({ keyword }) =>
+    Promise.resolve(
+      keyword
+        ? {
+            problems: [problemTwo],
+            page: 0,
+            size: 10,
+            totalElements: 1,
+            totalPages: 1,
+          }
+        : problemPage,
+    ),
+  )
+  renderRoute(<SolutionCreatePage />)
+
+  await userEvent.click(screen.getByRole('button', { name: '문제 선택' }))
+  await userEvent.type(
+    screen.getByRole('textbox', { name: '문제 검색' }),
+    '1204',
+  )
+
+  await waitFor(() => {
+    expect(getProblems).toHaveBeenLastCalledWith({
+      keyword: '1204',
+      page: 0,
+      size: 10,
+    })
+  })
+  await userEvent.click(await screen.findByRole('button', { name: /문제 2/ }))
+
+  expect(document.querySelector('input[name="problemId"]')).toHaveValue(
+    'problem-2',
+  )
+  expect(screen.getByRole('button', { name: '문제 변경' })).toBeVisible()
+})
+
+it('shows a dedicated empty state when a problem search has no matches', async () => {
+  vi.mocked(getProblems).mockImplementation(({ keyword }) =>
+    Promise.resolve(
+      keyword
+        ? {
+            problems: [],
+            page: 0,
+            size: 10,
+            totalElements: 0,
+            totalPages: 0,
+          }
+        : problemPage,
+    ),
+  )
+  renderRoute(<SolutionCreatePage />)
+
+  await userEvent.click(screen.getByRole('button', { name: '문제 선택' }))
+  await userEvent.type(
+    screen.getByRole('textbox', { name: '문제 검색' }),
+    '없는 문제',
+  )
+
+  expect(await screen.findByText('검색 결과가 없습니다')).toBeVisible()
+  expect(
+    screen.getByText('다른 문제명 또는 문제 번호로 검색해 주세요.'),
+  ).toBeVisible()
+  expect(screen.queryByText('선택할 문제가 없습니다')).not.toBeInTheDocument()
+})
+
 it('shows localized optional labels', () => {
   renderRoute(<SolutionCreatePage />)
 

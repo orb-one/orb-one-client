@@ -23,18 +23,39 @@ export interface ProblemListResponse {
 }
 
 export interface GetProblemsParams {
+  difficulty?: string
+  keyword?: string
   page: number
+  provider?: ProblemProvider
   size: number
 }
 
 export async function getProblems({
+  difficulty,
+  keyword,
   page,
+  provider,
   size,
 }: GetProblemsParams): Promise<ProblemPage> {
   const searchParams = new URLSearchParams({
     page: String(page),
     size: String(size),
   })
+  const normalizedDifficulty = difficulty?.trim()
+  const normalizedKeyword = keyword?.trim()
+
+  if (normalizedKeyword) {
+    searchParams.set('keyword', normalizedKeyword)
+  }
+
+  if (provider) {
+    searchParams.set('provider', provider)
+  }
+
+  if (normalizedDifficulty) {
+    searchParams.set('difficulty', normalizedDifficulty)
+  }
+
   const response = await apiClient<ProblemListResponse>(
     `/problems?${searchParams.toString()}`,
   )

@@ -54,6 +54,36 @@ it('gets and maps a page of problems', async () => {
   )
 })
 
+it('trims and encodes a problem search keyword', async () => {
+  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        problems: [],
+        page: 0,
+        size: 10,
+        totalElements: 0,
+        totalPages: 0,
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ),
+  )
+  vi.stubGlobal('fetch', fetchMock)
+
+  await getProblems({
+    difficulty: '  GOLD_3  ',
+    keyword: '  A+B 문제  ',
+    page: 0,
+    provider: 'BOJ',
+    size: 10,
+  })
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    'http://localhost:8080/problems?page=0&size=10&keyword=A%2BB+%EB%AC%B8%EC%A0%9C&provider=BOJ&difficulty=GOLD_3',
+    expect.objectContaining({ credentials: 'include' }),
+  )
+})
+
 it('gets and maps a problem detail', async () => {
   vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
   const fetchMock = vi.fn().mockResolvedValue(
