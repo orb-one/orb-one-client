@@ -12,7 +12,6 @@ import { NumberInput } from '@astryxdesign/core/NumberInput'
 import { Selector } from '@astryxdesign/core/Selector'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
-import { TextArea } from '@astryxdesign/core/TextArea'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
@@ -21,6 +20,7 @@ import { lazy, Suspense, useRef, useState, type ComponentProps } from 'react'
 
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import type { SolutionCodeEditorHandle } from '@/components/solutions/solution-code-editor'
+import { SolutionMarkdownEditor } from '@/components/solutions/solution-markdown-editor'
 import { ProblemPickerDialog } from '@/components/problems/problem-picker-dialog'
 import { problemQueryOptions } from '@/lib/problems/problem-queries'
 import type { Problem } from '@/lib/problems/problem-model'
@@ -188,7 +188,7 @@ export function SolutionCreatePage() {
     <Center width="100%">
       <VStack
         width="100%"
-        maxWidth={800}
+        maxWidth={1120}
         gap={5}
         paddingInline={4}
         paddingBlock={10}
@@ -346,7 +346,7 @@ export function SolutionCreatePage() {
                 />
               </Suspense>
 
-              <TextArea
+              <SolutionMarkdownEditor
                 label={`${copy.solutionDescriptionLabel} (${copy.optionalLabel})`}
                 value={description}
                 onChange={(nextDescription) => {
@@ -355,10 +355,11 @@ export function SolutionCreatePage() {
                 }}
                 description={copy.solutionDescriptionDescription}
                 placeholder={copy.solutionDescriptionPlaceholder}
-                rows={8}
+                editLabel={copy.solutionDescriptionEdit}
+                previewLabel={copy.solutionDescriptionPreview}
+                modeLabel={copy.solutionDescriptionModeLabel}
+                emptyPreview={copy.solutionDescriptionPreviewEmpty}
                 isDisabled={isSubmitting}
-                hasSpellCheck={false}
-                size="lg"
               />
 
               <CheckboxInput

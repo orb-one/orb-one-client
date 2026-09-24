@@ -116,6 +116,132 @@ test('scopes the solution list from the problem query string', async ({
   ).not.toBeVisible()
 })
 
+test('shows an independently scrollable live Markdown preview beside the editor on desktop and tabs on mobile', async ({
+  page,
+}) => {
+  await mockCurrentUser(page)
+  await mockSolutionApi(page)
+
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/solutions/new')
+
+  const editor = page.getByRole('textbox', { name: /풀이 설명/ })
+  const source = page.getByRole('region', { name: '편집' })
+  const preview = page.getByRole('region', { name: '미리보기' })
+  const previewScroll = page.getByTestId('solution-markdown-preview-scroll')
+
+  await expect(
+    page.getByText('편집', { exact: true }).filter({ visible: true }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByText('미리보기', { exact: true }).filter({ visible: true }),
+  ).toHaveCount(1)
+  await expect(preview.getByText('미리볼 내용이 없습니다.')).toBeVisible()
+  await editor.fill('# 실시간 미리보기')
+  await expect(
+    preview.getByRole('heading', { name: '실시간 미리보기', level: 3 }),
+  ).toBeVisible()
+
+  await editor.fill('[풀이 목록](/solutions)')
+  const [previewLinkPage] = await Promise.all([
+    page.waitForEvent('popup'),
+    preview.getByRole('link', { name: '풀이 목록' }).click(),
+  ])
+  await expect(previewLinkPage).toHaveURL(/\/solutions$/)
+  await expect(page).toHaveURL(/\/solutions\/new$/)
+  await expect(editor).toHaveValue('[풀이 목록](/solutions)')
+  await previewLinkPage.close()
+
+  const sourceBounds = await source.boundingBox()
+  const editorBounds = await editor.boundingBox()
+  const previewBounds = await preview.boundingBox()
+  if (!sourceBounds || !editorBounds || !previewBounds) {
+    throw new Error('Markdown editor and preview must have visible bounds')
+  }
+  expect(editorBounds.width).toBeGreaterThan(400)
+  expect(previewBounds.width).toBeGreaterThan(400)
+  expect(editorBounds.x + editorBounds.width).toBeLessThan(previewBounds.x)
+  expect(sourceBounds.height).toBe(previewBounds.height)
+
+  const longMarkdown = Array.from({ length: 40 }, (_, index) => {
+    const step = String(index + 1)
+    return `## 단계 ${step}\n\n- 설명 ${step}`
+  }).join('\n\n')
+  await editor.fill(longMarkdown)
+  await previewScroll.evaluate((element) => {
+    element.scrollTop = 160
+  })
+  const previewScrollTop = await previewScroll.evaluate(
+    (element) => element.scrollTop,
+  )
+  expect(previewScrollTop).toBeGreaterThan(0)
+  await editor.evaluate((element) => {
+    element.scrollTop = element.scrollHeight / 2
+  })
+  await expect
+    .poll(() => previewScroll.evaluate((element) => element.scrollTop))
+    .toBe(previewScrollTop)
+
+  await editor.fill('# 변경된 설명')
+  await expect(
+    preview.getByRole('heading', { name: '변경된 설명', level: 3 }),
+  ).toBeVisible()
+
+  await page.setViewportSize({ width: 320, height: 667 })
+  await expect(editor).toBeVisible()
+  await expect(preview).toBeHidden()
+  await expect(page.getByTestId('solution-description')).toHaveCount(0)
+  const editTab = page.getByRole('button', { name: '편집' })
+  const previewTab = page.getByRole('button', { name: '미리보기' })
+  await editTab.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(previewTab).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(
+    preview.getByRole('heading', { name: '변경된 설명', level: 3 }),
+  ).toBeVisible()
+  await editTab.click()
+  await expect(editor).toHaveValue('# 변경된 설명')
+
+  const longCodeLine = 'x'.repeat(240)
+  const markdownWithLongCode = [
+    '# 긴 코드',
+    '',
+    '```java',
+    `String value = "${longCodeLine}";`,
+    '```',
+  ].join('\n')
+  await editor.fill(markdownWithLongCode)
+  await previewTab.click()
+  await expect(
+    preview.getByRole('textbox', { name: 'java code' }),
+  ).toContainText(longCodeLine)
+  const codeScroller = preview.locator('.solution-code-mirror .cm-scroller')
+  await expect
+    .poll(() =>
+      codeScroller.evaluate((element) =>
+        element.scrollWidth > element.clientWidth ? 1 : 0,
+      ),
+    )
+    .toBe(1)
+  await codeScroller.evaluate((element) => {
+    element.scrollLeft = element.scrollWidth
+  })
+  expect(
+    await codeScroller.evaluate((element) => element.scrollLeft),
+  ).toBeGreaterThan(0)
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      })),
+    )
+    .toEqual({ clientWidth: 320, scrollWidth: 320 })
+  await editTab.click()
+  await expect(editor).toHaveValue(markdownWithLongCode)
+})
+
 test('creates a solution with CodeMirror keyboard and language behavior', async ({
   page,
 }) => {
@@ -275,9 +401,23 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   await page.getByRole('option', { name: 'Java', exact: true }).click()
   await expect(javaConstant).not.toHaveCount(0)
 
+  const descriptionMarkdown = '# E2E 신규 풀이 설명\n\n- 두 수를 더한다.'
+
   await page
     .getByRole('textbox', { name: /풀이 설명/ })
-    .fill('E2E 신규 풀이 설명')
+    .fill(descriptionMarkdown)
+  await page.getByRole('button', { name: '미리보기' }).click()
+  await expect(
+    page.getByRole('heading', { name: 'E2E 신규 풀이 설명', level: 3 }),
+  ).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      })),
+    )
+    .toEqual({ clientWidth: 320, scrollWidth: 320 })
   await page.getByRole('checkbox', { name: /풀이 완료/ }).check()
   await page.getByRole('spinbutton', { name: /메모리 사용량/ }).fill('12345')
   await page.getByRole('spinbutton', { name: /실행 시간/ }).fill('67')
@@ -292,7 +432,7 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
     problemId: seededSolution.problemId,
     language: 'Java',
     code: '  boolean value = true;',
-    description: 'E2E 신규 풀이 설명',
+    description: descriptionMarkdown,
     isSolved: true,
     isDraft: false,
     memoryUsage: 12_345,
@@ -307,7 +447,9 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   await expect(page.getByTestId('solution-code')).toContainText(
     'boolean value = true;',
   )
-  await expect(page.getByText('E2E 신규 풀이 설명')).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'E2E 신규 풀이 설명', level: 3 }),
+  ).toBeVisible()
   await expect(page.getByText('12,345 KB')).toBeVisible()
   await expect(page.getByText('67 ms')).toBeVisible()
 })
@@ -319,6 +461,7 @@ test('edits fields and preserves an author solution language alias', async ({
   await mockCurrentUser(page)
   const solutionApi = await mockSolutionApi(page, editableSolution)
 
+  await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto(`/solutions/${editableSolution.solutionId}`)
   await page.getByRole('link', { name: '풀이 수정' }).click()
   await page.waitForURL(
@@ -330,7 +473,37 @@ test('edits fields and preserves an author solution language alias', async ({
   await expect(
     page.getByRole('combobox', { name: '프로그래밍 언어' }),
   ).toHaveText('PyPy3')
-  await description.fill('수정된 풀이 설명')
+  const preview = page.getByRole('region', { name: '미리보기' })
+  await expect(description).toHaveValue(editableSolution.description ?? '')
+  await expect(
+    preview.getByRole('heading', { name: '접근 방법', level: 3 }),
+  ).toBeVisible()
+  const descriptionBounds = await description.boundingBox()
+  const previewBounds = await preview.boundingBox()
+  if (!descriptionBounds || !previewBounds) {
+    throw new Error('Edit Markdown editor and preview must have visible bounds')
+  }
+  expect(descriptionBounds.x + descriptionBounds.width).toBeLessThan(
+    previewBounds.x,
+  )
+
+  await page.setViewportSize({ width: 320, height: 667 })
+  const descriptionMarkdown = '# 수정된 풀이 설명\n\n- 단계 확인'
+  await description.fill(descriptionMarkdown)
+  await page.getByRole('button', { name: '미리보기' }).click()
+  await expect(
+    preview.getByRole('heading', { name: '수정된 풀이 설명', level: 3 }),
+  ).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      })),
+    )
+    .toEqual({ clientWidth: 320, scrollWidth: 320 })
+  await page.getByRole('button', { name: '편집' }).click()
+  await expect(description).toHaveValue(descriptionMarkdown)
   await expect(page.getByRole('checkbox', { name: /임시 저장/ })).toHaveCount(0)
   await page
     .getByRole('spinbutton', { name: /메모리 사용량/ })
@@ -344,13 +517,15 @@ test('edits fields and preserves an author solution language alias', async ({
   expect(solutionApi.lastUpdateRequest()).toEqual({
     language: 'PyPy3',
     code: editableSolution.code,
-    description: '수정된 풀이 설명',
+    description: descriptionMarkdown,
     isSolved: true,
     isDraft: false,
     memoryUsage: -2_147_483_648,
     timeElapsed: 2_147_483_647,
   })
-  await expect(page.getByText('수정된 풀이 설명')).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '수정된 풀이 설명', level: 3 }),
+  ).toBeVisible()
 })
 
 test('deletes an authored solution and restores it from the undo toast', async ({

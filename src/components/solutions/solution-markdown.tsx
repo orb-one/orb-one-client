@@ -1,6 +1,7 @@
 import { Markdown, type MarkdownComponents } from '@astryxdesign/core/Markdown'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
+import type { ComponentProps } from 'react'
 
 import { SolutionCodeBlock } from '@/components/solutions/solution-code-block'
 
@@ -10,7 +11,10 @@ const solutionMarkdownComponents = {
 } satisfies Partial<MarkdownComponents>
 
 /** 풀이 설명용 Markdown 렌더러. 페이지의 제목 계층과 코드 강조 규칙을 유지한다. */
-export function SolutionMarkdown({ children }: SolutionMarkdownProps) {
+export function SolutionMarkdown({
+  children,
+  onLinkClick,
+}: SolutionMarkdownProps) {
   return (
     <Markdown
       data-testid="solution-description"
@@ -18,6 +22,7 @@ export function SolutionMarkdown({ children }: SolutionMarkdownProps) {
       contentWidth={680}
       headingLevelStart={3}
       components={solutionMarkdownComponents}
+      {...(onLinkClick ? { onLinkClick } : {})}
     >
       {children}
     </Markdown>
@@ -56,4 +61,5 @@ function SolutionMarkdownImage({ alt }: { src: string; alt: string }) {
 
 interface SolutionMarkdownProps {
   children: string
+  onLinkClick?: ComponentProps<typeof Markdown>['onLinkClick']
 }
