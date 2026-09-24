@@ -400,6 +400,7 @@ test('edits fields and preserves an author solution language alias', async ({
   await mockCurrentUser(page)
   const solutionApi = await mockSolutionApi(page, editableSolution)
 
+  await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto(`/solutions/${editableSolution.solutionId}`)
   await page.getByRole('link', { name: '풀이 수정' }).click()
   await page.waitForURL(
@@ -411,7 +412,37 @@ test('edits fields and preserves an author solution language alias', async ({
   await expect(
     page.getByRole('combobox', { name: '프로그래밍 언어' }),
   ).toHaveText('PyPy3')
-  await description.fill('수정된 풀이 설명')
+  const preview = page.getByRole('region', { name: '미리보기' })
+  await expect(description).toHaveValue(editableSolution.description)
+  await expect(
+    preview.getByRole('heading', { name: '접근 방법', level: 3 }),
+  ).toBeVisible()
+  const descriptionBounds = await description.boundingBox()
+  const previewBounds = await preview.boundingBox()
+  if (!descriptionBounds || !previewBounds) {
+    throw new Error('Edit Markdown editor and preview must have visible bounds')
+  }
+  expect(descriptionBounds.x + descriptionBounds.width).toBeLessThan(
+    previewBounds.x,
+  )
+
+  await page.setViewportSize({ width: 320, height: 667 })
+  const descriptionMarkdown = '# 수정된 풀이 설명\n\n- 단계 확인'
+  await description.fill(descriptionMarkdown)
+  await page.getByRole('button', { name: '미리보기' }).click()
+  await expect(
+    preview.getByRole('heading', { name: '수정된 풀이 설명', level: 3 }),
+  ).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      })),
+    )
+    .toEqual({ clientWidth: 320, scrollWidth: 320 })
+  await page.getByRole('button', { name: '편집' }).click()
+  await expect(description).toHaveValue(descriptionMarkdown)
   await expect(page.getByRole('checkbox', { name: /임시 저장/ })).toHaveCount(0)
   await page
     .getByRole('spinbutton', { name: /메모리 사용량/ })
@@ -425,13 +456,15 @@ test('edits fields and preserves an author solution language alias', async ({
   expect(solutionApi.lastUpdateRequest()).toEqual({
     language: 'PyPy3',
     code: editableSolution.code,
-    description: '수정된 풀이 설명',
+    description: descriptionMarkdown,
     isSolved: true,
     isDraft: false,
     memoryUsage: -2_147_483_648,
     timeElapsed: 2_147_483_647,
   })
-  await expect(page.getByText('수정된 풀이 설명')).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '수정된 풀이 설명', level: 3 }),
+  ).toBeVisible()
 })
 
 test('deletes an authored solution and restores it from the undo toast', async ({

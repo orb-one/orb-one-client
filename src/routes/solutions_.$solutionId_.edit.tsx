@@ -10,7 +10,6 @@ import { NumberInput } from '@astryxdesign/core/NumberInput'
 import { Selector } from '@astryxdesign/core/Selector'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
-import { TextArea } from '@astryxdesign/core/TextArea'
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useQuery } from '@tanstack/react-query'
@@ -19,6 +18,7 @@ import { Save } from 'lucide-react'
 import { lazy, Suspense, useRef, useState, type ComponentProps } from 'react'
 
 import type { SolutionCodeEditorHandle } from '@/components/solutions/solution-code-editor'
+import { SolutionMarkdownEditor } from '@/components/solutions/solution-markdown-editor'
 import { ApiError, AuthSessionExpiredError } from '@/lib/api/client'
 import { currentUserQueryOptions } from '@/lib/auth/auth-queries'
 import { useI18n } from '@/lib/i18n/use-translations'
@@ -90,7 +90,7 @@ export function SolutionEditPage({ solutionId }: SolutionEditPageProps) {
     <Center width="100%">
       <VStack
         width="100%"
-        maxWidth={800}
+        maxWidth={1120}
         gap={5}
         paddingInline={4}
         paddingBlock={10}
@@ -348,8 +348,8 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
               />
             </Suspense>
 
-            <TextArea
-              label={copy.descriptionLabel}
+            <SolutionMarkdownEditor
+              label={`${copy.descriptionLabel} (${copy.optionalLabel})`}
               value={description}
               onChange={(nextDescription) => {
                 setDescription(nextDescription)
@@ -357,11 +357,11 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
               }}
               description={copy.descriptionDescription}
               placeholder={copy.descriptionPlaceholder}
-              rows={8}
-              isOptional
+              editLabel={copy.descriptionEdit}
+              previewLabel={copy.descriptionPreview}
+              modeLabel={copy.descriptionModeLabel}
+              emptyPreview={copy.descriptionPreviewEmpty}
               isDisabled={isSubmitting}
-              hasSpellCheck={false}
-              size="lg"
             />
 
             <CheckboxInput

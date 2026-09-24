@@ -61,9 +61,8 @@ it('loads every replaceable field and preserves it on submit', async () => {
   expect(
     screen.getByRole('combobox', { name: '프로그래밍 언어' }),
   ).toHaveTextContent('Java')
-  expect(screen.getByRole('textbox', { name: /풀이 설명/ })).toHaveValue(
-    '기존 설명',
-  )
+  const descriptionInput = screen.getByRole('textbox', { name: /풀이 설명/ })
+  expect(descriptionInput).toHaveValue('기존 설명')
   expect(screen.getByRole('checkbox', { name: /풀이 완료/ })).toBeChecked()
   expect(
     screen.queryByRole('checkbox', { name: /임시 저장/ }),
@@ -73,13 +72,24 @@ it('loads every replaceable field and preserves it on submit', async () => {
   )
   expect(screen.getByRole('spinbutton', { name: /실행 시간/ })).toHaveValue(104)
 
+  const descriptionMarkdown = '# 수정된 설명\n\n- 풀이 단계'
+  await userEvent.clear(descriptionInput)
+  await userEvent.paste(descriptionMarkdown)
+  await userEvent.click(screen.getByRole('button', { name: '미리보기' }))
+  expect(
+    await screen.findByRole('heading', { name: '수정된 설명', level: 3 }),
+  ).toBeVisible()
+  expect(screen.getByRole('listitem')).toHaveTextContent('풀이 단계')
+  await userEvent.click(screen.getByRole('button', { name: '편집' }))
+  expect(descriptionInput).toHaveValue(descriptionMarkdown)
+
   await userEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
 
   await waitFor(() => {
     expect(updateSolution).toHaveBeenCalledWith('solution-1', {
       language: 'Java',
       code: 'class Main {}',
-      description: '기존 설명',
+      description: descriptionMarkdown,
       isSolved: true,
       isDraft: false,
       memoryUsage: 14_128,
