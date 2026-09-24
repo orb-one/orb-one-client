@@ -1,19 +1,18 @@
-import { useLayoutEffect } from 'react'
-
 import { SolutionMarkdown } from '@/components/solutions/solution-markdown'
 
 export function SolutionMarkdownPreviewContent({
   value,
-  onRendered,
 }: SolutionMarkdownPreviewContentProps) {
-  useLayoutEffect(() => {
-    onRendered()
-  }, [value, onRendered])
+  return (
+    <SolutionMarkdown onLinkClick={openPreviewLink}>{value}</SolutionMarkdown>
+  )
+}
 
-  return <SolutionMarkdown>{value}</SolutionMarkdown>
+function openPreviewLink(href: string) {
+  window.open(href, '_blank', 'noopener,noreferrer')
+  return false as const
 }
 
 interface SolutionMarkdownPreviewContentProps {
   value: string
-  onRendered: () => void
 }

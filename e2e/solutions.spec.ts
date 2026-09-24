@@ -116,7 +116,7 @@ test('scopes the solution list from the problem query string', async ({
   ).not.toBeVisible()
 })
 
-test('shows a live Markdown preview beside the editor on desktop and tabs on mobile', async ({
+test('shows an independently scrollable live Markdown preview beside the editor on desktop and tabs on mobile', async ({
   page,
 }) => {
   await mockCurrentUser(page)
@@ -142,6 +142,16 @@ test('shows a live Markdown preview beside the editor on desktop and tabs on mob
     preview.getByRole('heading', { name: '실시간 미리보기', level: 3 }),
   ).toBeVisible()
 
+  await editor.fill('[풀이 목록](/solutions)')
+  const [previewLinkPage] = await Promise.all([
+    page.waitForEvent('popup'),
+    preview.getByRole('link', { name: '풀이 목록' }).click(),
+  ])
+  await expect(previewLinkPage).toHaveURL(/\/solutions$/)
+  await expect(page).toHaveURL(/\/solutions\/new$/)
+  await expect(editor).toHaveValue('[풀이 목록](/solutions)')
+  await previewLinkPage.close()
+
   const sourceBounds = await source.boundingBox()
   const editorBounds = await editor.boundingBox()
   const previewBounds = await preview.boundingBox()
@@ -158,16 +168,19 @@ test('shows a live Markdown preview beside the editor on desktop and tabs on mob
     return `## 단계 ${step}\n\n- 설명 ${step}`
   }).join('\n\n')
   await editor.fill(longMarkdown)
-  await expect
-    .poll(() => previewScroll.evaluate((element) => element.scrollTop))
-    .toBeGreaterThan(0)
+  await previewScroll.evaluate((element) => {
+    element.scrollTop = 160
+  })
+  const previewScrollTop = await previewScroll.evaluate(
+    (element) => element.scrollTop,
+  )
+  expect(previewScrollTop).toBeGreaterThan(0)
   await editor.evaluate((element) => {
-    element.scrollTop = 0
-    element.dispatchEvent(new Event('scroll', { bubbles: true }))
+    element.scrollTop = element.scrollHeight / 2
   })
   await expect
     .poll(() => previewScroll.evaluate((element) => element.scrollTop))
-    .toBe(0)
+    .toBe(previewScrollTop)
 
   await editor.fill('# 변경된 설명')
   await expect(
@@ -177,6 +190,7 @@ test('shows a live Markdown preview beside the editor on desktop and tabs on mob
   await page.setViewportSize({ width: 320, height: 667 })
   await expect(editor).toBeVisible()
   await expect(preview).toBeHidden()
+  await expect(page.getByTestId('solution-description')).toHaveCount(0)
   await page.getByRole('button', { name: '미리보기' }).click()
   await expect(
     preview.getByRole('heading', { name: '변경된 설명', level: 3 }),

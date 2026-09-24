@@ -1,11 +1,12 @@
 import { Grid } from '@astryxdesign/core/Grid'
+import { useMediaQuery } from '@astryxdesign/core/hooks'
 import { Section } from '@astryxdesign/core/Section'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Tab, TabList } from '@astryxdesign/core/TabList'
 import { Text } from '@astryxdesign/core/Text'
 import { TextArea } from '@astryxdesign/core/TextArea'
 import { VStack } from '@astryxdesign/core/VStack'
-import { lazy, Suspense, useId, useRef, useState } from 'react'
+import { lazy, Suspense, useId, useState } from 'react'
 
 import './solution-markdown-editor.css'
 
@@ -32,11 +33,10 @@ export function SolutionMarkdownEditor({
   isDisabled = false,
 }: SolutionMarkdownEditorProps) {
   const [mode, setMode] = useState<MarkdownEditorMode>('edit')
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
   const id = useId()
   const editPanelID = `${id}-edit-panel`
   const previewPanelID = `${id}-preview-panel`
-  const sourceRef = useRef<HTMLTextAreaElement>(null)
-  const previewScrollRef = useRef<HTMLElement>(null)
 
   return (
     <VStack gap={2} width="100%">
@@ -97,7 +97,6 @@ export function SolutionMarkdownEditor({
               className="solution-markdown-editor__source min-w-0"
             >
               <TextArea
-                ref={sourceRef}
                 label={label}
                 isLabelHidden
                 value={value}
@@ -107,9 +106,6 @@ export function SolutionMarkdownEditor({
                 isDisabled={isDisabled}
                 hasSpellCheck={false}
                 size="lg"
-                onScroll={() => {
-                  syncPreviewScroll(sourceRef.current, previewScrollRef.current)
-                }}
               />
             </Section>
           </VStack>
@@ -130,7 +126,6 @@ export function SolutionMarkdownEditor({
               className="min-w-0"
             >
               <VStack
-                ref={previewScrollRef}
                 width="100%"
                 height="100%"
                 padding={2}
@@ -138,25 +133,17 @@ export function SolutionMarkdownEditor({
                 className="min-w-0"
                 data-testid="solution-markdown-preview-scroll"
               >
-                {value.trim() ? (
+                {value.trim() && (isDesktop || mode === 'preview') ? (
                   <Suspense
                     fallback={<Skeleton width="100%" height={160} radius={3} />}
                   >
-                    <SolutionMarkdownPreviewContent
-                      value={value}
-                      onRendered={() => {
-                        syncPreviewScroll(
-                          sourceRef.current,
-                          previewScrollRef.current,
-                        )
-                      }}
-                    />
+                    <SolutionMarkdownPreviewContent value={value} />
                   </Suspense>
-                ) : (
+                ) : !value.trim() ? (
                   <Text type="supporting" color="secondary">
                     {emptyPreview}
                   </Text>
-                )}
+                ) : null}
               </VStack>
             </Section>
           </VStack>
@@ -164,26 +151,6 @@ export function SolutionMarkdownEditor({
       </Section>
     </VStack>
   )
-}
-
-function syncPreviewScroll(
-  source: HTMLTextAreaElement | null,
-  preview: HTMLElement | null,
-) {
-  if (!source || !preview || preview.clientHeight === 0) {
-    return
-  }
-
-  const sourceRange = source.scrollHeight - source.clientHeight
-  const previewRange = preview.scrollHeight - preview.clientHeight
-  const progress =
-    sourceRange > 0
-      ? source.scrollTop / sourceRange
-      : source.value.length > 0
-        ? source.selectionStart / source.value.length
-        : 0
-
-  preview.scrollTop = Math.max(0, Math.min(1, progress)) * previewRange
 }
 
 interface SolutionMarkdownEditorProps {
