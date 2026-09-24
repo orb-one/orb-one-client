@@ -191,10 +191,45 @@ test('shows an independently scrollable live Markdown preview beside the editor 
   await expect(editor).toBeVisible()
   await expect(preview).toBeHidden()
   await expect(page.getByTestId('solution-description')).toHaveCount(0)
-  await page.getByRole('button', { name: '미리보기' }).click()
+  const editTab = page.getByRole('button', { name: '편집' })
+  const previewTab = page.getByRole('button', { name: '미리보기' })
+  await editTab.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(previewTab).toBeFocused()
+  await page.keyboard.press('Enter')
   await expect(
     preview.getByRole('heading', { name: '변경된 설명', level: 3 }),
   ).toBeVisible()
+  await editTab.click()
+  await expect(editor).toHaveValue('# 변경된 설명')
+
+  const longCodeLine = 'x'.repeat(240)
+  const markdownWithLongCode = [
+    '# 긴 코드',
+    '',
+    '```java',
+    `String value = "${longCodeLine}";`,
+    '```',
+  ].join('\n')
+  await editor.fill(markdownWithLongCode)
+  await previewTab.click()
+  await expect(
+    preview.getByRole('textbox', { name: 'java code' }),
+  ).toContainText(longCodeLine)
+  const codeScroller = preview.locator('.solution-code-mirror .cm-scroller')
+  await expect
+    .poll(() =>
+      codeScroller.evaluate((element) =>
+        element.scrollWidth > element.clientWidth ? 1 : 0,
+      ),
+    )
+    .toBe(1)
+  await codeScroller.evaluate((element) => {
+    element.scrollLeft = element.scrollWidth
+  })
+  expect(
+    await codeScroller.evaluate((element) => element.scrollLeft),
+  ).toBeGreaterThan(0)
   await expect
     .poll(() =>
       page.evaluate(() => ({
@@ -203,8 +238,8 @@ test('shows an independently scrollable live Markdown preview beside the editor 
       })),
     )
     .toEqual({ clientWidth: 320, scrollWidth: 320 })
-  await page.getByRole('button', { name: '편집' }).click()
-  await expect(editor).toHaveValue('# 변경된 설명')
+  await editTab.click()
+  await expect(editor).toHaveValue(markdownWithLongCode)
 })
 
 test('creates a solution with CodeMirror keyboard and language behavior', async ({
@@ -413,7 +448,7 @@ test('edits fields and preserves an author solution language alias', async ({
     page.getByRole('combobox', { name: '프로그래밍 언어' }),
   ).toHaveText('PyPy3')
   const preview = page.getByRole('region', { name: '미리보기' })
-  await expect(description).toHaveValue(editableSolution.description)
+  await expect(description).toHaveValue(editableSolution.description ?? '')
   await expect(
     preview.getByRole('heading', { name: '접근 방법', level: 3 }),
   ).toBeVisible()
