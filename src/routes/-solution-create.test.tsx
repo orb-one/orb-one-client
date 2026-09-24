@@ -110,10 +110,13 @@ it('submits the documented fields and navigates to the created solution', async 
   renderRoute(<SolutionCreatePage />)
 
   await fillCreateForm()
-  await userEvent.type(
-    screen.getByRole('textbox', { name: /풀이 설명/ }),
-    '새 풀이 설명',
-  )
+  const description = '# 접근 방법\n\n- 두 수를 더한다.'
+  await userEvent.click(screen.getByRole('textbox', { name: /풀이 설명/ }))
+  await userEvent.paste(description)
+  await userEvent.click(screen.getByRole('button', { name: '미리보기' }))
+  expect(
+    await screen.findByRole('heading', { name: '접근 방법', level: 3 }),
+  ).toBeVisible()
   await userEvent.click(screen.getByRole('checkbox', { name: /풀이 완료/ }))
   await userEvent.type(
     screen.getByRole('spinbutton', { name: /메모리 사용량/ }),
@@ -144,7 +147,7 @@ it('submits the documented fields and navigates to the created solution', async 
       problemId: 'problem-1',
       language: 'Java',
       code: 'System.out.println(1);',
-      description: '새 풀이 설명',
+      description,
       isSolved: true,
       isDraft: false,
       memoryUsage: 12_345,
