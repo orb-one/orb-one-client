@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { expectPageBackLinkAboveHeading } from './page-back-link-assertions'
+
 const apiBaseUrl = getRequiredEnv('VITE_API_BASE_URL')
 const isMswE2eEnabled = process.env.E2E_ENABLE_MSW === 'true'
 const practice = {
@@ -53,6 +55,22 @@ async function mockGroupRequests(page: Page, groupId: string) {
   )
 }
 
+async function expectGroupBackLink(page: Page) {
+  if (isMswE2eEnabled) {
+    const link = page.getByRole('link', { name: '그룹 목록으로 돌아가기' })
+    await expect(link).toHaveCount(1)
+    await expect(link).toHaveAttribute('href', '/groups')
+    await expect(link.locator('svg')).toBeVisible()
+    return
+  }
+
+  await expectPageBackLinkAboveHeading(page, {
+    label: '그룹 목록으로 돌아가기',
+    href: '/groups',
+    headingName: '알고리즘 스터디',
+  })
+}
+
 test('returns from a practice detail to the practice tab on mobile', async ({
   page,
 }) => {
@@ -97,19 +115,24 @@ test('returns from a practice detail to the practice tab on mobile', async ({
 
   const backLink = page.getByRole('link', { name: '연습 목록으로 돌아가기' })
 
-  await expect(
-    page.getByRole('heading', { name: practice.title, level: 1 }),
-  ).toBeVisible()
-  await expect(backLink).toHaveAttribute(
-    'href',
-    `/groups/${practice.groupId}?tab=practice`,
-  )
-  await expect(backLink.locator('svg')).toBeVisible()
+  await expectPageBackLinkAboveHeading(page, {
+    label: '연습 목록으로 돌아가기',
+    href: `/groups/${practice.groupId}?tab=practice`,
+    headingName: practice.title,
+  })
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expectPageBackLinkAboveHeading(page, {
+    label: '연습 목록으로 돌아가기',
+    href: `/groups/${practice.groupId}?tab=practice`,
+    headingName: practice.title,
+  })
+  await page.setViewportSize({ width: 320, height: 667 })
   await expect(backLink).toBeInViewport()
   await backLink.focus()
   await page.keyboard.press('Enter')
 
   await page.waitForURL(`/groups/${practice.groupId}?tab=practice`)
+  await expectGroupBackLink(page)
   await expect(page.getByRole('button', { name: '연습 생성' })).toBeVisible()
   await expect(page.getByRole('button', { name: '문제집 생성' })).toHaveCount(0)
   await expect(page.getByRole('link', { name: practice.title })).toBeVisible()
@@ -169,19 +192,22 @@ test('returns from a problem set detail to the problem set tab on desktop', asyn
     name: '문제집 목록으로 돌아가기',
   })
 
-  if (!isMswE2eEnabled) {
-    await expect(
-      page.getByRole('heading', { name: problemSet.name, level: 1 }),
-    ).toBeVisible()
-  }
-  await expect(backLink).toHaveAttribute(
-    'href',
-    `/groups/${problemSet.groupId}?tab=problem-sets`,
-  )
-  await expect(backLink.locator('svg')).toBeVisible()
+  await expectPageBackLinkAboveHeading(page, {
+    label: '문제집 목록으로 돌아가기',
+    href: `/groups/${problemSet.groupId}?tab=problem-sets`,
+    ...(!isMswE2eEnabled ? { headingName: problemSet.name } : {}),
+  })
+  await page.setViewportSize({ width: 320, height: 667 })
+  await expectPageBackLinkAboveHeading(page, {
+    label: '문제집 목록으로 돌아가기',
+    href: `/groups/${problemSet.groupId}?tab=problem-sets`,
+    ...(!isMswE2eEnabled ? { headingName: problemSet.name } : {}),
+  })
+  await page.setViewportSize({ width: 1280, height: 800 })
   await backLink.click()
 
   await page.waitForURL(`/groups/${problemSet.groupId}?tab=problem-sets`)
+  await expectGroupBackLink(page)
   await expect(page.getByRole('button', { name: '문제집 생성' })).toBeVisible()
   await expect(page.getByRole('button', { name: '연습 생성' })).toHaveCount(0)
   if (!isMswE2eEnabled) {

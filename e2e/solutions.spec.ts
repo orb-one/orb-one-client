@@ -1,5 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 
+import { expectPageBackLinkAboveHeading } from './page-back-link-assertions'
+
 const apiBaseUrl = getRequiredEnv('VITE_API_BASE_URL')
 const seededSolution = createSeededSolution()
 
@@ -38,6 +40,11 @@ test('browses, copies, and collapses a saved solution across viewports', async (
       level: 1,
     }),
   ).toBeVisible()
+  await expectPageBackLinkAboveHeading(page, {
+    label: '풀이 목록으로 돌아가기',
+    href: '/solutions',
+    headingName: 'A+B',
+  })
   await expect(
     page.getByRole('link', { name: /문제 원문 보기/ }),
   ).toHaveAttribute('href', 'https://www.acmicpc.net/problem/1000')
@@ -77,6 +84,11 @@ test('browses, copies, and collapses a saved solution across viewports', async (
   await expect(collapsibleContent).toBeHidden()
 
   await page.setViewportSize({ width: 320, height: 667 })
+  await expectPageBackLinkAboveHeading(page, {
+    label: '풀이 목록으로 돌아가기',
+    href: '/solutions',
+    headingName: 'A+B',
+  })
   await copyButtons.first().scrollIntoViewIfNeeded()
 
   await expect(copyButtons.first()).toBeInViewport()
@@ -124,6 +136,12 @@ test('shows an independently scrollable live Markdown preview beside the editor 
 
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/solutions/new')
+
+  await expectPageBackLinkAboveHeading(page, {
+    label: '풀이 목록으로 돌아가기',
+    href: '/solutions',
+    headingName: '새 풀이 작성',
+  })
 
   const editor = page.getByRole('textbox', { name: /풀이 설명/ })
   const source = page.getByRole('region', { name: '편집' })
@@ -188,6 +206,11 @@ test('shows an independently scrollable live Markdown preview beside the editor 
   ).toBeVisible()
 
   await page.setViewportSize({ width: 320, height: 667 })
+  await expectPageBackLinkAboveHeading(page, {
+    label: '풀이 목록으로 돌아가기',
+    href: '/solutions',
+    headingName: '새 풀이 작성',
+  })
   await expect(editor).toBeVisible()
   await expect(preview).toBeHidden()
   await expect(page.getByTestId('solution-description')).toHaveCount(0)
@@ -468,6 +491,12 @@ test('edits fields and preserves an author solution language alias', async ({
     (url) => url.pathname === `/solutions/${editableSolution.solutionId}/edit`,
   )
 
+  await expectPageBackLinkAboveHeading(page, {
+    label: '풀이 상세로 돌아가기',
+    href: `/solutions/${editableSolution.solutionId}`,
+    headingName: '풀이 수정',
+  })
+
   const description = page.getByRole('textbox', { name: /풀이 설명/ })
 
   await expect(
@@ -488,6 +517,11 @@ test('edits fields and preserves an author solution language alias', async ({
   )
 
   await page.setViewportSize({ width: 320, height: 667 })
+  await expectPageBackLinkAboveHeading(page, {
+    label: '풀이 상세로 돌아가기',
+    href: `/solutions/${editableSolution.solutionId}`,
+    headingName: '풀이 수정',
+  })
   const descriptionMarkdown = '# 수정된 풀이 설명\n\n- 단계 확인'
   await description.fill(descriptionMarkdown)
   await page.getByRole('button', { name: '미리보기' }).click()
