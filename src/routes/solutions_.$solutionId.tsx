@@ -79,10 +79,15 @@ export function SolutionDetailPage({ solutionId }: SolutionDetailPageProps) {
       <VStack
         width="100%"
         maxWidth={1024}
-        gap={6}
+        gap={2}
         paddingInline={4}
         paddingBlock={10}
       >
+        {!solutionQuery.isPending && !solutionQuery.isError ? (
+          <Text type="supporting" color="secondary">
+            {copy.eyebrow}
+          </Text>
+        ) : null}
         <PageBackLink href="/solutions" label={copy.backToList} />
 
         {solutionQuery.isPending ? (
@@ -176,9 +181,6 @@ function SolutionDetailContent({
   return (
     <VStack gap={6} width="100%">
       <VStack gap={2} maxWidth={672}>
-        <Text type="supporting" color="secondary">
-          {copy.eyebrow}
-        </Text>
         <Heading level={1}>{problem?.name ?? solution.problemId}</Heading>
         {problem ? (
           <Text type="supporting" color="secondary">

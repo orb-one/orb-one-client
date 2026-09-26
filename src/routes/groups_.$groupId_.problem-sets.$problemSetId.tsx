@@ -287,7 +287,7 @@ export function ProblemSetDetailPage() {
         paddingBlock={10}
       >
         {/* 상단 네비게이션 & 헤더 */}
-        <VStack width="100%" gap={4}>
+        <VStack width="100%" gap={2}>
           <PageBackLink
             href={`/groups/${encodeURIComponent(groupId)}?tab=problem-sets`}
             label="문제집 목록으로 돌아가기"

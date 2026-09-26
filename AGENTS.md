@@ -66,6 +66,7 @@
 - loading/empty/error state 고려
 - 버튼, 입력, 메뉴, 토글 등 신규 interactive UI는 Astryx 패턴 우선 사용
 - 페이지 단위 돌아가기 안내를 추가하거나 수정할 때는 제목 위에 `src/components/navigation/page-back-link.tsx`의 `PageBackLink`를 사용
+- `PageBackLink`과 H1 사이는 gap 2로 통일하고, eyebrow는 링크 앞에 배치
 - 돌아가기 문구는 실제 이동 목적지를 설명하고, 기존 고정 목적지를 브라우저 방문 기록 동작으로 임의 변경하지 않음
 - 목적지가 별도로 지정되지 않은 새 화면은 `PageBackLink`의 `href`를 생략해 등록된 가장 가까운 상위 페이지 라우트로 이동하고, 브라우저 방문 기록에 의존하지 않음
 

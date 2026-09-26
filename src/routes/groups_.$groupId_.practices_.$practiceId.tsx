@@ -51,7 +51,7 @@ function PracticeDetailPage() {
         paddingBlock={10}
       >
         <Stack gap={6}>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             <PageBackLink
               href={`/groups/${encodeURIComponent(groupId)}?tab=practice`}
               label="연습 목록으로 돌아가기"

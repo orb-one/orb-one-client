@@ -64,17 +64,18 @@ export function GroupDetailPage() {
         paddingInline={4}
         paddingBlock={10}
       >
-        <PageBackLink href="/groups" label="그룹 목록으로 돌아가기" />
-
         {/* 메인 헤더 */}
         <VStack width="100%" gap={8}>
-          <VStack width="100%" hAlign="center" gap={1}>
-            {/* 로딩 중에는 Skeleton을 표시하여 깜빡임 방지 */}
-            {isLoading ? (
-              <Skeleton width="220px" height="36px" />
-            ) : (
-              <Heading level={1}>{groupDetail?.name}</Heading>
-            )}
+          <VStack width="100%" gap={2}>
+            <PageBackLink href="/groups" label="그룹 목록으로 돌아가기" />
+            <VStack width="100%" hAlign="center" gap={1}>
+              {/* 로딩 중에는 Skeleton을 표시하여 깜빡임 방지 */}
+              {isLoading ? (
+                <Skeleton width="220px" height="36px" />
+              ) : (
+                <Heading level={1}>{groupDetail?.name}</Heading>
+              )}
+            </VStack>
           </VStack>
 
           {/* 탭 버튼 */}

@@ -91,7 +91,7 @@ export function SolutionEditPage({ solutionId }: SolutionEditPageProps) {
       <VStack
         width="100%"
         maxWidth={1120}
-        gap={5}
+        gap={2}
         paddingInline={4}
         paddingBlock={10}
       >
