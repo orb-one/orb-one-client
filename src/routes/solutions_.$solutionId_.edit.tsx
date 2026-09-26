@@ -5,7 +5,6 @@ import { CheckboxInput } from '@astryxdesign/core/CheckboxInput'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
 import { Heading } from '@astryxdesign/core/Heading'
 import { Icon } from '@astryxdesign/core/Icon'
-import { Link } from '@astryxdesign/core/Link'
 import { NumberInput } from '@astryxdesign/core/NumberInput'
 import { Selector } from '@astryxdesign/core/Selector'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
@@ -17,6 +16,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Save } from 'lucide-react'
 import { lazy, Suspense, useRef, useState, type ComponentProps } from 'react'
 
+import { PageBackLink } from '@/components/navigation/page-back-link'
 import type { SolutionCodeEditorHandle } from '@/components/solutions/solution-code-editor'
 import { SolutionMarkdownEditor } from '@/components/solutions/solution-markdown-editor'
 import { ApiError, AuthSessionExpiredError } from '@/lib/api/client'
@@ -91,13 +91,18 @@ export function SolutionEditPage({ solutionId }: SolutionEditPageProps) {
       <VStack
         width="100%"
         maxWidth={1120}
-        gap={5}
+        gap={2}
         paddingInline={4}
         paddingBlock={10}
       >
-        <Link href={`/solutions/${solutionId}`} isStandalone>
-          {copy.backToDetail}
-        </Link>
+        <PageBackLink
+          href={
+            isNotFound
+              ? '/solutions'
+              : `/solutions/${encodeURIComponent(solutionId)}`
+          }
+          label={isNotFound ? t.solutions.detail.backToList : copy.backToDetail}
+        />
 
         {isPending ? (
           <SolutionEditSkeleton label={copy.loading} />

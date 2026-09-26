@@ -14,6 +14,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
 
+import { PageBackLink } from '@/components/navigation/page-back-link'
 import { SolutionDeleteAction } from '@/components/solutions/solution-delete-action'
 import { SolutionStatus } from '@/components/solutions/solution-status'
 import type { CurrentUserResponse } from '@/lib/api/auth'
@@ -78,13 +79,16 @@ export function SolutionDetailPage({ solutionId }: SolutionDetailPageProps) {
       <VStack
         width="100%"
         maxWidth={1024}
-        gap={6}
+        gap={2}
         paddingInline={4}
         paddingBlock={10}
       >
-        <Link href="/solutions" isStandalone>
-          {copy.backToList}
-        </Link>
+        {!solutionQuery.isPending && !solutionQuery.isError ? (
+          <Text type="supporting" color="secondary">
+            {copy.eyebrow}
+          </Text>
+        ) : null}
+        <PageBackLink href="/solutions" label={copy.backToList} />
 
         {solutionQuery.isPending ? (
           <SolutionDetailSkeleton label={copy.loading} />
@@ -177,9 +181,6 @@ function SolutionDetailContent({
   return (
     <VStack gap={6} width="100%">
       <VStack gap={2} maxWidth={672}>
-        <Text type="supporting" color="secondary">
-          {copy.eyebrow}
-        </Text>
         <Heading level={1}>{problem?.name ?? solution.problemId}</Heading>
         {problem ? (
           <Text type="supporting" color="secondary">

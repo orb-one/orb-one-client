@@ -240,6 +240,19 @@ it('prompts signed-out users to log in instead of retrying the solution list', a
   ).not.toBeInTheDocument()
 })
 
+it('keeps the back link available while solution detail is loading', () => {
+  vi.mocked(getSolution).mockReturnValue(
+    new Promise<SolutionDetail>(() => undefined),
+  )
+
+  renderRoute(<SolutionDetailPage solutionId="solution-1" />)
+
+  expect(
+    screen.getByRole('link', { name: '풀이 목록으로 돌아가기' }),
+  ).toHaveAttribute('href', '/solutions')
+  expect(screen.getByText('풀이 상세를 불러오는 중')).toBeInTheDocument()
+})
+
 it('renders solution metadata, code, and Markdown notes', async () => {
   vi.mocked(getSolution).mockResolvedValue(solutionDetail)
 
@@ -248,6 +261,9 @@ it('renders solution metadata, code, and Markdown notes', async () => {
   expect(
     await screen.findByRole('heading', { name: 'A+B', level: 1 }),
   ).toBeVisible()
+  expect(
+    screen.getByRole('link', { name: '풀이 목록으로 돌아가기' }),
+  ).toHaveAttribute('href', '/solutions')
   expect(screen.getByText('BOJ 1000')).toBeVisible()
   expect(screen.getByText('BRONZE_5')).toBeVisible()
   expect(screen.getByRole('link', { name: /문제 원문 보기/ })).toHaveAttribute(

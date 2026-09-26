@@ -15,7 +15,6 @@ import { VStack } from '@astryxdesign/core/VStack'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
-  ArrowLeft,
   Calendar,
   ChevronDown,
   ChevronUp,
@@ -27,6 +26,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
+import { PageBackLink } from '@/components/navigation/page-back-link'
 import {
   addProblemsToProblemSet,
   deleteProblemFromProblemSet,
@@ -287,21 +287,11 @@ export function ProblemSetDetailPage() {
         paddingBlock={10}
       >
         {/* 상단 네비게이션 & 헤더 */}
-        <VStack width="100%" gap={4}>
-          <HStack width="100%" vAlign="center">
-            <Button
-              label="문제집 목록으로"
-              size="sm"
-              variant="ghost"
-              icon={<Icon icon={ArrowLeft} size="sm" />}
-              onClick={() => {
-                void navigate({
-                  to: '/groups/$groupId',
-                  params: { groupId },
-                })
-              }}
-            />
-          </HStack>
+        <VStack width="100%" gap={2}>
+          <PageBackLink
+            href={`/groups/${encodeURIComponent(groupId)}?tab=problem-sets`}
+            label="문제집 목록으로 돌아가기"
+          />
 
           {isLoading ? (
             <VStack gap={2} width="100%">

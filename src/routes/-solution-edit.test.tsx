@@ -48,6 +48,20 @@ afterEach(() => {
   vi.resetAllMocks()
 })
 
+it('keeps the back link available while the solution edit form is loading', () => {
+  vi.mocked(getCurrentUser).mockResolvedValue(currentUser)
+  vi.mocked(getSolution).mockReturnValue(
+    new Promise<SolutionDetail>(() => undefined),
+  )
+
+  renderRoute(<SolutionEditPage solutionId="solution-1" />)
+
+  expect(
+    screen.getByRole('link', { name: '풀이 상세로 돌아가기' }),
+  ).toHaveAttribute('href', '/solutions/solution-1')
+  expect(screen.getByText('수정할 풀이를 불러오는 중')).toBeInTheDocument()
+})
+
 it('loads every replaceable field and preserves it on submit', async () => {
   vi.mocked(getCurrentUser).mockResolvedValue(currentUser)
   vi.mocked(getSolution).mockResolvedValue(solution)
@@ -58,6 +72,9 @@ it('loads every replaceable field and preserves it on submit', async () => {
   expect(
     await screen.findByRole('heading', { name: '풀이 수정', level: 1 }),
   ).toBeVisible()
+  expect(
+    screen.getByRole('link', { name: '풀이 상세로 돌아가기' }),
+  ).toHaveAttribute('href', '/solutions/solution-1')
   expect(
     screen.getByRole('combobox', { name: '프로그래밍 언어' }),
   ).toHaveTextContent('Java')
@@ -164,6 +181,20 @@ it('prompts for login when the current user session has expired', async () => {
   expect(
     screen.queryByRole('button', { name: '변경사항 저장' }),
   ).not.toBeInTheDocument()
+})
+
+it('returns to the solution list when the solution being edited is missing', async () => {
+  vi.mocked(getCurrentUser).mockResolvedValue(currentUser)
+  vi.mocked(getSolution).mockRejectedValue(
+    new ApiError('Not found', 404, new Response(null, { status: 404 }), null),
+  )
+
+  renderRoute(<SolutionEditPage solutionId="missing" />)
+
+  expect(await screen.findByText('풀이를 찾을 수 없습니다.')).toBeVisible()
+  expect(
+    screen.getByRole('link', { name: '풀이 목록으로 돌아가기' }),
+  ).toHaveAttribute('href', '/solutions')
 })
 
 it('shows a forbidden error returned by the update endpoint', async () => {

@@ -8,9 +8,9 @@ import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, BookOpen, Dumbbell, Users } from 'lucide-react'
-import { useState } from 'react'
+import { BookOpen, Dumbbell, Users } from 'lucide-react'
 
+import { PageBackLink } from '@/components/navigation/page-back-link'
 import { getGroup } from '@/lib/api/groups'
 
 import { MemberTab } from './-components/MemberTab'
@@ -18,16 +18,35 @@ import { ProblemSetTab } from './-components/ProblemSetTab'
 import { PracticeTab } from './-components/PracticeTab'
 
 export const Route = createFileRoute('/groups_/$groupId')({
+  validateSearch: normalizeGroupDetailSearch,
   component: GroupDetailPage,
 })
 
 type TabType = 'problem-sets' | 'practice' | 'members'
 
+export function normalizeGroupDetailSearch(search: Record<string, unknown>): {
+  tab?: TabType
+} {
+  return search.tab === 'problem-sets' ||
+    search.tab === 'practice' ||
+    search.tab === 'members'
+    ? { tab: search.tab }
+    : {}
+}
+
 export function GroupDetailPage() {
   const { groupId } = Route.useParams()
+  const { tab } = Route.useSearch()
   const navigate = useNavigate()
+  const activeTab = tab ?? 'problem-sets'
 
-  const [activeTab, setActiveTab] = useState<TabType>('problem-sets')
+  function selectTab(nextTab: TabType) {
+    void navigate({
+      to: '/groups/$groupId',
+      params: { groupId },
+      search: { tab: nextTab },
+    })
+  }
 
   // 1. GET /groups/{groupId} 상세 API 직접 호출
   const { data: groupDetail, isLoading } = useQuery({
@@ -45,26 +64,18 @@ export function GroupDetailPage() {
         paddingInline={4}
         paddingBlock={10}
       >
-        {/* 목록 돌아가기 */}
-        <HStack width="100%">
-          <Button
-            label="그룹 목록으로 돌아가기"
-            size="sm"
-            variant="secondary"
-            icon={<Icon icon={ArrowLeft} size="sm" />}
-            onClick={() => void navigate({ to: '/groups' })}
-          />
-        </HStack>
-
         {/* 메인 헤더 */}
         <VStack width="100%" gap={8}>
-          <VStack width="100%" hAlign="center" gap={1}>
-            {/* 로딩 중에는 Skeleton을 표시하여 깜빡임 방지 */}
-            {isLoading ? (
-              <Skeleton width="220px" height="36px" />
-            ) : (
-              <Heading level={1}>{groupDetail?.name}</Heading>
-            )}
+          <VStack width="100%" gap={2}>
+            <PageBackLink href="/groups" label="그룹 목록으로 돌아가기" />
+            <VStack width="100%" hAlign="center" gap={1}>
+              {/* 로딩 중에는 Skeleton을 표시하여 깜빡임 방지 */}
+              {isLoading ? (
+                <Skeleton width="220px" height="36px" />
+              ) : (
+                <Heading level={1}>{groupDetail?.name}</Heading>
+              )}
+            </VStack>
           </VStack>
 
           {/* 탭 버튼 */}
@@ -75,7 +86,7 @@ export function GroupDetailPage() {
               variant={activeTab === 'problem-sets' ? 'primary' : 'secondary'}
               icon={<Icon icon={BookOpen} size="sm" />}
               onClick={() => {
-                setActiveTab('problem-sets')
+                selectTab('problem-sets')
               }}
             />
             <Button
@@ -84,7 +95,7 @@ export function GroupDetailPage() {
               variant={activeTab === 'practice' ? 'primary' : 'secondary'}
               icon={<Icon icon={Dumbbell} size="sm" />}
               onClick={() => {
-                setActiveTab('practice')
+                selectTab('practice')
               }}
             />
             <Button
@@ -93,7 +104,7 @@ export function GroupDetailPage() {
               variant={activeTab === 'members' ? 'primary' : 'secondary'}
               icon={<Icon icon={Users} size="sm" />}
               onClick={() => {
-                setActiveTab('members')
+                selectTab('members')
               }}
             />
           </HStack>

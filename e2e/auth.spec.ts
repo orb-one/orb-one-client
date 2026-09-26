@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 
+import { expectPageBackLinkAboveHeading } from './page-back-link-assertions'
+
 const apiBaseUrl = getRequiredEnv('VITE_API_BASE_URL')
 const password = process.env.E2E_TEST_PASSWORD ?? 'password123!'
 const emailDomain = process.env.E2E_TEST_EMAIL_DOMAIN ?? 'example.com'
@@ -15,6 +17,12 @@ test('shows the first registration error in view on a short viewport', async ({
   await page.setViewportSize({ width: 390, height: 667 })
   await page.goto('/register')
 
+  await expectPageBackLinkAboveHeading(page, {
+    label: '로그인으로 돌아가기',
+    href: '/login',
+    headingName: '회원가입',
+  })
+
   await page.getByRole('button', { name: '회원가입', exact: true }).click()
 
   const emailInput = page.getByLabel('이메일')
@@ -23,6 +31,13 @@ test('shows the first registration error in view on a short viewport', async ({
   await expect(emailInput).toBeFocused()
   await expect(emailInput).toBeInViewport()
   await expect(emailError).toBeInViewport()
+
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expectPageBackLinkAboveHeading(page, {
+    label: '로그인으로 돌아가기',
+    href: '/login',
+    headingName: '회원가입',
+  })
 })
 
 test('shows the first login error in view on a short viewport', async ({
@@ -30,6 +45,12 @@ test('shows the first login error in view on a short viewport', async ({
 }) => {
   await page.setViewportSize({ width: 390, height: 667 })
   await page.goto('/login')
+
+  await expectPageBackLinkAboveHeading(page, {
+    label: '홈으로 돌아가기',
+    href: '/',
+    headingName: '로그인',
+  })
 
   const mainBox = await page.getByRole('main').boundingBox()
 
@@ -49,6 +70,13 @@ test('shows the first login error in view on a short viewport', async ({
   await expect(emailInput).toBeFocused()
   await expect(emailInput).toBeInViewport()
   await expect(emailError).toBeInViewport()
+
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expectPageBackLinkAboveHeading(page, {
+    label: '홈으로 돌아가기',
+    href: '/',
+    headingName: '로그인',
+  })
 })
 
 test('keeps the signed-in application navigation usable across viewports', async ({

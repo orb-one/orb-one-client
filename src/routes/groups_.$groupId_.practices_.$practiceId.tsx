@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { Center } from '@astryxdesign/core/Center'
 import { VStack } from '@astryxdesign/core/VStack'
 import { Heading } from '@astryxdesign/core/Heading'
@@ -12,6 +12,7 @@ import { Icon } from '@astryxdesign/core/Icon'
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '@astryxdesign/core/Toast'
+import { PageBackLink } from '@/components/navigation/page-back-link'
 
 export const Route = createFileRoute(
   '/groups_/$groupId_/practices_/$practiceId',
@@ -50,16 +51,11 @@ function PracticeDetailPage() {
         paddingBlock={10}
       >
         <Stack gap={6}>
-          <div className="flex flex-col gap-1">
-            <Text
-              type="supporting"
-              color="secondary"
-              className="cursor-pointer hover:underline"
-            >
-              <Link to="/groups/$groupId" params={{ groupId }}>
-                {'< 이전으로 돌아가기'}
-              </Link>
-            </Text>
+          <div className="flex flex-col gap-2">
+            <PageBackLink
+              href={`/groups/${encodeURIComponent(groupId)}?tab=practice`}
+              label="연습 목록으로 돌아가기"
+            />
             <div className="flex items-end justify-between">
               <Heading level={1}>{practice?.title ?? '연습 이름'}</Heading>
 

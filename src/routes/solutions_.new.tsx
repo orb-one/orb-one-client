@@ -7,7 +7,6 @@ import { FormLayout } from '@astryxdesign/core/FormLayout'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
-import { Link } from '@astryxdesign/core/Link'
 import { NumberInput } from '@astryxdesign/core/NumberInput'
 import { Selector } from '@astryxdesign/core/Selector'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
@@ -19,6 +18,7 @@ import { FilePlus2 } from 'lucide-react'
 import { lazy, Suspense, useRef, useState, type ComponentProps } from 'react'
 
 import { AuthSessionExpiredError } from '@/lib/api/client'
+import { PageBackLink } from '@/components/navigation/page-back-link'
 import type { SolutionCodeEditorHandle } from '@/components/solutions/solution-code-editor'
 import { SolutionMarkdownEditor } from '@/components/solutions/solution-markdown-editor'
 import { ProblemPickerDialog } from '@/components/problems/problem-picker-dialog'
@@ -194,13 +194,11 @@ export function SolutionCreatePage() {
         paddingBlock={10}
       >
         <VStack gap={2} maxWidth={672}>
+          <PageBackLink href="/solutions" label={copy.backToList} />
           <Heading level={1}>{copy.title}</Heading>
           <Text type="body" color="secondary">
             {copy.description}
           </Text>
-          <Link href="/solutions" isStandalone>
-            {copy.backToList}
-          </Link>
         </VStack>
 
         <form noValidate onSubmit={handleSubmit}>

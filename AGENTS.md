@@ -25,6 +25,7 @@
 - package manager는 `pnpm`만 사용
 - 커밋은 사용자가 명시적으로 요청할 때만 수행
 - 변경 전 기존 파일 구조와 주변 패턴 먼저 확인
+- 코드 주석은 한국어로 짧게 작성하고, API·타입·필드 이름은 코드 표기 그대로 사용
 - 요청 범위 밖의 리팩터링 금지
 - 사용자 변경사항을 임의로 되돌리지 않음
 - 생성 파일을 임의로 삭제하지 않음
@@ -64,6 +65,10 @@
 - desktop/mobile 상태 확인
 - loading/empty/error state 고려
 - 버튼, 입력, 메뉴, 토글 등 신규 interactive UI는 Astryx 패턴 우선 사용
+- 페이지 단위 돌아가기 안내를 추가하거나 수정할 때는 제목 위에 `src/components/navigation/page-back-link.tsx`의 `PageBackLink`를 사용
+- `PageBackLink`과 H1 사이는 gap 2로 통일하고, eyebrow는 링크 앞에 배치
+- 돌아가기 문구는 실제 이동 목적지를 설명하고, 기존 고정 목적지를 브라우저 방문 기록 동작으로 임의 변경하지 않음
+- 목적지가 별도로 지정되지 않은 새 화면은 `PageBackLink`의 `href`를 생략해 등록된 가장 가까운 상위 페이지 라우트로 이동하고, 브라우저 방문 기록에 의존하지 않음
 
 ## Security Rules
 
