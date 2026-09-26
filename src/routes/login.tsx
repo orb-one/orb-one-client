@@ -18,6 +18,7 @@ import {
   TurnstileCaptcha,
   type TurnstileCaptchaHandle,
 } from '@/components/auth/turnstile-captcha'
+import { PageBackLink } from '@/components/navigation/page-back-link'
 import { loginAccount, type LoginRequest } from '@/lib/api/auth'
 import { getAuthErrorMessage } from '@/lib/auth/auth-errors'
 import { signInMockUser } from '@/lib/auth/mock-auth-session'
@@ -152,15 +153,13 @@ export function LoginPage() {
             <Text type="supporting" color="secondary">
               {copy.eyebrow}
             </Text>
+            <PageBackLink href="/" label={copy.backToHome} />
             <Heading level={1} justify="center">
               {copy.title}
             </Heading>
             <Text type="body" color="secondary" justify="center">
               {copy.description}
             </Text>
-            <Link href="/" isStandalone>
-              {copy.backToHome}
-            </Link>
           </VStack>
 
           <Card padding={8} width="100%">

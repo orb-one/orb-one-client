@@ -14,6 +14,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
 
+import { PageBackLink } from '@/components/navigation/page-back-link'
 import { SolutionDeleteAction } from '@/components/solutions/solution-delete-action'
 import { SolutionStatus } from '@/components/solutions/solution-status'
 import type { CurrentUserResponse } from '@/lib/api/auth'
@@ -82,9 +83,7 @@ export function SolutionDetailPage({ solutionId }: SolutionDetailPageProps) {
         paddingInline={4}
         paddingBlock={10}
       >
-        <Link href="/solutions" isStandalone>
-          {copy.backToList}
-        </Link>
+        <PageBackLink href="/solutions" label={copy.backToList} />
 
         {solutionQuery.isPending ? (
           <SolutionDetailSkeleton label={copy.loading} />

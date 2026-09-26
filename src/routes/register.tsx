@@ -24,6 +24,7 @@ import {
   TurnstileCaptcha,
   type TurnstileCaptchaHandle,
 } from '@/components/auth/turnstile-captcha'
+import { PageBackLink } from '@/components/navigation/page-back-link'
 import { registerAccount, type RegisterRequest } from '@/lib/api/auth'
 import { getAuthErrorMessage } from '@/lib/auth/auth-errors'
 import { rememberMockRegisteredUser } from '@/lib/auth/mock-auth-session'
@@ -159,15 +160,13 @@ export function RegisterPage() {
             <Text type="supporting" color="secondary">
               {copy.eyebrow}
             </Text>
+            <PageBackLink href="/login" label={copy.backToLogin} />
             <Heading level={1} justify="center">
               {copy.title}
             </Heading>
             <Text type="body" color="secondary" justify="center">
               {copy.description}
             </Text>
-            <Link href="/login" isStandalone>
-              {copy.backToLogin}
-            </Link>
           </VStack>
 
           <Card padding={8} width="100%">
