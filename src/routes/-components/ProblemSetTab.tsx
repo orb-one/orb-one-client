@@ -41,6 +41,7 @@ const PROVIDER_OPTIONS = [
   { value: 'JUNGOL', label: 'JUNGOL' },
   { value: 'SWEA', label: 'SWEA' },
   { value: 'PROGRAMMERS', label: 'PROGRAMMERS' },
+  { value: 'LEETCODE', label: 'LEETCODE' },
 ]
 
 const INITIAL_PROBLEM: ProblemFormItem = {
@@ -124,7 +125,7 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
     },
   })
 
-  // 모든 필드 필수 입력 여부 검증
+  // 필수 필드 입력 여부 검증
   const isFormValid =
     Boolean(newProblemSetName.trim()) &&
     problems.length > 0 &&
@@ -133,7 +134,6 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
         Boolean(p.provider.trim()) &&
         Boolean(p.externalProblemId.trim()) &&
         Boolean(p.name.trim()) &&
-        Boolean(p.difficulty.trim()) &&
         Boolean(p.url.trim()),
     )
 
@@ -190,11 +190,10 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
         !p.provider.trim() ||
         !p.externalProblemId.trim() ||
         !p.name.trim() ||
-        !p.difficulty.trim() ||
         !p.url.trim()
       ) {
         alert(
-          `${String(i + 1)}번째 문제의 모든 필수 필드(플랫폼, 번호, 이름, 난이도, 링크)를 입력해 주세요.`,
+          `${String(i + 1)}번째 문제의 모든 필수 필드(플랫폼, 번호, 이름, 링크)를 입력해 주세요.`,
         )
         return
       }
