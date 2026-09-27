@@ -207,7 +207,7 @@ export function mapProblem(response: ProblemResponse): Problem {
     externalProblemId: response.externalProblemId,
     name: response.name,
     url: response.url,
-    difficulty: response.difficulty ?? null,
+    difficulty: response.difficulty?.trim() ?? null,
   }
 }
 
@@ -281,7 +281,7 @@ export function toCreatedProblemSetDomain(
       externalId: p.externalProblemId,
       name: p.name,
       url: p.url,
-      difficulty: p.difficulty ?? null,
+      difficulty: p.difficulty?.trim() ?? null,
     })),
     createdBy: dto.createdBy,
     createdAt: new Date(dto.createdAt),
