@@ -1,0 +1,1521 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Orbone API", "version": "1.0.0" },
+  "servers": [
+    {
+      "url": "http://dev-api.orb-one.cc",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "회원가입, 로그인, 토큰 갱신 및 로그아웃 API"
+    },
+    { "name": "Group", "description": "그룹 관련 API" },
+    { "name": "ProblemSet", "description": "문제집 관련 API" },
+    { "name": "User", "description": "사용자 API" },
+    { "name": "Practice", "description": "연습(가상 대회/세션) 관련 API" }
+  ],
+  "paths": {
+    "/groups/{groupId}/problem-sets/{problemSetId}": {
+      "put": {
+        "tags": ["ProblemSet"],
+        "summary": "문제집 수정",
+        "description": "문제집의 이름과 문제 목록을 전체 교체 방식으로 수정한다. 생성한 사람만 수정 가능하다.",
+        "operationId": "updateProblemSet",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "problemSetId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProblemSetUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "문제집 수정 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemSetUpdateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 또는 경로 ID 형식 오류",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemSetUpdateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "403": {
+            "description": "문제집 수정 권한 없음",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "문제집을 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    },
+    "/groups/{groupId}/practices/{practiceId}": {
+      "put": {
+        "tags": ["Practice"],
+        "summary": "연습 수정",
+        "description": "연습의 이름과 기간을 수정한다 (문제 목록은 수정 안 함). 생성한 사람만, 종료 전에만 가능하다.",
+        "operationId": "updatePractice",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "practiceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PracticeUpdateRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeUpdateResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    },
+    "/groups": {
+      "get": {
+        "tags": ["Group"],
+        "summary": "전체 그룹 조회",
+        "description": "전체 그룹 목록을 조회한다. 그룹 이름 선택 화면 등에서 사용한다.",
+        "operationId": "getAllGroups",
+        "responses": {
+          "200": {
+            "description": "그룹 목록 조회 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupSummaryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      },
+      "post": {
+        "tags": ["Group"],
+        "summary": "그룹 생성",
+        "description": "새 그룹을 생성하고 인증된 사용자를 OWNER로 지정한다. db profile에서는 DB에 저장하고, mock profile에서는 요청 값을 바탕으로 응답한다.",
+        "operationId": "createGroup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GroupCreateRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "그룹 생성 성공",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/GroupCreateResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 오류",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/GroupCreateResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    },
+    "/groups/{groupId}/problem-sets": {
+      "post": {
+        "tags": ["ProblemSet"],
+        "summary": "문제집 생성",
+        "description": "그룹 안에 새 문제집을 생성한다. db profile에서는 DB에 저장하고, mock profile에서는 요청 값을 바탕으로 응답한다.",
+        "operationId": "createProblemSet",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProblemSetCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "문제집 생성 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemSetCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 또는 그룹 ID 형식 오류",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemSetCreateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    },
+    "/groups/{groupId}/problem-sets/{problemSetId}/problems": {
+      "post": {
+        "tags": ["ProblemSet"],
+        "summary": "문제집에 문제 추가",
+        "description": "기존 문제집에 문제를 추가한다 (기존 목록 유지, 새 문제만 추가). 생성한 사람만 추가 가능하다.",
+        "operationId": "addProblems",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "problemSetId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProblemSetAddProblemsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "문제집 문제 추가 성공",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemSetAddProblemsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 또는 경로 ID 형식 오류",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemSetAddProblemsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "403": {
+            "description": "문제집 수정 권한 없음",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "문제집을 찾을 수 없음",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "이미 문제집에 포함된 문제",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    },
+    "/groups/{groupId}/practices": {
+      "post": {
+        "tags": ["Practice"],
+        "summary": "연습 생성",
+        "description": "그룹 안에 새 연습을 생성한다. 종료 시각은 현재 시각보다 이후여야 한다.",
+        "operationId": "createPractice",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PracticeCreateRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeCreateResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    },
+    "/groups/{groupId}/practices/{practiceId}/problems": {
+      "post": {
+        "tags": ["Practice"],
+        "summary": "연습에 문제 등록",
+        "description": "연습에 문제를 등록한다 (기존 목록 유지, 새 문제만 추가). 생성한 사람만, 종료 전에만 가능하다.",
+        "operationId": "addProblems_1",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "practiceId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeAddProblemsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeAddProblemsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    },
+    "/groups/{groupId}/members": {
+      "post": {
+        "tags": ["Group"],
+        "summary": "그룹 가입",
+        "description": "인증된 사용자를 그룹의 MEMBER로 가입시킨다. db profile에서는 DB에 저장하고, mock profile에서는 성공 응답을 반환한다.",
+        "operationId": "joinGroup",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "그룹 가입 성공",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/GroupJoinResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 또는 그룹 ID 형식 오류",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/GroupJoinResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "회원가입",
+        "description": "db profile에서는 회원 정보를 저장하고, mock profile에서는 고정응답을 반환합니다.",
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "회원가입 성공",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 오류",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "이미 가입된 이메일",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "토큰 갱신",
+        "description": "db profile에서는 Refresh Token Cookie 검증 후 Access Token과 Refresh Token을 함께 재발급하고, mock profile에서는 Mock 인증 Cookie를 반환합니다.",
+        "operationId": "refresh",
+        "responses": {
+          "200": {
+            "description": "토큰 갱신 성공",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Refresh Token이 없거나 유효하지 않음",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "refreshCookie": [] }]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "로그아웃",
+        "description": "db profile에서는 현재 Refresh Token을 폐기하고 인증 Cookie 삭제 응답을 반환합니다. mock profile에서는 Cookie 삭제 응답만 반환합니다.",
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "description": "로그아웃 성공",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "refreshCookie": [] }]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "로그인",
+        "description": "db profile에서는 사용자 검증 후 실제 인증 Cookie를 발급하고, mock profile에서는 Mock 인증 Cookie를 반환합니다.",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "로그인 성공",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 오류",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "로그인 실패",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/password": {
+      "patch": {
+        "tags": ["User"],
+        "summary": "비밀번호 변경",
+        "description": "현재 비밀번호 검증 후 새 비밀번호로 변경합니다. db profile에서는 기존 Refresh Token을 모두 폐기합니다.",
+        "operationId": "changePassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PasswordChangeRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "비밀번호 변경 성공",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "요청 값 오류",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패 또는 현재 비밀번호 불일치",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": ["User"],
+        "summary": "내 정보 조회",
+        "description": "현재 인증된 사용자의 정보를 반환합니다.",
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "description": "내 정보 조회 성공",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/UserMeResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      },
+      "delete": {
+        "tags": ["User"],
+        "summary": "회원탈퇴",
+        "description": "현재 사용자를 영구 삭제합니다. 소유 중인 그룹이 있으면 소유권을 이전하거나 그룹을 폐쇄한 뒤 탈퇴할 수 있습니다.",
+        "operationId": "deleteMe",
+        "responses": {
+          "204": { "description": "회원탈퇴 성공" },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "소유 중인 그룹 존재",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    },
+    "/groups/{groupId}": {
+      "get": {
+        "tags": ["Group"],
+        "summary": "그룹 홈 정보 조회",
+        "description": "그룹 기본 정보와 멤버 목록을 조회한다.",
+        "operationId": "getGroupHome",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "그룹 홈 정보 조회 성공",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/GroupHomeResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "그룹 ID 형식 오류",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/GroupHomeResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    },
+    "/groups/{groupId}/members/me": {
+      "delete": {
+        "tags": ["Group"],
+        "summary": "그룹 탈퇴",
+        "description": "인증된 사용자를 그룹에서 탈퇴시킨다. db profile에서는 DB에서 삭제하고, mock profile에서는 성공 응답을 반환한다.",
+        "operationId": "leaveGroup",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "그룹 탈퇴 성공",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/GroupLeaveResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "그룹 또는 사용자 ID 형식 오류",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/GroupLeaveResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "그룹 OWNER는 소유권 이전 또는 그룹 폐쇄 전 탈퇴할 수 없음",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "accessCookie": [] }]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProblemRequest": {
+        "type": "object",
+        "description": "외부 코딩 문제 등록 정보",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "문제 제공자",
+            "enum": ["BOJ", "JUNGOL", "SWEA", "PROGRAMMERS"],
+            "example": "SWEA"
+          },
+          "externalProblemId": {
+            "type": "string",
+            "description": "제공자 내부 문제 식별자",
+            "example": 1204,
+            "maxLength": 128,
+            "minLength": 0
+          },
+          "name": {
+            "type": "string",
+            "description": "문제 제목",
+            "example": "최빈수 구하기",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "url": {
+            "type": "string",
+            "description": "문제 원문 URL",
+            "example": "https://swexpertacademy.com/main/code/problem/problemDetail.do?problemLevel=3&contestProbId=AV13zo1KAAACFAYh",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": ["externalProblemId", "name", "provider"]
+      },
+      "ProblemSetUpdateRequest": {
+        "type": "object",
+        "description": "문제집 수정 요청 (이름/문제 목록 전체 교체)",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "수정할 문제집 이름",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "problems": {
+            "type": "array",
+            "description": "수정할 문제 목록 (기존 목록을 완전히 대체함)",
+            "items": { "$ref": "#/components/schemas/ProblemRequest" },
+            "minItems": 1
+          }
+        },
+        "required": ["name", "problems"]
+      },
+      "ProblemResponse": {
+        "type": "object",
+        "description": "코딩 문제 정보",
+        "properties": {
+          "problemId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "서버가 생성한 문제 ID"
+          },
+          "provider": {
+            "type": "string",
+            "description": "문제 제공자",
+            "enum": ["BOJ", "JUNGOL", "SWEA", "PROGRAMMERS"],
+            "example": "SWEA"
+          },
+          "externalProblemId": {
+            "type": "string",
+            "description": "제공자 내부 문제 식별자",
+            "example": 1204
+          },
+          "name": {
+            "type": "string",
+            "description": "문제 제목",
+            "example": "최빈수 구하기"
+          },
+          "url": { "type": "string", "description": "문제 원문 URL" }
+        }
+      },
+      "ProblemSetUpdateResponse": {
+        "type": "object",
+        "description": "문제집 수정 응답",
+        "properties": {
+          "problemSetId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "문제집 ID"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "그룹 ID"
+          },
+          "name": { "type": "string", "description": "수정된 문제집 이름" },
+          "problems": {
+            "type": "array",
+            "description": "수정된 문제 목록",
+            "items": { "$ref": "#/components/schemas/ProblemResponse" }
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정 시각"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "description": "공통 오류 응답",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "애플리케이션 오류 코드",
+            "enum": [
+              "UNAUTHENTICATED",
+              "INVALID_CREDENTIALS",
+              "INVALID_REFRESH_TOKEN",
+              "DUPLICATE_EMAIL",
+              "USER_OWNS_GROUP",
+              "GROUP_OWNER_CANNOT_LEAVE",
+              "FORBIDDEN",
+              "INVALID_FIELD",
+              "MALFORMED_REQUEST",
+              "INVALID_PATH_VARIABLE",
+              "METHOD_NOT_ALLOWED",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "INTERNAL_SERVER_ERROR",
+              "DUPLICATE_PROBLEM_IN_REQUEST",
+              "PROBLEM_SET_NOT_FOUND",
+              "PROBLEM_SET_FORBIDDEN",
+              "PROBLEM_ALREADY_IN_SET",
+              "PRACTICE_NOT_FOUND",
+              "PRACTICE_FORBIDDEN",
+              "PRACTICE_ALREADY_ENDED",
+              "PRACTICE_INVALID_END_DATE",
+              "PROBLEM_ALREADY_IN_PRACTICE"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "사용자에게 노출할 일반 오류 메시지",
+            "example": "인증에 실패했습니다."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "오류 발생 시각",
+            "example": "2026-06-20T12:00:00Z"
+          },
+          "requestId": {
+            "type": "string",
+            "description": "서버 로그 추적용 요청 ID"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "필드 검증 오류 목록",
+            "items": { "$ref": "#/components/schemas/FieldErrorResponse" }
+          }
+        }
+      },
+      "FieldErrorResponse": {
+        "type": "object",
+        "description": "잘못된 요청 필드 정보",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "오류가 발생한 필드",
+            "example": "email"
+          },
+          "reason": {
+            "type": "string",
+            "description": "필드 오류 원인",
+            "example": "INVALID_FORMAT"
+          }
+        }
+      },
+      "PracticeUpdateRequest": {
+        "type": "object",
+        "description": "연습 수정 요청 (이름/시작/종료 시각만 수정)",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "수정할 연습 이름",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정할 시작 시각"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정할 종료 시각 (현재 시각보다 이후여야 함)"
+          }
+        },
+        "required": ["endDate", "startDate", "title"]
+      },
+      "PracticeUpdateResponse": {
+        "type": "object",
+        "description": "연습 수정 응답",
+        "properties": {
+          "practiceId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "연습 ID"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "그룹 ID"
+          },
+          "title": { "type": "string", "description": "수정된 연습 이름" },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정된 시작 시각"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정된 종료 시각"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정 시각"
+          }
+        }
+      },
+      "GroupCreateRequest": {
+        "type": "object",
+        "description": "그룹 생성 요청",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "그룹 이름",
+            "example": "알고리즘 스터디 1반",
+            "maxLength": 100,
+            "minLength": 0
+          }
+        },
+        "required": ["name"]
+      },
+      "GroupCreateResponse": {
+        "type": "object",
+        "description": "그룹 생성 응답",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "생성된 그룹 ID",
+            "example": "6f9619ff-8b86-d011-b42d-00c04fc964ff"
+          },
+          "name": {
+            "type": "string",
+            "description": "그룹 이름",
+            "example": "알고리즘 스터디 1반"
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "소유자(owner) 사용자 ID",
+            "example": "3f2504e0-4f89-11d3-9a0c-0305e82c3301"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성 시각"
+          }
+        }
+      },
+      "ProblemSetCreateRequest": {
+        "type": "object",
+        "description": "문제집 생성 요청",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "문제집 이름",
+            "example": "그리디 알고리즘 모음",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "problems": {
+            "type": "array",
+            "description": "문제집에 포함될 문제 목록",
+            "items": { "$ref": "#/components/schemas/ProblemRequest" },
+            "minItems": 1
+          }
+        },
+        "required": ["name", "problems"]
+      },
+      "ProblemSetCreateResponse": {
+        "type": "object",
+        "description": "문제집 생성 응답",
+        "properties": {
+          "problemSetId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "생성된 문제집 ID",
+            "example": "6f9619ff-8b86-d011-b42d-00c04fc964ff"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "그룹 ID"
+          },
+          "name": { "type": "string", "description": "문제집 이름" },
+          "problems": {
+            "type": "array",
+            "description": "포함된 문제 목록",
+            "items": { "$ref": "#/components/schemas/ProblemResponse" }
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid",
+            "description": "생성한 사용자 ID"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성 시각"
+          }
+        }
+      },
+      "ProblemSetAddProblemsRequest": {
+        "type": "object",
+        "description": "문제집에 문제 추가 요청 (기존 목록 유지, 새 문제만 추가)",
+        "properties": {
+          "problems": {
+            "type": "array",
+            "description": "추가할 문제 목록",
+            "items": { "$ref": "#/components/schemas/ProblemRequest" },
+            "minItems": 1
+          }
+        },
+        "required": ["problems"]
+      },
+      "ProblemSetAddProblemsResponse": {
+        "type": "object",
+        "description": "문제집에 문제 추가 응답 (전체 목록 기준)",
+        "properties": {
+          "problemSetId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "문제집 ID"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "그룹 ID"
+          },
+          "problems": {
+            "type": "array",
+            "description": "추가 후 문제집에 들어있는 전체 문제 목록",
+            "items": { "$ref": "#/components/schemas/ProblemResponse" }
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정 시각"
+          }
+        }
+      },
+      "PracticeCreateRequest": {
+        "type": "object",
+        "description": "연습 생성 요청",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "연습 이름",
+            "example": "3주차 DP 특훈",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "연습 시작 시각",
+            "example": "2026-07-20T00:00:00"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "연습 종료 시각 (현재 시각보다 이후여야 함)",
+            "example": "2026-07-27T23:59:59"
+          },
+          "problems": {
+            "type": "array",
+            "description": "연습에 포함될 문제 목록",
+            "items": { "$ref": "#/components/schemas/ProblemRequest" },
+            "minItems": 1
+          }
+        },
+        "required": ["endDate", "problems", "startDate", "title"]
+      },
+      "PracticeCreateResponse": {
+        "type": "object",
+        "description": "연습 생성 응답",
+        "properties": {
+          "practiceId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "생성된 연습 ID"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "그룹 ID"
+          },
+          "title": { "type": "string", "description": "연습 이름" },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "시작 시각"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "종료 시각"
+          },
+          "problems": {
+            "type": "array",
+            "description": "포함된 문제 목록",
+            "items": { "$ref": "#/components/schemas/ProblemResponse" }
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid",
+            "description": "생성한 사용자 ID"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성 시각"
+          }
+        }
+      },
+      "PracticeAddProblemsRequest": {
+        "type": "object",
+        "description": "연습에 문제 등록 요청 (기존 목록 유지, 새 문제만 추가)",
+        "properties": {
+          "problems": {
+            "type": "array",
+            "description": "등록할 문제 목록",
+            "items": { "$ref": "#/components/schemas/ProblemRequest" },
+            "minItems": 1
+          }
+        },
+        "required": ["problems"]
+      },
+      "PracticeAddProblemsResponse": {
+        "type": "object",
+        "description": "연습에 문제 등록 응답 (전체 목록 기준)",
+        "properties": {
+          "practiceId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "연습 ID"
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "그룹 ID"
+          },
+          "problems": {
+            "type": "array",
+            "description": "등록 후 연습에 들어있는 전체 문제 목록",
+            "items": { "$ref": "#/components/schemas/ProblemResponse" }
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "수정 시각"
+          }
+        }
+      },
+      "GroupJoinResponse": {
+        "type": "object",
+        "description": "그룹 가입 응답",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "가입한 그룹 ID",
+            "example": "6f9619ff-8b86-d011-b42d-00c04fc964ff"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "가입한 사용자 ID",
+            "example": "e2a1a2e0-9c1a-4b1e-9a3b-2f6a1c9d5e11"
+          },
+          "role": {
+            "type": "string",
+            "description": "가입 시 부여된 권한 (신규 가입자는 항상 MEMBER)",
+            "enum": ["MEMBER", "ADMIN", "OWNER"],
+            "example": "MEMBER"
+          },
+          "message": {
+            "type": "string",
+            "description": "결과 메시지",
+            "example": "그룹 가입이 완료되었습니다."
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "description": "회원가입 요청",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "로그인 식별자로 사용하는 이메일",
+            "example": "user@example.com",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "description": "8자 이상의 비밀번호",
+            "example": "password123!",
+            "maxLength": 2147483647,
+            "minLength": 8
+          },
+          "nickname": {
+            "type": "string",
+            "description": "서비스에서 표시할 닉네임",
+            "example": "orbone-user",
+            "minLength": 1
+          }
+        },
+        "required": ["email", "nickname", "password"]
+      },
+      "MessageResponse": {
+        "type": "object",
+        "description": "처리 결과 응답",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "처리 결과 메시지",
+            "example": "Login successful"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "description": "로그인 요청",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "로그인 식별자로 사용하는 이메일",
+            "example": "user@example.com",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "description": "비밀번호",
+            "example": "password123!",
+            "minLength": 1
+          }
+        },
+        "required": ["email", "password"]
+      },
+      "PasswordChangeRequest": {
+        "type": "object",
+        "description": "비밀번호 변경 요청",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "description": "현재 비밀번호",
+            "example": "old-password123!",
+            "minLength": 1
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "새 비밀번호",
+            "example": "new-password123!",
+            "maxLength": 2147483647,
+            "minLength": 8
+          }
+        },
+        "required": ["currentPassword", "newPassword"]
+      },
+      "UserMeResponse": {
+        "type": "object",
+        "description": "로그인 사용자 정보",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "사용자 UUID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "email": {
+            "type": "string",
+            "description": "로그인 식별자로 사용하는 이메일",
+            "example": "user@example.com"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "닉네임",
+            "example": "orbone-user"
+          }
+        }
+      },
+      "GroupSummaryResponse": {
+        "type": "object",
+        "description": "그룹 목록 항목",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "그룹 ID (UUID)",
+            "example": "6f9619ff-8b86-d011-b42d-00c04fc964ff"
+          },
+          "name": {
+            "type": "string",
+            "description": "그룹 이름",
+            "example": "알고리즘 스터디 1반"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "그룹 소유자 닉네임",
+            "example": "소유자 닉네임"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "그룹 생성 시각"
+          }
+        }
+      },
+      "GroupHomeResponse": {
+        "type": "object",
+        "description": "그룹 홈 정보 조회 응답",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "그룹 ID (UUID)",
+            "example": "6f9619ff-8b86-d011-b42d-00c04fc964ff"
+          },
+          "groupName": {
+            "type": "string",
+            "description": "그룹 이름",
+            "example": "알고리즘 스터디 1반"
+          },
+          "members": {
+            "type": "array",
+            "description": "그룹 멤버 목록",
+            "items": { "$ref": "#/components/schemas/GroupMemberResponse" }
+          }
+        }
+      },
+      "GroupMemberResponse": {
+        "type": "object",
+        "description": "그룹 멤버 정보",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "사용자 ID (UUID)",
+            "example": "3f2504e0-4f89-11d3-9a0c-0305e82c3301"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "닉네임",
+            "example": "algo_master"
+          },
+          "role": {
+            "type": "string",
+            "description": "그룹 내 권한 (MEMBER / ADMIN / OWNER)",
+            "enum": ["MEMBER", "ADMIN", "OWNER"],
+            "example": "OWNER"
+          }
+        }
+      },
+      "GroupLeaveResponse": {
+        "type": "object",
+        "description": "그룹 탈퇴 응답",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "탈퇴한 그룹 ID",
+            "example": "6f9619ff-8b86-d011-b42d-00c04fc964ff"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "탈퇴한 사용자 ID",
+            "example": "e2a1a2e0-9c1a-4b1e-9a3b-2f6a1c9d5e11"
+          },
+          "message": {
+            "type": "string",
+            "description": "결과 메시지",
+            "example": "그룹에서 탈퇴했습니다."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "accessCookie": {
+        "type": "apiKey",
+        "name": "access_token",
+        "in": "cookie"
+      },
+      "refreshCookie": {
+        "type": "apiKey",
+        "name": "refresh_token",
+        "in": "cookie"
+      }
+    }
+  }
+}

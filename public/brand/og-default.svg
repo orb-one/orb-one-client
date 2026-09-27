@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <title>Orb One</title>
+  <desc>The Orb One symbol and English product name on a light background.</desc>
+
+  <rect width="1200" height="630" fill="#f8fafc"/>
+  <circle cx="236" cy="315" r="214" fill="#e0f2fe"/>
+  <circle cx="236" cy="315" r="174" fill="#f8fafc"/>
+  <image href="orb-one-symbol.svg" x="20" y="99" width="432" height="432"/>
+
+  <g transform="translate(515 0)">
+    <text x="0" y="302" fill="#0f172a" font-family="Geist, Inter, Arial, sans-serif" font-size="88" font-weight="650" letter-spacing="-4">Orb One</text>
+    <rect x="2" y="342" width="72" height="6" rx="3" fill="#0ea5e9"/>
+    <text x="0" y="397" fill="#475569" font-family="Geist, Inter, Arial, sans-serif" font-size="26" font-weight="500" letter-spacing="1.2">ALGORITHM SOLUTION NOTES</text>
+  </g>
+
+  <rect x="1" y="1" width="1198" height="628" rx="1" stroke="#e2e8f0" stroke-width="2"/>
+</svg>

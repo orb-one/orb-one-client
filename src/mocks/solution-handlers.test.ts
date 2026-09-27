@@ -1,0 +1,269 @@
+import { http, HttpResponse } from 'msw'
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest'
+
+import { ApiError, apiClient } from '@/lib/api/client'
+import {
+  createSolution,
+  deleteSolution,
+  getSolution,
+  getSolutions,
+  restoreSolution,
+  updateSolution,
+} from '@/lib/api/solutions'
+import {
+  getCurrentMockUser,
+  rememberRegisteredUser,
+  signInMockUser,
+  signOutMockUser,
+} from '@/mocks/auth-session'
+import { resetMockSolutions } from '@/mocks/solution-data'
+import {
+  isDocumentNavigation,
+  isSolutionApiRequest,
+  solutionHandlers,
+} from '@/mocks/solution-handlers'
+
+const server = setupServer(
+  ...solutionHandlers,
+  http.get('*/auth/csrf', () =>
+    HttpResponse.json({ token: 'csrf-token', headerName: 'X-XSRF-TOKEN' }),
+  ),
+)
+
+beforeAll(() => {
+  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
+  server.listen({ onUnhandledRequest: 'error' })
+})
+
+afterEach(() => {
+  server.resetHandlers()
+  resetMockSolutions()
+  signOutMockUser()
+})
+
+afterAll(() => {
+  server.close()
+  vi.unstubAllEnvs()
+})
+
+it('returns solution fixtures without detail-only fields', async () => {
+  const solutions = await getSolutions()
+
+  expect(solutions).toHaveLength(3)
+  expect(solutions[0]).toMatchObject({
+    id: '30000000-0000-4000-8000-000000000001',
+    problemId: '10000000-0000-4000-8000-000000000001',
+    userId: '00000000-0000-4000-8000-000000000001',
+    isSolved: true,
+    isDraft: false,
+    language: 'Java',
+  })
+  expect(solutions[2]).toMatchObject({
+    problemId: '10000000-0000-4000-8000-000000000003',
+  })
+  expect(solutions[0]).not.toHaveProperty('code')
+  expect(solutions[0]).not.toHaveProperty('description')
+})
+
+it('does not classify a frontend module under a solutions folder as an API request', () => {
+  expect(
+    isSolutionApiRequest(
+      new Request(
+        'http://localhost:8080/src/components/solutions/solution-code-block.tsx',
+      ),
+      '/solutions/solution-code-block.tsx',
+    ),
+  ).toBe(false)
+  expect(
+    isSolutionApiRequest(
+      new Request('http://localhost:8080/solutions/solution-1'),
+      '/solutions/solution-1',
+    ),
+  ).toBe(true)
+})
+
+it('classifies HTML document requests as navigation', () => {
+  const request = new Request('http://localhost:8080/solutions', {
+    headers: { accept: 'text/html,application/xhtml+xml' },
+  })
+
+  expect(isDocumentNavigation(request)).toBe(true)
+})
+
+it('filters the solution list by problemId', async () => {
+  const problemId = '10000000-0000-4000-8000-000000000002'
+
+  const solutions = await getSolutions({ problemId })
+
+  expect(solutions).toHaveLength(1)
+  expect(solutions[0]).toMatchObject({
+    problemId,
+    problemName: 'Hello World',
+    problemProvider: 'BOJ',
+    problemNumber: '2557',
+    problemDifficulty: 'BRONZE_5',
+  })
+})
+
+it('returns the code and description from a solution detail', async () => {
+  const solution = await getSolution('30000000-0000-4000-8000-000000000002')
+
+  expect(solution.problemId).toBe('10000000-0000-4000-8000-000000000002')
+  expect(solution.code).toContain('from collections import deque')
+  expect(solution.description).toContain('# 풀이 전략')
+  expect(solution.description).toContain('**BFS**')
+  expect(solution.description).toContain('```python')
+})
+
+it('returns a 404 response for an unknown solution', async () => {
+  await expect(getSolution('unknown-solution')).rejects.toMatchObject({
+    status: 404,
+    message: 'Solution not found',
+  })
+})
+
+it('creates a solution that subsequent list and detail requests can read', async () => {
+  const email = 'solution-author@example.com'
+
+  rememberRegisteredUser({ email, nickname: 'solution-author' })
+  signInMockUser({ email })
+
+  const currentUser = getCurrentMockUser()
+  const request = {
+    problemId: '10000000-0000-4000-8000-000000000001',
+    language: 'TypeScript',
+    code: 'console.log(input)',
+    isSolved: true,
+    isDraft: false as const,
+    memoryUsage: 9_876,
+    timeElapsed: 54,
+    description: 'created solution',
+  }
+
+  const result = await createSolution(request)
+  const solutions = await getSolutions({ problemId: request.problemId })
+  const detail = await getSolution(result.id)
+
+  expect(solutions).toHaveLength(2)
+  expect(solutions[0]).toMatchObject({
+    id: result.id,
+    userId: currentUser?.id,
+    language: 'TypeScript',
+    isSolved: true,
+    isDraft: false,
+  })
+  expect(detail).toMatchObject({
+    id: result.id,
+    code: 'console.log(input)',
+    description: 'created solution',
+    memoryUsage: 9_876,
+    timeElapsed: 54,
+  })
+})
+
+it('updates an authored solution and rejects a different author', async () => {
+  const solutionId = '30000000-0000-4000-8000-000000000001'
+  const request = {
+    language: 'Kotlin',
+    code: 'fun main() = println(1)',
+    isSolved: true,
+    isDraft: false,
+    memoryUsage: 12_000,
+    timeElapsed: 40,
+    description: 'updated',
+  }
+
+  signInMockUser({ email: 'seeded-user@example.com' })
+
+  await expect(updateSolution(solutionId, request)).resolves.toMatchObject({
+    id: solutionId,
+    ...request,
+  })
+  await expect(getSolution(solutionId)).resolves.toMatchObject({
+    id: solutionId,
+    ...request,
+  })
+
+  const email = 'different-author@example.com'
+  rememberRegisteredUser({ email, nickname: 'different-author' })
+  signInMockUser({ email })
+
+  await expect(updateSolution(solutionId, request)).rejects.toMatchObject({
+    status: 403,
+    message: 'Solution forbidden',
+  })
+})
+
+it('hides an authored solution on delete and restores it during the grace period', async () => {
+  const solutionId = '30000000-0000-4000-8000-000000000001'
+
+  signInMockUser({ email: 'seeded-user@example.com' })
+
+  await expect(deleteSolution(solutionId)).resolves.toBeUndefined()
+  await expect(getSolution(solutionId)).rejects.toMatchObject({ status: 404 })
+  await expect(getSolutions()).resolves.not.toEqual(
+    expect.arrayContaining([expect.objectContaining({ id: solutionId })]),
+  )
+
+  await expect(restoreSolution(solutionId)).resolves.toBeUndefined()
+  await expect(getSolution(solutionId)).resolves.toMatchObject({
+    id: solutionId,
+  })
+  await expect(getSolutions()).resolves.toEqual(
+    expect.arrayContaining([expect.objectContaining({ id: solutionId })]),
+  )
+})
+
+it('rejects deleting another author solution and conceals restore ownership', async () => {
+  const solutionId = '30000000-0000-4000-8000-000000000001'
+  const email = 'different-author@example.com'
+
+  rememberRegisteredUser({ email, nickname: 'different-author' })
+  signInMockUser({ email })
+
+  await expect(deleteSolution(solutionId)).rejects.toMatchObject({
+    status: 403,
+    message: 'Solution forbidden',
+  })
+
+  signInMockUser({ email: 'seeded-user@example.com' })
+  await deleteSolution(solutionId)
+  signInMockUser({ email })
+
+  await expect(restoreSolution(solutionId)).rejects.toMatchObject({
+    status: 404,
+    message: 'Solution not found',
+  })
+})
+
+it('rejects malformed requests and unknown problems', async () => {
+  const invalidRequest = apiClient('/solutions', {
+    method: 'POST',
+    body: { problemId: '', language: 'Java', code: '' },
+  })
+
+  await expect(invalidRequest).rejects.toMatchObject({
+    status: 400,
+    message: 'Invalid solution request',
+  })
+  await expect(invalidRequest).rejects.toBeInstanceOf(ApiError)
+
+  signInMockUser({ email: 'solution-author@example.com' })
+
+  await expect(
+    createSolution({
+      problemId: 'unknown-problem',
+      language: 'Java',
+      code: 'class Main {}',
+      isSolved: false,
+      isDraft: false,
+      memoryUsage: null,
+      timeElapsed: null,
+      description: null,
+    }),
+  ).rejects.toMatchObject({
+    status: 404,
+    message: 'Problem not found',
+  })
+})

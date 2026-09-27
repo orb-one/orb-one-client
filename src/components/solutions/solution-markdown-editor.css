@@ -1,0 +1,29 @@
+@layer components {
+  .solution-markdown-editor__source > div,
+  .solution-markdown-editor__source .astryx-field,
+  .solution-markdown-editor__source .astryx-field > div,
+  .solution-markdown-editor__source .astryx-textarea {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .solution-markdown-editor__source .astryx-field > div {
+    flex: 1;
+  }
+
+  .solution-markdown-editor__source .astryx-textarea {
+    border-color: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .solution-markdown-editor__source:focus-within {
+    box-shadow: var(--shadow-inset-selected);
+  }
+
+  .solution-markdown-editor__source textarea {
+    height: 100%;
+    font-family: var(--font-family-code) !important;
+    resize: none !important;
+  }
+}

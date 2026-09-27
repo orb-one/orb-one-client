@@ -1,100 +1,116 @@
+import { Grid } from '@astryxdesign/core/Grid'
+import { Heading } from '@astryxdesign/core/Heading'
+import { Text } from '@astryxdesign/core/Text'
+import { VStack } from '@astryxdesign/core/VStack'
 import { createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { Activity, Database, RotateCcw } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { useAppStore } from '@/stores/use-app-store'
+import groupProblemSetImage from '@/assets/landing/group-problem-set.webp'
+import solutionDetailImage from '@/assets/landing/solution-detail.webp'
+import { BrandLogo } from '@/components/brand/brand-logo'
+import { ProviderLogoMarquee } from '@/components/landing/provider-logo-marquee'
+import { useTranslations } from '@/lib/i18n/use-translations'
 
 export const Route = createFileRoute('/')({
-  component: DashboardPage,
+  component: LandingPage,
 })
 
-const loadSummary = async () => {
-  await new Promise((resolve) => window.setTimeout(resolve, 250))
-
-  return {
-    framework: 'React + TypeScript',
-    router: 'TanStack Router',
-    serverState: 'TanStack Query',
-  }
-}
-
-function DashboardPage() {
-  const launchCount = useAppStore((state) => state.launchCount)
-  const incrementLaunchCount = useAppStore(
-    (state) => state.incrementLaunchCount,
-  )
-  const resetLaunchCount = useAppStore((state) => state.resetLaunchCount)
-
-  const summaryQuery = useQuery({
-    queryKey: ['project-summary'],
-    queryFn: loadSummary,
-  })
+export function LandingPage() {
+  const t = useTranslations()
+  const copy = t.landing
+  const [heroTitleBeforeHighlight, heroTitleAfterHighlight = ''] =
+    copy.hero.title.split(copy.hero.highlight)
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10">
-      <section className="space-y-4">
-        <div className="text-muted-foreground inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-sm">
-          <Activity className="size-4" />
-          Frontend starter
-        </div>
-        <div className="max-w-2xl space-y-3">
-          <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
-            Orb One client
-          </h1>
-          <p className="text-muted-foreground text-base leading-7">
-            React, TypeScript, Zustand, TanStack Router, TanStack Query, and
-            shadcn/ui are wired together and ready to grow.
-          </p>
-        </div>
+    <VStack
+      gap={0}
+      className="orb-brand-accent orb-study-landing overflow-x-clip"
+    >
+      <section
+        aria-labelledby="landing-hero-title"
+        className="landing-study-hero relative min-h-[calc(100dvh-4rem)] overflow-hidden"
+      >
+        <header className="landing-hero-copy landing-study-hero-copy">
+          <VStack gap={6} hAlign="center">
+            <Heading
+              id="landing-hero-title"
+              level={1}
+              type="display-1"
+              justify="center"
+              textWrap="balance"
+            >
+              {heroTitleBeforeHighlight}
+              <span className="text-[var(--color-accent)]">
+                {copy.hero.highlight}
+              </span>
+              {heroTitleAfterHighlight}
+            </Heading>
+            <Text
+              id="landing-hero-description"
+              as="p"
+              type="large"
+              color="secondary"
+              justify="center"
+              textWrap="pretty"
+            >
+              {copy.hero.description}
+            </Text>
+          </VStack>
+        </header>
+
+        <VStack
+          gap={0}
+          role="group"
+          aria-label={copy.images.previewLabel}
+          className="landing-hero-visual landing-study-product-stage"
+        >
+          <figure className="landing-product-window landing-product-window-main">
+            <figcaption aria-hidden="true" className="landing-window-bar">
+              workspace / weekly-problems
+            </figcaption>
+            <img
+              src={groupProblemSetImage}
+              width={1440}
+              height={602}
+              alt={copy.images.groupAlt}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+            />
+          </figure>
+
+          <figure className="landing-product-window landing-product-window-detail">
+            <figcaption aria-hidden="true" className="landing-window-bar">
+              solutions / BOJ-1000.java
+            </figcaption>
+            <img
+              src={solutionDetailImage}
+              width={1440}
+              height={952}
+              alt={copy.images.solutionAlt}
+              loading="eager"
+              decoding="async"
+            />
+          </figure>
+        </VStack>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <InfoPanel
-          label="Framework"
-          value={summaryQuery.data?.framework ?? 'Loading'}
-        />
-        <InfoPanel
-          label="Routing"
-          value={summaryQuery.data?.router ?? 'Loading'}
-        />
-        <InfoPanel
-          label="Async state"
-          value={summaryQuery.data?.serverState ?? 'Loading'}
-        />
-      </section>
+      <ProviderLogoMarquee
+        title={copy.support.title}
+        description={copy.support.description}
+      />
 
-      <section className="bg-card text-card-foreground rounded-lg border p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <h2 className="text-lg font-medium">Zustand store</h2>
-            <p className="text-muted-foreground text-sm">
-              Local UI state is isolated from server state.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" onClick={resetLaunchCount}>
-              <RotateCcw className="size-4" />
-              Reset
-            </Button>
-            <Button type="button" onClick={incrementLaunchCount}>
-              Launch count: {launchCount}
-            </Button>
-          </div>
-        </div>
-      </section>
-    </main>
-  )
-}
-
-function InfoPanel({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-card text-card-foreground rounded-lg border p-4">
-      <div className="bg-muted mb-3 flex size-8 items-center justify-center rounded-md">
-        <Database className="size-4" />
-      </div>
-      <p className="text-muted-foreground text-sm">{label}</p>
-      <p className="mt-1 font-medium">{value}</p>
-    </div>
+      <footer className="bg-surface border-t border-[var(--color-border)]">
+        <Grid
+          columns={{ minWidth: 240, max: 2, repeat: 'fit' }}
+          gap={3}
+          align="center"
+          width="100%"
+          maxWidth={1200}
+          className="mx-auto px-4 py-8 sm:px-6"
+        >
+          <BrandLogo label={t.common.productName} size="sm" />
+        </Grid>
+      </footer>
+    </VStack>
   )
 }

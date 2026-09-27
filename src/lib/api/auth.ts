@@ -1,0 +1,93 @@
+import { apiClient } from '@/lib/api/client'
+
+export interface LoginCredentials {
+  email: string
+  password: string
+}
+
+export interface LoginRequest extends LoginCredentials {
+  captchaToken: string
+}
+
+export interface RegisterCredentials {
+  email: string
+  password: string
+  nickname: string
+}
+
+export interface RegisterRequest extends RegisterCredentials {
+  captchaToken: string
+}
+
+export interface NicknameUpdateRequest {
+  nickname: string
+}
+
+export interface PasswordChangeRequest {
+  currentPassword: string
+  newPassword: string
+}
+
+export interface MessageResponse {
+  message: string
+}
+
+export interface CurrentUserResponse {
+  id: string
+  email: string
+  nickname: string
+}
+
+// route에서 auth API path와 request shape 직접 관리 방지
+export function loginAccount(request: LoginRequest) {
+  return apiClient<MessageResponse>('/auth/login', {
+    method: 'POST',
+    body: request,
+  })
+}
+
+export function registerAccount(request: RegisterRequest) {
+  return apiClient<MessageResponse>('/auth/register', {
+    method: 'POST',
+    body: request,
+  })
+}
+
+export function refreshSession() {
+  return apiClient<MessageResponse>('/auth/refresh', {
+    method: 'POST',
+  })
+}
+
+export function logoutAccount() {
+  return apiClient<MessageResponse>('/auth/logout', {
+    method: 'POST',
+  })
+}
+
+export function getCurrentUser(signal?: AbortSignal) {
+  return apiClient<CurrentUserResponse>(
+    '/users/me',
+    signal ? { signal } : undefined,
+  )
+}
+
+export function updateCurrentUser(request: NicknameUpdateRequest) {
+  return apiClient<CurrentUserResponse>('/users/me', {
+    method: 'PATCH',
+    body: request,
+  })
+}
+
+export function changeCurrentUserPassword(request: PasswordChangeRequest) {
+  return apiClient<MessageResponse>('/users/me/password', {
+    method: 'PATCH',
+    body: request,
+  })
+}
+
+export function deleteCurrentUser() {
+  return apiClient<undefined>('/users/me', {
+    method: 'DELETE',
+  })
+}
