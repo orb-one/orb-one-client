@@ -1,7 +1,6 @@
 {
   "name": "orb-one-client-react",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "packageManager": "pnpm@10.28.1",
   "scripts": {
