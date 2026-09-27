@@ -225,3 +225,7 @@ VITE_API_BASE_URL=http://localhost:5173 API_PROXY_TARGET=https://api.example.com
 ```bash
 VITE_API_BASE_URL=http://localhost:5173 API_PROXY_TARGET=https://api.example.com E2E_TEST_EMAIL=auth-e2e@example.com E2E_TEST_PASSWORD=replace-with-dedicated-test-account-password pnpm test:e2e:auth-live
 ```
+
+## 라이선스
+
+직접 작성한 코드와 문서는 [MIT 라이선스](./LICENSE)를 따릅니다. 이미지와 외부 로고는 제외하며, 대상 파일과 외부 저작물 고지는 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)에 정리했습니다.
