@@ -55,6 +55,7 @@ const PROVIDER_OPTIONS = [
   { value: 'JUNGOL', label: 'JUNGOL' },
   { value: 'SWEA', label: 'SWEA' },
   { value: 'PROGRAMMERS', label: 'PROGRAMMERS' },
+  { value: 'LEETCODE', label: 'LEETCODE' },
 ]
 
 const INITIAL_PROBLEM: ProblemFormItem = {
@@ -192,7 +193,6 @@ export function ProblemSetDetailPage() {
         Boolean(p.provider.trim()) &&
         Boolean(p.externalProblemId.trim()) &&
         Boolean(p.name.trim()) &&
-        Boolean(p.difficulty.trim()) &&
         Boolean(p.url.trim()),
     )
 
@@ -239,11 +239,10 @@ export function ProblemSetDetailPage() {
         !p.provider.trim() ||
         !p.externalProblemId.trim() ||
         !p.name.trim() ||
-        !p.difficulty.trim() ||
         !p.url.trim()
       ) {
         alert(
-          `${String(i + 1)}번째 문제의 모든 필수 항목(플랫폼, 번호, 이름, 난이도, 링크)을 입력해 주세요.`,
+          `${String(i + 1)}번째 문제의 모든 필수 항목(플랫폼, 번호, 이름, 링크)을 입력해 주세요.`,
         )
         return
       }
