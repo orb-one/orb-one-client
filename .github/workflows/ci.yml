@@ -42,6 +42,9 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Check third-party license notices
+        run: pnpm licenses:check
+
       - name: Test
         run: pnpm test
 
