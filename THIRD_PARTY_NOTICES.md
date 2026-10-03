@@ -8,7 +8,6 @@
 
 - `public/brand/`, `src/assets/landing/`: Orb One 브랜드 이미지와 화면 이미지
 - `src/assets/providers/`: Baekjoon Online Judge, Programmers, SW Expert Academy, JUNGOL 로고
-- `public/icons.svg`: Bluesky, Discord, GitHub, X 등의 로고
 
 로고와 상표의 권리는 각 권리자에게 있습니다.
 
