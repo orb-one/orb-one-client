@@ -25,6 +25,9 @@ test-results
 .env.*
 !.env.example
 
+# Local API schema snapshots
+/swagger.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

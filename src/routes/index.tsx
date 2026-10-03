@@ -1,5 +1,6 @@
 import { Grid } from '@astryxdesign/core/Grid'
 import { Heading } from '@astryxdesign/core/Heading'
+import { Link } from '@astryxdesign/core/Link'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
 import { createFileRoute } from '@tanstack/react-router'
@@ -109,6 +110,15 @@ export function LandingPage() {
           className="mx-auto px-4 py-8 sm:px-6"
         >
           <BrandLogo label={t.common.productName} size="sm" />
+          <Link
+            as="a"
+            href="/THIRD_PARTY_LICENSES.txt"
+            color="secondary"
+            isStandalone
+            className="sm:justify-self-end"
+          >
+            {copy.footer.licenses}
+          </Link>
         </Grid>
       </footer>
     </VStack>

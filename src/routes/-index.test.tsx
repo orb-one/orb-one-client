@@ -63,7 +63,10 @@ it('renders the study landing page with a centered message and real product imag
     screen.getByRole('img', { name: 'Baekjoon Online Judge' }),
   ).toBeVisible()
   expect(screen.queryByRole('button')).not.toBeInTheDocument()
-  expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  expect(screen.getAllByRole('link')).toHaveLength(1)
+  expect(
+    screen.getByRole('link', { name: '오픈소스 라이선스' }),
+  ).toHaveAttribute('href', '/THIRD_PARTY_LICENSES.txt')
 })
 
 it('uses the active locale for the hero and provider copy', () => {
@@ -98,4 +101,7 @@ it('uses the active locale for the hero and provider copy', () => {
   expect(
     screen.getByRole('group', { name: 'Orb One product preview' }),
   ).toBeVisible()
+  expect(
+    screen.getByRole('link', { name: 'Open source licenses' }),
+  ).toHaveAttribute('href', '/THIRD_PARTY_LICENSES.txt')
 })

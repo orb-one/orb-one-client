@@ -33,13 +33,15 @@ pnpm build         # TypeScript build 후 Vite production build
 pnpm preview       # production build preview
 pnpm typecheck     # TypeScript typecheck
 pnpm lint          # ESLint 실행
+pnpm licenses:generate # production 의존성 라이선스 고지 생성
+pnpm licenses:check # 라이선스 정책과 고지 파일 검사
 pnpm format        # Prettier write
 pnpm format:check  # Prettier check
 pnpm test          # Vitest run
 pnpm test:watch    # Vitest watch mode
 pnpm test:e2e:install # Playwright Chromium 설치
 pnpm test:e2e      # Playwright e2e run
-pnpm check         # typecheck, lint, format:check, test, build 전체 실행
+pnpm check         # typecheck, lint, format:check, license, test, build 전체 실행
 ```
 
 PR 전에는 최소한 아래 명령이 통과해야 합니다.
@@ -57,7 +59,7 @@ Git hook은 다음 역할을 합니다.
 - `pre-commit`: staged file에 `lint-staged` 실행
 - `commit-msg`: 커밋 메시지 형식 검증
 
-CI는 GitHub Actions에서 `typecheck`, `lint`, `format:check`, `test`, `build`를 실행합니다.
+CI는 GitHub Actions에서 `typecheck`, `lint`, `format:check`, `licenses:check`, `test`, `build`를 실행합니다.
 
 ## Agent Guide
 
@@ -225,3 +227,7 @@ VITE_API_BASE_URL=http://localhost:5173 API_PROXY_TARGET=https://api.example.com
 ```bash
 VITE_API_BASE_URL=http://localhost:5173 API_PROXY_TARGET=https://api.example.com E2E_TEST_EMAIL=auth-e2e@example.com E2E_TEST_PASSWORD=replace-with-dedicated-test-account-password pnpm test:e2e:auth-live
 ```
+
+## 라이선스
+
+Orb One 기여자가 직접 작성한 코드와 문서는 [MIT 라이선스](./LICENSE)를 따릅니다. 외부 라이브러리, 글꼴, 이미지와 로고는 각 권리자의 조건을 따르며, 적용 범위와 고지는 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)에 정리했습니다.

@@ -37,6 +37,9 @@ export const messages = {
         solutionAlt: '코드와 풀이 설명을 함께 보여주는 풀이 상세 화면',
         groupAlt: '그룹에서 함께 풀 문제를 정리한 문제집 화면',
       },
+      footer: {
+        licenses: '오픈소스 라이선스',
+      },
     },
     auth: {
       sessionExpired: '세션이 만료되었습니다. 다시 로그인해 주세요.',
@@ -393,6 +396,9 @@ export const messages = {
         solutionAlt:
           'Solution detail showing source code and written reasoning',
         groupAlt: 'Group problem set organizing problems to solve together',
+      },
+      footer: {
+        licenses: 'Open source licenses',
       },
     },
     auth: {
