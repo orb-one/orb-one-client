@@ -191,13 +191,11 @@ export function useUpdatePractice(groupId: string, practiceId: string) {
 }
 
 export interface AddPracticeProblemRequest {
-  problems: {
-    provider: string
-    externalProblemId: string
-    name: string
-    url?: string
-    difficulty?: string
-  }[]
+  provider: string
+  externalProblemId: string
+  name: string
+  url?: string
+  difficulty?: string
 }
 
 export function useAddPracticeProblem(groupId: string, practiceId: string) {
@@ -206,7 +204,11 @@ export function useAddPracticeProblem(groupId: string, practiceId: string) {
   return useMutation({
     mutationFn: async (data: AddPracticeProblemRequest) => {
       const payload = {
-        problems: data.problems,
+        provider: data.provider,
+        externalProblemId: data.externalProblemId,
+        name: data.name,
+        url: data.url,
+        difficulty: data.difficulty,
       }
       return apiClient(`/groups/${groupId}/practices/${practiceId}/problems`, {
         method: 'POST',

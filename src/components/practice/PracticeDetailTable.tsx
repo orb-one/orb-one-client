@@ -1,7 +1,7 @@
 import { Button } from '@astryxdesign/core/Button'
 import { Badge } from '@astryxdesign/core/Badge'
 import { Icon } from '@astryxdesign/core/Icon'
-import { Table } from '@astryxdesign/core/Table'
+import { Table, proportional, pixel } from '@astryxdesign/core/Table'
 import { Text } from '@astryxdesign/core/Text'
 import { Trash2, ExternalLink, List } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
@@ -34,11 +34,13 @@ export function PracticeDetailTable({
         {
           key: 'provider',
           header: '플랫폼',
+          width: proportional(1),
           renderCell: (prob: PracticeProblem) => <Text>{prob.provider}</Text>,
         },
         {
           key: 'id',
           header: '문제 ID',
+          width: proportional(1),
           renderCell: (prob: PracticeProblem) => (
             <Text type="supporting" color="secondary">
               {prob.externalProblemId}
@@ -48,6 +50,7 @@ export function PracticeDetailTable({
         {
           key: 'name',
           header: '문제 이름',
+          width: proportional(2),
           renderCell: (prob: PracticeProblem) => (
             <Text className="font-medium">{prob.name}</Text>
           ),
@@ -55,6 +58,7 @@ export function PracticeDetailTable({
         {
           key: 'difficulty',
           header: '난이도',
+          width: proportional(1),
           renderCell: (prob: PracticeProblem) =>
             prob.difficulty ? (
               <Badge label={prob.difficulty} />
@@ -67,6 +71,7 @@ export function PracticeDetailTable({
         {
           key: 'action',
           header: isDeleteMode ? '삭제' : '이동',
+          width: pixel(230),
           renderCell: (prob: PracticeProblem) =>
             isDeleteMode ? (
               <Button
