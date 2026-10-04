@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 import { Button } from '@astryxdesign/core/Button'
 import { Card } from '@astryxdesign/core/Card'
@@ -28,6 +28,20 @@ export function PracticeTab({ groupId }: PracticeTabProps) {
 
   const { data: practices, isLoading: practicesLoading } =
     useGroupPractices(groupId)
+
+  const sortedPractices = useMemo(() => {
+    if (!practices) return []
+    const now = new Date().toISOString()
+    return [...practices].sort((a, b) => {
+      const aOngoing = a.startDate <= now && now <= a.endDate
+      const bOngoing = b.startDate <= now && now <= b.endDate
+
+      if (aOngoing && !bOngoing) return -1
+      if (!aOngoing && bOngoing) return 1
+
+      return new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+    })
+  }, [practices])
   const deletePractice = useDeletePractice(groupId)
 
   const handleDeletePractice = (practiceId: string) => {
@@ -72,7 +86,7 @@ export function PracticeTab({ groupId }: PracticeTabProps) {
             </div>
           ) : (
             <PracticeList
-              practices={practices ?? []}
+              practices={sortedPractices}
               groupId={groupId}
               isDeleteMode={isDeleteMode}
               onDeletePractice={handleDeletePractice}
