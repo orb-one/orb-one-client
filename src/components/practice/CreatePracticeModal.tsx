@@ -152,7 +152,6 @@ export function CreatePracticeModal({
                   setStartDate(formatDateTimeInput(val))
                 }}
                 placeholder="YYYYMMDDHHMM"
-                inputMode="numeric"
               />
               <TextInput
                 htmlName="endDate"
@@ -162,7 +161,6 @@ export function CreatePracticeModal({
                   setEndDate(formatDateTimeInput(val))
                 }}
                 placeholder="YYYYMMDDHHMM"
-                inputMode="numeric"
               />
             </div>
 
@@ -194,6 +192,7 @@ export function CreatePracticeModal({
                           type="button"
                           variant="ghost"
                           size="sm"
+                          label="삭제"
                           icon={<Icon icon={Trash2} size="sm" />}
                           onClick={() => {
                             setSelectedProblems(

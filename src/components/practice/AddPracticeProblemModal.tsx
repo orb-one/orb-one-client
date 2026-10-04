@@ -106,6 +106,7 @@ export function AddPracticeProblemModal({
                           type="button"
                           variant="ghost"
                           size="sm"
+                          label="삭제"
                           icon={<Icon icon={Trash2} size="sm" />}
                           onClick={() => {
                             setSelectedProblems(

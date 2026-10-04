@@ -132,7 +132,6 @@ export function EditPracticeModal({
                 setStartDate(formatDateTimeInput(val))
               }}
               placeholder="YYYYMMDDHHMM"
-              inputMode="numeric"
             />
             <TextInput
               htmlName="endDate"
@@ -142,7 +141,6 @@ export function EditPracticeModal({
                 setEndDate(formatDateTimeInput(val))
               }}
               placeholder="YYYYMMDDHHMM"
-              inputMode="numeric"
             />
           </div>
         </FormLayout>
