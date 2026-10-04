@@ -39,9 +39,25 @@ export function PracticeList({
     )
   }
 
+  const sortedPractices = [...practices].sort((a, b) => {
+    const now = new Date().getTime()
+    const aStart = new Date(a.startDate).getTime()
+    const aEnd = new Date(a.endDate).getTime()
+    const bStart = new Date(b.startDate).getTime()
+    const bEnd = new Date(b.endDate).getTime()
+
+    const aOngoing = aStart <= now && now <= aEnd
+    const bOngoing = bStart <= now && now <= bEnd
+
+    if (aOngoing && !bOngoing) return -1
+    if (!aOngoing && bOngoing) return 1
+
+    return bStart - aStart // Newest first
+  })
+
   return (
     <Table<Practice & Record<string, unknown>>
-      data={practices as (Practice & Record<string, unknown>)[]}
+      data={sortedPractices as (Practice & Record<string, unknown>)[]}
       idKey="id"
       columns={[
         {

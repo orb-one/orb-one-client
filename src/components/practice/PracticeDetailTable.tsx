@@ -1,4 +1,5 @@
 import { Button } from '@astryxdesign/core/Button'
+import { Badge } from '@astryxdesign/core/Badge'
 import { Icon } from '@astryxdesign/core/Icon'
 import { Table } from '@astryxdesign/core/Table'
 import { Text } from '@astryxdesign/core/Text'
@@ -50,6 +51,18 @@ export function PracticeDetailTable({
           renderCell: (prob: PracticeProblem) => (
             <Text className="font-medium">{prob.name}</Text>
           ),
+        },
+        {
+          key: 'difficulty',
+          header: '난이도',
+          renderCell: (prob: PracticeProblem) =>
+            prob.difficulty ? (
+              <Badge label={prob.difficulty} />
+            ) : (
+              <Text type="supporting" color="secondary">
+                -
+              </Text>
+            ),
         },
         {
           key: 'action',

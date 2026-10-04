@@ -13,9 +13,13 @@ interface EditPracticeModalProps {
   onClose: () => void
 }
 
-const formatDateInput = (value: string) => {
-  const digits = value.replace(/\D/g, '').slice(0, 8)
-  if (digits.length >= 7) {
+const formatDateTimeInput = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 12)
+  if (digits.length >= 11) {
+    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)} ${digits.slice(8, 10)}:${digits.slice(10, 12)}`
+  } else if (digits.length >= 9) {
+    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)} ${digits.slice(8)}`
+  } else if (digits.length >= 7) {
     return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`
   } else if (digits.length >= 5) {
     return `${digits.slice(0, 4)}-${digits.slice(4)}`
@@ -39,8 +43,8 @@ export function EditPracticeModal({
     if (practice) {
       // eslint-disable-next-line
       setTitle(practice.title)
-      setStartDate(practice.startDate.split('T')[0] ?? '')
-      setEndDate(practice.endDate.split('T')[0] ?? '')
+      setStartDate(practice.startDate.substring(0, 16).replace('T', ' '))
+      setEndDate(practice.endDate.substring(0, 16).replace('T', ' '))
     }
   }, [practice])
 
@@ -56,9 +60,9 @@ export function EditPracticeModal({
       return
     }
 
-    if (startDate.length !== 10 || endDate.length !== 10) {
+    if (startDate.length !== 16 || endDate.length !== 16) {
       showToast({
-        body: '날짜를 끝까지 올바르게 입력해주세요. (예: 2023-01-01)',
+        body: '날짜와 시간을 끝까지 올바르게 입력해주세요. (예: 202301011430)',
         type: 'error',
       })
       return
@@ -75,8 +79,8 @@ export function EditPracticeModal({
     updatePractice.mutate(
       {
         title,
-        startDate: `${startDate}T00:00:00`,
-        endDate: `${endDate}T23:59:59`,
+        startDate: `${startDate.replace(' ', 'T')}:00`,
+        endDate: `${endDate.replace(' ', 'T')}:00`,
       },
       {
         onSuccess: () => {
@@ -103,7 +107,11 @@ export function EditPracticeModal({
           if (!open) onClose()
         }}
       />
-      <form onSubmit={handleSubmit} className="p-4">
+      <form
+        onSubmit={handleSubmit}
+        className="p-4"
+        style={{ overflowX: 'hidden', boxSizing: 'border-box' }}
+      >
         <FormLayout>
           <TextInput
             htmlName="title"
@@ -115,24 +123,24 @@ export function EditPracticeModal({
             }}
             placeholder="1주차"
           />
-          <div className="flex flex-col gap-4">
+          <div className="flex w-full flex-col gap-4 sm:flex-row">
             <TextInput
               htmlName="startDate"
               label="시작 일시"
               value={startDate}
               onChange={(val) => {
-                setStartDate(formatDateInput(val))
+                setStartDate(formatDateTimeInput(val))
               }}
-              placeholder="YYYYMMDD"
+              placeholder="YYYYMMDDHHMM"
             />
             <TextInput
               htmlName="endDate"
               label="종료 일시"
               value={endDate}
               onChange={(val) => {
-                setEndDate(formatDateInput(val))
+                setEndDate(formatDateTimeInput(val))
               }}
-              placeholder="YYYYMMDD"
+              placeholder="YYYYMMDDHHMM"
             />
           </div>
         </FormLayout>

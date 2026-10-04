@@ -25,6 +25,7 @@ export interface PracticeProblem {
   external_problem_id?: string
   name: string
   url?: string
+  difficulty?: string
 }
 
 export interface Practice {
@@ -60,6 +61,9 @@ export function mapPractice(response: PracticeResponse): Practice {
       if (p.url !== undefined) {
         prob.url = p.url
       }
+      if (p.difficulty !== undefined) {
+        prob.difficulty = p.difficulty
+      }
       return prob
     })
   }
@@ -91,18 +95,11 @@ export function usePracticeDetail(groupId: string, practiceId: string) {
   })
 }
 
-interface CreatePracticeProblem {
-  provider: string
-  externalProblemId: string
-  name: string
-  url?: string
-}
-
 interface CreatePracticeRequest {
   title: string
   startDate: string
   endDate: string
-  problems: CreatePracticeProblem[]
+  problemIds: string[]
 }
 
 export function useCreatePractice(groupId: string) {
@@ -115,12 +112,7 @@ export function useCreatePractice(groupId: string) {
         title: data.title,
         startDate: data.startDate,
         endDate: data.endDate,
-        problems: data.problems.map((p) => ({
-          provider: p.provider,
-          externalProblemId: p.externalProblemId,
-          name: p.name,
-          url: p.url,
-        })),
+        problemIds: data.problemIds,
       }
 
       const response = await apiClient<PracticeResponse>(
@@ -193,10 +185,7 @@ export function useUpdatePractice(groupId: string, practiceId: string) {
 }
 
 export interface AddPracticeProblemRequest {
-  provider: string
-  externalProblemId: string
-  name: string
-  url?: string
+  problemIds: string[]
 }
 
 export function useAddPracticeProblem(groupId: string, practiceId: string) {
@@ -205,10 +194,7 @@ export function useAddPracticeProblem(groupId: string, practiceId: string) {
   return useMutation({
     mutationFn: async (data: AddPracticeProblemRequest) => {
       const payload = {
-        provider: data.provider,
-        externalProblemId: data.externalProblemId,
-        name: data.name,
-        url: data.url,
+        problemIds: data.problemIds,
       }
       return apiClient(`/groups/${groupId}/practices/${practiceId}/problems`, {
         method: 'POST',
