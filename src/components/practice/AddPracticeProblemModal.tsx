@@ -1,10 +1,14 @@
 import { Button } from '@astryxdesign/core/Button'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
-import { TextInput } from '@astryxdesign/core/TextInput'
 import { useToast } from '@astryxdesign/core/Toast'
 import { useState } from 'react'
 import { useAddPracticeProblem } from '@/lib/api/practice'
+import { ProblemPickerDialog } from '@/components/problems/problem-picker-dialog'
+import type { Problem } from '@/lib/problems/problem-model'
+import { List, ListItem } from '@astryxdesign/core/List'
+import { Icon } from '@astryxdesign/core/Icon'
+import { Trash2, Plus } from 'lucide-react'
 
 interface AddPracticeProblemModalProps {
   groupId: string
@@ -19,20 +23,23 @@ export function AddPracticeProblemModal({
   isOpen,
   onClose,
 }: AddPracticeProblemModalProps) {
-  const [provider, setProvider] = useState('')
-  const [externalProblemId, setExternalProblemId] = useState('')
-  const [name, setName] = useState('')
-  const [url, setUrl] = useState('')
+  const [selectedProblems, setSelectedProblems] = useState<Problem[]>([])
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
 
   const showToast = useToast()
   const addProblem = useAddPracticeProblem(groupId, practiceId)
 
+  const handleClose = () => {
+    setSelectedProblems([])
+    onClose()
+  }
+
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!provider || !externalProblemId || !name || !url) {
+    if (selectedProblems.length === 0) {
       showToast({
-        body: '모든 문제 정보를 입력해주세요.',
+        body: '최소 하나의 문제를 선택해주세요.',
         type: 'error',
       })
       return
@@ -40,90 +47,106 @@ export function AddPracticeProblemModal({
 
     addProblem.mutate(
       {
-        provider,
-        externalProblemId,
-        name,
-        url,
+        problemIds: selectedProblems.map((p) => p.id),
       },
       {
         onSuccess: () => {
           showToast({ body: '문제가 성공적으로 등록되었습니다.' })
-          setProvider('')
-          setExternalProblemId('')
-          setName('')
-          setUrl('')
-          onClose()
+          handleClose()
         },
-        onError: () => {
-          showToast({ body: '문제 등록에 실패했습니다.', type: 'error' })
+        onError: (error: Error) => {
+          showToast({
+            body: error.message || '문제 등록에 실패했습니다.',
+            type: 'error',
+          })
         },
       },
     )
   }
 
   return (
-    <Dialog
-      isOpen={isOpen}
-      onOpenChange={(open: boolean) => {
-        if (!open) onClose()
-      }}
-    >
-      <DialogHeader
-        title="문제 추가하기"
+    <>
+      <Dialog
+        isOpen={isOpen}
         onOpenChange={(open: boolean) => {
-          if (!open) onClose()
+          if (!open) handleClose()
+        }}
+      >
+        <DialogHeader
+          title="문제 추가하기"
+          onOpenChange={(open: boolean) => {
+            if (!open) handleClose()
+          }}
+        />
+        <form onSubmit={handleSubmit} className="p-4">
+          <FormLayout>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">선택된 문제</span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  label="문제 추가"
+                  icon={<Icon icon={Plus} size="sm" />}
+                  onClick={() => {
+                    setIsPickerOpen(true)
+                  }}
+                />
+              </div>
+              {selectedProblems.length > 0 ? (
+                <List density="balanced" hasDividers>
+                  {selectedProblems.map((problem) => (
+                    <ListItem
+                      key={problem.id}
+                      label={problem.name}
+                      description={`${problem.provider} ${problem.externalId}`}
+                      endContent={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          icon={<Icon icon={Trash2} size="sm" />}
+                          onClick={() => {
+                            setSelectedProblems(
+                              selectedProblems.filter(
+                                (p) => p.id !== problem.id,
+                              ),
+                            )
+                          }}
+                        />
+                      }
+                    />
+                  ))}
+                </List>
+              ) : (
+                <div className="rounded-md border border-dashed py-4 text-center text-sm text-gray-500">
+                  선택된 문제가 없습니다.
+                </div>
+              )}
+            </div>
+          </FormLayout>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button label="취소" variant="secondary" onClick={handleClose} />
+            <Button
+              type="submit"
+              label="추가하기"
+              variant="primary"
+              isLoading={addProblem.isPending}
+            />
+          </div>
+        </form>
+      </Dialog>
+      <ProblemPickerDialog
+        isOpen={isPickerOpen}
+        onOpenChange={setIsPickerOpen}
+        selectedProblem={null}
+        onSelect={(problem) => {
+          if (!selectedProblems.find((p) => p.id === problem.id)) {
+            setSelectedProblems([...selectedProblems, problem])
+          }
         }}
       />
-      <form onSubmit={handleSubmit} className="p-4">
-        <FormLayout>
-          <TextInput
-            htmlName="provider"
-            label="플랫폼"
-            hasAutoFocus
-            value={provider}
-            onChange={(val) => {
-              setProvider(val)
-            }}
-            placeholder="플랫폼"
-          />
-          <TextInput
-            htmlName="externalProblemId"
-            label="문제 ID"
-            value={externalProblemId}
-            onChange={(val) => {
-              setExternalProblemId(val.replace(/\D/g, ''))
-            }}
-            placeholder="1000"
-          />
-          <TextInput
-            htmlName="name"
-            label="문제 이름"
-            value={name}
-            onChange={(val) => {
-              setName(val)
-            }}
-            placeholder="A+B"
-          />
-          <TextInput
-            htmlName="url"
-            label="문제 링크"
-            value={url}
-            onChange={(val) => {
-              setUrl(val)
-            }}
-            placeholder="https://"
-          />
-        </FormLayout>
-        <div className="mt-6 flex justify-end gap-2">
-          <Button label="취소" variant="secondary" onClick={onClose} />
-          <Button
-            type="submit"
-            label="추가하기"
-            variant="primary"
-            isLoading={addProblem.isPending}
-          />
-        </div>
-      </form>
-    </Dialog>
+    </>
   )
 }
