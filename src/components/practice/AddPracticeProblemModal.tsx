@@ -47,7 +47,13 @@ export function AddPracticeProblemModal({
 
     addProblem.mutate(
       {
-        problemIds: selectedProblems.map((p) => p.id),
+        problems: selectedProblems.map((p) => ({
+          provider: p.provider,
+          externalProblemId: p.externalId,
+          name: p.name,
+          url: p.url,
+          difficulty: p.difficulty ?? 'UNKNOWN',
+        })),
       },
       {
         onSuccess: () => {
