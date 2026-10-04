@@ -88,11 +88,13 @@ function PracticeDetailPage() {
                 <Text>로딩 중...</Text>
               </div>
             ) : practice ? (
-              <PracticeDetailTable
-                practice={practice}
-                isDeleteMode={isDeleteMode}
-                onDeleteProblem={handleDeleteProblem}
-              />
+              <div className="min-w-[800px]">
+                <PracticeDetailTable
+                  practice={practice}
+                  isDeleteMode={isDeleteMode}
+                  onDeleteProblem={handleDeleteProblem}
+                />
+              </div>
             ) : (
               <div className="text-secondary p-8 text-center">
                 <Text>연습 정보를 찾을 수 없습니다.</Text>
