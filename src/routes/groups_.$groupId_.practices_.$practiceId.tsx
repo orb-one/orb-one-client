@@ -82,7 +82,7 @@ function PracticeDetailPage() {
             </div>
           </div>
 
-          <div className="border-border bg-surface overflow-hidden rounded-lg border">
+          <div className="border-border bg-surface overflow-x-auto rounded-lg border">
             {isLoading ? (
               <div className="text-secondary p-8 text-center">
                 <Text>로딩 중...</Text>
