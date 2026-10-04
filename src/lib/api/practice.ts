@@ -99,7 +99,13 @@ interface CreatePracticeRequest {
   title: string
   startDate: string
   endDate: string
-  problemIds: string[]
+  problems: {
+    provider: string
+    externalProblemId: string
+    name: string
+    url?: string
+    difficulty?: string
+  }[]
 }
 
 export function useCreatePractice(groupId: string) {
@@ -112,7 +118,7 @@ export function useCreatePractice(groupId: string) {
         title: data.title,
         startDate: data.startDate,
         endDate: data.endDate,
-        problemIds: data.problemIds,
+        problems: data.problems,
       }
 
       const response = await apiClient<PracticeResponse>(
@@ -185,7 +191,13 @@ export function useUpdatePractice(groupId: string, practiceId: string) {
 }
 
 export interface AddPracticeProblemRequest {
-  problemIds: string[]
+  problems: {
+    provider: string
+    externalProblemId: string
+    name: string
+    url?: string
+    difficulty?: string
+  }[]
 }
 
 export function useAddPracticeProblem(groupId: string, practiceId: string) {
@@ -194,7 +206,7 @@ export function useAddPracticeProblem(groupId: string, practiceId: string) {
   return useMutation({
     mutationFn: async (data: AddPracticeProblemRequest) => {
       const payload = {
-        problemIds: data.problemIds,
+        problems: data.problems,
       }
       return apiClient(`/groups/${groupId}/practices/${practiceId}/problems`, {
         method: 'POST',

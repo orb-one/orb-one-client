@@ -91,7 +91,13 @@ export function CreatePracticeModal({
         title,
         startDate: `${startDate.replace(' ', 'T')}:00`,
         endDate: `${endDate.replace(' ', 'T')}:00`,
-        problemIds: selectedProblems.map((p) => p.id),
+        problems: selectedProblems.map((p) => ({
+          provider: p.provider,
+          externalProblemId: p.externalId,
+          name: p.name,
+          url: p.url,
+          difficulty: p.difficulty ?? 'UNKNOWN',
+        })),
       },
       {
         onSuccess: () => {
