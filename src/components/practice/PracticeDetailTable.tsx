@@ -71,7 +71,7 @@ export function PracticeDetailTable({
         {
           key: 'action',
           header: isDeleteMode ? '삭제' : '이동',
-          width: pixel(240),
+          width: pixel(230),
           renderCell: (prob: PracticeProblem) =>
             isDeleteMode ? (
               <Button

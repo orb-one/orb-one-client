@@ -45,29 +45,26 @@ export function AddPracticeProblemModal({
       return
     }
 
-    addProblem.mutate(
-      {
-        problems: selectedProblems.map((p) => ({
+    Promise.all(
+      selectedProblems.map((p) =>
+        addProblem.mutateAsync({
           provider: p.provider,
           externalProblemId: p.externalId,
           name: p.name,
           url: p.url,
           difficulty: p.difficulty ?? 'UNKNOWN',
-        })),
-      },
-      {
-        onSuccess: () => {
-          showToast({ body: '문제가 성공적으로 등록되었습니다.' })
-          handleClose()
-        },
-        onError: (error: Error) => {
-          showToast({
-            body: error.message || '문제 등록에 실패했습니다.',
-            type: 'error',
-          })
-        },
-      },
+        }),
+      ),
     )
+      .then(() => {
+        showToast({ body: '문제가 성공적으로 등록되었습니다.' })
+        handleClose()
+      })
+      .catch((error: unknown) => {
+        const message =
+          error instanceof Error ? error.message : '문제 추가에 실패했습니다.'
+        showToast({ body: message, type: 'error' })
+      })
   }
 
   return (
