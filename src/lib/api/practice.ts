@@ -204,11 +204,15 @@ export function useAddPracticeProblem(groupId: string, practiceId: string) {
   return useMutation({
     mutationFn: async (data: AddPracticeProblemRequest) => {
       const payload = {
-        provider: data.provider,
-        externalProblemId: data.externalProblemId,
-        name: data.name,
-        url: data.url,
-        difficulty: data.difficulty,
+        problems: [
+          {
+            provider: data.provider,
+            externalProblemId: data.externalProblemId,
+            name: data.name,
+            url: data.url,
+            difficulty: data.difficulty,
+          },
+        ],
       }
       return apiClient(`/groups/${groupId}/practices/${practiceId}/problems`, {
         method: 'POST',
