@@ -1,25 +1,22 @@
 import { Button } from '@astryxdesign/core/Button'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
+import { Selector } from '@astryxdesign/core/Selector'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { useToast } from '@astryxdesign/core/Toast'
 import { useState } from 'react'
 import { useCreatePractice } from '@/lib/api/practice'
+import { getReadableErrorMessage } from '@/lib/api/error-message'
+import {
+  formatDateInput,
+  validateAndFormatPracticeDates,
+} from '@/lib/practice/practice-date'
+import { PRACTICE_PROVIDER_OPTIONS } from '@/lib/practice/provider-options'
 
 interface CreatePracticeModalProps {
   groupId: string
   isOpen: boolean
   onClose: () => void
-}
-
-const formatDateInput = (value: string) => {
-  const digits = value.replace(/\D/g, '').slice(0, 8)
-  if (digits.length >= 7) {
-    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`
-  } else if (digits.length >= 5) {
-    return `${digits.slice(0, 4)}-${digits.slice(4)}`
-  }
-  return digits
 }
 
 export function CreatePracticeModal({
@@ -31,41 +28,44 @@ export function CreatePracticeModal({
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
-  // 첫 문제 등록을 위한 필수 상태들
-  const [provider, setProvider] = useState('')
+  // 첫 문제 등록을 위한 상태들
+  const [providerSelect, setProviderSelect] = useState('JUNGOL')
+  const [customProvider, setCustomProvider] = useState('')
   const [externalProblemId, setExternalProblemId] = useState('')
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
 
   const showToast = useToast()
-
   const createPractice = useCreatePractice(groupId)
 
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!title || !startDate || !endDate) {
-      showToast({ body: '연습 기본 정보를 모두 입력해주세요.', type: 'error' })
+    if (!title.trim()) {
+      showToast({ body: '연습 이름을 입력해주세요.', type: 'error' })
       return
     }
 
-    if (startDate.length !== 10 || endDate.length !== 10) {
+    const dateValidation = validateAndFormatPracticeDates(startDate, endDate)
+    if (!dateValidation.success) {
+      showToast({ body: dateValidation.error, type: 'error' })
+      return
+    }
+
+    const effectiveProvider =
+      providerSelect === 'CUSTOM'
+        ? customProvider.trim()
+        : providerSelect.trim()
+
+    if (!effectiveProvider) {
       showToast({
-        body: '날짜를 끝까지 올바르게 입력해주세요. (예: 2023-01-01)',
+        body: '플랫폼을 선택하거나 직접 입력해주세요.',
         type: 'error',
       })
       return
     }
 
-    if (startDate > endDate) {
-      showToast({
-        body: '종료 일시는 시작 일시보다 빠를 수 없습니다.',
-        type: 'error',
-      })
-      return
-    }
-
-    if (!provider || !externalProblemId || !name || !url) {
+    if (!externalProblemId.trim() || !name.trim() || !url.trim()) {
       showToast({
         body: '모든 문제 정보를 입력해주세요.',
         type: 'error',
@@ -75,15 +75,15 @@ export function CreatePracticeModal({
 
     createPractice.mutate(
       {
-        title,
-        startDate: `${startDate}T00:00:00`,
-        endDate: `${endDate}T23:59:59`,
+        title: title.trim(),
+        startDate: dateValidation.startDate,
+        endDate: dateValidation.endDate,
         problems: [
           {
-            provider,
-            externalProblemId,
-            name,
-            url,
+            provider: effectiveProvider,
+            externalProblemId: externalProblemId.trim(),
+            name: name.trim(),
+            url: url.trim(),
           },
         ],
       },
@@ -93,15 +93,18 @@ export function CreatePracticeModal({
           setTitle('')
           setStartDate('')
           setEndDate('')
-          setProvider('')
+          setProviderSelect('JUNGOL')
+          setCustomProvider('')
           setExternalProblemId('')
           setName('')
           setUrl('')
           onClose()
         },
         onError: (error: unknown) => {
-          const message =
-            error instanceof Error ? error.message : '연습 생성에 실패했습니다.'
+          const message = getReadableErrorMessage(
+            error,
+            '연습 생성에 실패했습니다.',
+          )
           showToast({ body: message, type: 'error' })
         },
       },
@@ -116,7 +119,8 @@ export function CreatePracticeModal({
           setTitle('')
           setStartDate('')
           setEndDate('')
-          setProvider('')
+          setProviderSelect('JUNGOL')
+          setCustomProvider('')
           setExternalProblemId('')
           setName('')
           setUrl('')
@@ -131,7 +135,8 @@ export function CreatePracticeModal({
             setTitle('')
             setStartDate('')
             setEndDate('')
-            setProvider('')
+            setProviderSelect('JUNGOL')
+            setCustomProvider('')
             setExternalProblemId('')
             setName('')
             setUrl('')
@@ -178,23 +183,37 @@ export function CreatePracticeModal({
 
           <hr className="my-4 border-gray-200" />
 
-          <TextInput
+          <Selector
             htmlName="provider"
             label="플랫폼"
-            value={provider}
+            value={providerSelect}
             onChange={(val) => {
-              setProvider(val)
+              setProviderSelect(val)
             }}
-            placeholder="플랫폼"
+            options={PRACTICE_PROVIDER_OPTIONS}
+            placeholder="플랫폼 선택"
           />
+
+          {providerSelect === 'CUSTOM' && (
+            <TextInput
+              htmlName="customProvider"
+              label="플랫폼 직접 입력"
+              value={customProvider}
+              onChange={(val) => {
+                setCustomProvider(val)
+              }}
+              placeholder="플랫폼 이름을 입력하세요"
+            />
+          )}
+
           <TextInput
             htmlName="externalProblemId"
             label="문제 ID"
             value={externalProblemId}
             onChange={(val) => {
-              setExternalProblemId(val.replace(/\D/g, ''))
+              setExternalProblemId(val)
             }}
-            placeholder="1000"
+            placeholder="예: 1000 또는 two-sum"
           />
           <TextInput
             htmlName="name"
