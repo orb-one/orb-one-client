@@ -13,6 +13,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '@astryxdesign/core/Toast'
 import { PageBackLink } from '@/components/navigation/page-back-link'
+import { getReadableErrorMessage } from '@/lib/api/error-message'
 
 export const Route = createFileRoute(
   '/groups_/$groupId_/practices_/$practiceId',
@@ -35,8 +36,12 @@ function PracticeDetailPage() {
       onSuccess: () => {
         showToast({ body: '문제가 삭제되었습니다.' })
       },
-      onError: () => {
-        showToast({ body: '문제 삭제에 실패했습니다.', type: 'error' })
+      onError: (error: unknown) => {
+        const message = getReadableErrorMessage(
+          error,
+          '문제 삭제에 실패했습니다.',
+        )
+        showToast({ body: message, type: 'error' })
       },
     })
   }
@@ -82,7 +87,7 @@ function PracticeDetailPage() {
             </div>
           </div>
 
-          <div className="border-border bg-surface overflow-hidden rounded-lg border">
+          <div className="border-border bg-surface overflow-x-auto rounded-lg border">
             {isLoading ? (
               <div className="text-secondary p-8 text-center">
                 <Text>로딩 중...</Text>

@@ -5,6 +5,7 @@ import type { Practice } from '@/lib/api/practice'
 import { Trash2 } from 'lucide-react'
 import { Icon } from '@astryxdesign/core/Icon'
 import { Link } from '@tanstack/react-router'
+import { sortPractices } from '@/lib/practice/sort-practices'
 
 interface PracticeListProps {
   practices: Practice[]
@@ -39,9 +40,11 @@ export function PracticeList({
     )
   }
 
+  const sortedPractices = sortPractices(practices)
+
   return (
     <Table<Practice & Record<string, unknown>>
-      data={practices as (Practice & Record<string, unknown>)[]}
+      data={sortedPractices as (Practice & Record<string, unknown>)[]}
       idKey="id"
       columns={[
         {
