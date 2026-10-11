@@ -213,7 +213,7 @@ export function CreatePracticeModal({
             onChange={(val) => {
               setExternalProblemId(val)
             }}
-            placeholder="예: 1000 또는 two-sum"
+            placeholder="예: 1000"
           />
           <TextInput
             htmlName="name"
