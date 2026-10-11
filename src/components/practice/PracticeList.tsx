@@ -5,6 +5,7 @@ import type { Practice } from '@/lib/api/practice'
 import { Trash2 } from 'lucide-react'
 import { Icon } from '@astryxdesign/core/Icon'
 import { Link } from '@tanstack/react-router'
+import { sortPractices } from '@/lib/practice/sort-practices'
 
 interface PracticeListProps {
   practices: Practice[]
@@ -39,21 +40,7 @@ export function PracticeList({
     )
   }
 
-  const sortedPractices = [...practices].sort((a, b) => {
-    const now = new Date().getTime()
-    const aStart = new Date(a.startDate).getTime()
-    const aEnd = new Date(a.endDate).getTime()
-    const bStart = new Date(b.startDate).getTime()
-    const bEnd = new Date(b.endDate).getTime()
-
-    const aOngoing = aStart <= now && now <= aEnd
-    const bOngoing = bStart <= now && now <= bEnd
-
-    if (aOngoing && !bOngoing) return -1
-    if (!aOngoing && bOngoing) return 1
-
-    return bStart - aStart // Newest first
-  })
+  const sortedPractices = sortPractices(practices)
 
   return (
     <Table<Practice & Record<string, unknown>>
