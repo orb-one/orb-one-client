@@ -10,6 +10,7 @@ import type {
   ProblemSetDetailResponse,
 } from '@/lib/api/problem-sets'
 
+import { mockProblems } from './problem-handlers'
 import { mockProblemSetDetails, mockProblemSetList } from './problem-sets'
 
 export const problemSetHandlers = [
@@ -86,14 +87,21 @@ export const problemSetHandlers = [
     const newProblemSetId = crypto.randomUUID()
     const now = new Date().toISOString()
 
-    const createdProblems: ProblemResponse[] = body.problems.map((p) => ({
-      problemId: crypto.randomUUID(),
-      provider: p.provider,
-      externalProblemId: p.externalProblemId,
-      name: p.name,
-      url: p.url,
-      difficulty: p.difficulty,
-    }))
+    const createdProblems: ProblemResponse[] = []
+
+    // 등록된 문제를 UUID로 조회
+    for (const problemId of body.problemIds) {
+      const problem = mockProblems.find((item) => item.problemId === problemId)
+
+      if (!problem) {
+        return HttpResponse.json(
+          { message: '등록된 문제를 찾을 수 없습니다.' },
+          { status: 404 },
+        )
+      }
+
+      createdProblems.push({ ...problem })
+    }
 
     mockProblemSetList.unshift({
       problemSetId: newProblemSetId,
