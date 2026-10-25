@@ -13,6 +13,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '@astryxdesign/core/Toast'
 import { PageBackLink } from '@/components/navigation/page-back-link'
+import { getReadableErrorMessage } from '@/lib/api/error-message'
 
 export const Route = createFileRoute(
   '/groups_/$groupId_/practices_/$practiceId',
@@ -30,15 +31,17 @@ function PracticeDetailPage() {
 
   const removeProblem = useRemovePracticeProblem(groupId, practiceId)
 
-  const handleDeleteProblem = (problemId: string) => {
-    removeProblem.mutate(problemId, {
-      onSuccess: () => {
-        showToast({ body: '문제가 삭제되었습니다.' })
-      },
-      onError: () => {
-        showToast({ body: '문제 삭제에 실패했습니다.', type: 'error' })
-      },
-    })
+  const handleDeleteProblem = async (problemId: string) => {
+    try {
+      await removeProblem.mutateAsync(problemId)
+      showToast({ body: '문제가 삭제되었습니다.' })
+    } catch (error) {
+      const message = getReadableErrorMessage(
+        error,
+        '문제 삭제에 실패했습니다.',
+      )
+      showToast({ body: message, type: 'error' })
+    }
   }
 
   return (
@@ -82,7 +85,7 @@ function PracticeDetailPage() {
             </div>
           </div>
 
-          <div className="border-border bg-surface overflow-hidden rounded-lg border">
+          <div className="border-border bg-surface overflow-x-auto rounded-lg border">
             {isLoading ? (
               <div className="text-secondary p-8 text-center">
                 <Text>로딩 중...</Text>
@@ -91,7 +94,9 @@ function PracticeDetailPage() {
               <PracticeDetailTable
                 practice={practice}
                 isDeleteMode={isDeleteMode}
-                onDeleteProblem={handleDeleteProblem}
+                onDeleteProblem={(problemId) => {
+                  void handleDeleteProblem(problemId)
+                }}
               />
             ) : (
               <div className="text-secondary p-8 text-center">

@@ -170,12 +170,21 @@ export const practiceHandlers = [
         return HttpResponse.json({ message: 'Not found' }, { status: 404 })
       }
 
+      const problemData =
+        Array.isArray(body.problems) && body.problems.length > 0
+          ? body.problems[0]
+          : body
+
       const newProblem = {
         problemId: String(Date.now()),
-        provider: body.provider,
-        externalProblemId: body.external_problem_id,
-        name: body.name,
-        url: body.url || '',
+        provider: problemData.provider || '',
+        externalProblemId:
+          problemData.externalProblemId ??
+          problemData.external_problem_id ??
+          '',
+        name: problemData.name || '',
+        url: problemData.url || '',
+        difficulty: problemData.difficulty,
       }
 
       const practice = currentPractices[index]!

@@ -10,6 +10,7 @@ import { useToast } from '@astryxdesign/core/Toast'
 import { Plus, Trash2 } from 'lucide-react'
 
 import { useGroupPractices, useDeletePractice } from '@/lib/api/practice'
+import { getReadableErrorMessage } from '@/lib/api/error-message'
 import { PracticeList } from '@/components/practice/PracticeList'
 import { CreatePracticeModal } from '@/components/practice/CreatePracticeModal'
 import { EditPracticeModal } from '@/components/practice/EditPracticeModal'
@@ -35,8 +36,12 @@ export function PracticeTab({ groupId }: PracticeTabProps) {
       onSuccess: () => {
         showToast({ body: '연습이 삭제되었습니다.' })
       },
-      onError: () => {
-        showToast({ body: '연습 삭제에 실패했습니다.', type: 'error' })
+      onError: (error: unknown) => {
+        const message = getReadableErrorMessage(
+          error,
+          '연습 삭제에 실패했습니다.',
+        )
+        showToast({ body: message, type: 'error' })
       },
     })
   }
