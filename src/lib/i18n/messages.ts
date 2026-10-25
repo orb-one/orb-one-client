@@ -6,6 +6,7 @@ export const messages = {
   ko: {
     common: {
       productName: '오브원',
+      fieldLabels: { required: '필수', optional: '선택' },
       rateLimitError: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
     },
     navigation: {
@@ -230,8 +231,6 @@ export const messages = {
         languageLabel: '프로그래밍 언어',
         languagePlaceholder: '언어를 선택하세요',
         codeLabel: '소스 코드',
-        requiredLabel: '필수',
-        optionalLabel: '선택',
         codePlaceholder: '풀이 코드를 입력하세요',
         codeDescription: '제출할 소스 코드를 그대로 입력해 주세요.',
         solutionDescriptionLabel: '풀이 설명',
@@ -321,7 +320,6 @@ export const messages = {
         descriptionPreview: '미리보기',
         descriptionModeLabel: '풀이 설명 보기 방식',
         descriptionPreviewEmpty: '미리볼 내용이 없습니다.',
-        optionalLabel: '선택',
         solvedLabel: '풀이 완료',
         solvedDescription: '정답으로 해결한 풀이인지 표시합니다.',
         memoryUsageLabel: '메모리 사용량',
@@ -364,6 +362,7 @@ export const messages = {
   en: {
     common: {
       productName: 'Orb One',
+      fieldLabels: { required: 'Required', optional: 'Optional' },
       rateLimitError: 'Too many requests. Please try again shortly.',
     },
     navigation: {
@@ -589,8 +588,6 @@ export const messages = {
         languageLabel: 'Programming language',
         languagePlaceholder: 'Choose a language',
         codeLabel: 'Source code',
-        requiredLabel: 'required',
-        optionalLabel: 'Optional',
         codePlaceholder: 'Enter your solution code',
         codeDescription:
           'Enter the source code exactly as you want to save it.',
@@ -683,7 +680,6 @@ export const messages = {
         descriptionPreview: 'Preview',
         descriptionModeLabel: 'Solution notes view',
         descriptionPreviewEmpty: 'There is nothing to preview.',
-        optionalLabel: 'Optional',
         solvedLabel: 'Solved',
         solvedDescription: 'Mark whether this solution was accepted.',
         memoryUsageLabel: 'Memory usage',

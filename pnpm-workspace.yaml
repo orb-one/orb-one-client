@@ -1,0 +1,2 @@
+patchedDependencies:
+  '@astryxdesign/core@0.1.6': patches/@astryxdesign__core@0.1.6.patch

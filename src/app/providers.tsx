@@ -1,3 +1,4 @@
+import { FieldLabelProvider } from '@astryxdesign/core/Field'
 import { LayerProvider } from '@astryxdesign/core/Layer'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { LinkProvider } from '@astryxdesign/core/Link'
@@ -8,16 +9,21 @@ import { useState, type PropsWithChildren } from 'react'
 
 import { AstryxRouterLink } from '@/app/astryx-router-link'
 import { createAppQueryClient } from '@/app/query-client'
+import { useI18n } from '@/lib/i18n/use-translations'
 
 export function AppProviders({ children }: PropsWithChildren) {
+  const { t } = useI18n()
+
   return (
-    <Theme theme={neutralTheme} mode="system">
-      <LayerProvider toast={{ position: 'bottomEnd' }}>
-        <LinkProvider component={AstryxRouterLink}>
-          <AppQueryProvider>{children}</AppQueryProvider>
-        </LinkProvider>
-      </LayerProvider>
-    </Theme>
+    <FieldLabelProvider value={t.common.fieldLabels}>
+      <Theme theme={neutralTheme} mode="system">
+        <LayerProvider toast={{ position: 'bottomEnd' }}>
+          <LinkProvider component={AstryxRouterLink}>
+            <AppQueryProvider>{children}</AppQueryProvider>
+          </LinkProvider>
+        </LayerProvider>
+      </Theme>
+    </FieldLabelProvider>
   )
 }
 

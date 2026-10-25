@@ -404,6 +404,14 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   const codeEditor = page.getByRole('textbox', { name: /소스 코드/ })
   const codeInput = page.locator('input[name="code"]')
 
+  await expect(languageSelector).toHaveAccessibleName(/프로그래밍 언어.*필수/)
+  await expect(languageSelector).toHaveAttribute('aria-required', 'true')
+  await expect(codeEditor).toHaveAccessibleName(/소스 코드.*필수/)
+  await expect(codeEditor).toHaveAttribute('aria-required', 'true')
+  await expect(
+    page.getByRole('spinbutton', { name: /메모리 사용량.*선택/ }),
+  ).toBeVisible()
+
   await codeEditor.click()
   await page.keyboard.press('Tab')
 
@@ -500,7 +508,7 @@ test('edits fields and preserves an author solution language alias', async ({
   const description = page.getByRole('textbox', { name: /풀이 설명/ })
 
   await expect(
-    page.getByRole('combobox', { name: '프로그래밍 언어' }),
+    page.getByRole('combobox', { name: /프로그래밍 언어/ }),
   ).toHaveText('PyPy3')
   const preview = page.getByRole('region', { name: '미리보기' })
   await expect(description).toHaveValue(editableSolution.description ?? '')

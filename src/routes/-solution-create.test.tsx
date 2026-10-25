@@ -1,3 +1,4 @@
+import { FieldLabelProvider } from '@astryxdesign/core/Field'
 import { LayerProvider } from '@astryxdesign/core/Layer'
 import { Theme } from '@astryxdesign/core/theme'
 import { neutralTheme } from '@astryxdesign/theme-neutral/built'
@@ -11,6 +12,7 @@ import { AuthSessionExpiredError } from '@/lib/api/client'
 import { getProblem, getProblems } from '@/lib/api/problems'
 import { createSolution } from '@/lib/api/solutions'
 import { useAppStore } from '@/stores/use-app-store'
+import { messages } from '@/lib/i18n/messages'
 
 const navigate = vi.hoisted(() => vi.fn())
 const routeSearch = vi.hoisted<{ current: { problemId?: string } }>(() => ({
@@ -243,8 +245,8 @@ it('shows localized optional labels', () => {
 
   expect(screen.queryByText('Optional')).not.toBeInTheDocument()
   expect(screen.getByLabelText('풀이 설명 (선택)')).toBeInTheDocument()
-  expect(screen.getByLabelText('메모리 사용량 (선택)')).toBeInTheDocument()
-  expect(screen.getByLabelText('실행 시간 (선택)')).toBeInTheDocument()
+  expect(screen.getByLabelText(/메모리 사용량.*선택/)).toBeInTheDocument()
+  expect(screen.getByLabelText(/실행 시간.*선택/)).toBeInTheDocument()
 })
 
 it.each([
@@ -359,7 +361,9 @@ function renderRoute(children: ReactNode) {
     <Theme theme={neutralTheme} mode="light">
       <LayerProvider>
         <QueryClientProvider client={queryClient}>
-          {children}
+          <FieldLabelProvider value={messages.ko.common.fieldLabels}>
+            {children}
+          </FieldLabelProvider>
         </QueryClientProvider>
       </LayerProvider>
     </Theme>,

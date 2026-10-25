@@ -307,6 +307,7 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
           <FormLayout>
             <Selector
               label={copy.languageLabel}
+              isRequired
               value={language}
               onChange={(nextLanguage) => {
                 setLanguage(nextLanguage)
@@ -354,7 +355,7 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
             </Suspense>
 
             <SolutionMarkdownEditor
-              label={`${copy.descriptionLabel} (${copy.optionalLabel})`}
+              label={`${copy.descriptionLabel} (${t.common.fieldLabels.optional})`}
               value={description}
               onChange={(nextDescription) => {
                 setDescription(nextDescription)

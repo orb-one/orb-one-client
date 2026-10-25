@@ -1,3 +1,4 @@
+import { FieldLabelProvider } from '@astryxdesign/core/Field'
 import { LayerProvider } from '@astryxdesign/core/Layer'
 import { Theme } from '@astryxdesign/core/theme'
 import { neutralTheme } from '@astryxdesign/theme-neutral/built'
@@ -18,6 +19,7 @@ import { ApiError, AuthSessionExpiredError } from '@/lib/api/client'
 import { getSolution, updateSolution } from '@/lib/api/solutions'
 import type { SolutionDetail } from '@/lib/solutions/solution-model'
 import { useAppStore } from '@/stores/use-app-store'
+import { messages } from '@/lib/i18n/messages'
 
 const navigate = vi.hoisted(() => vi.fn())
 
@@ -76,7 +78,7 @@ it('loads every replaceable field and preserves it on submit', async () => {
     screen.getByRole('link', { name: '풀이 상세로 돌아가기' }),
   ).toHaveAttribute('href', '/solutions/solution-1')
   expect(
-    screen.getByRole('combobox', { name: '프로그래밍 언어' }),
+    screen.getByRole('combobox', { name: /프로그래밍 언어/ }),
   ).toHaveTextContent('Java')
   const descriptionInput = screen.getByRole('textbox', { name: /풀이 설명/ })
   expect(descriptionInput).toHaveValue('기존 설명')
@@ -132,7 +134,7 @@ it('preserves a saved language alias and draft state without exposing draft cont
   renderRoute(<SolutionEditPage solutionId="solution-1" />)
 
   expect(
-    await screen.findByRole('combobox', { name: '프로그래밍 언어' }),
+    await screen.findByRole('combobox', { name: /프로그래밍 언어/ }),
   ).toHaveTextContent('PyPy3')
   expect(
     screen.queryByRole('checkbox', { name: /임시 저장/ }),
@@ -292,7 +294,9 @@ function renderRoute(children: ReactNode) {
     <Theme theme={neutralTheme} mode="light">
       <LayerProvider>
         <QueryClientProvider client={queryClient}>
-          {children}
+          <FieldLabelProvider value={messages.ko.common.fieldLabels}>
+            {children}
+          </FieldLabelProvider>
         </QueryClientProvider>
       </LayerProvider>
     </Theme>,

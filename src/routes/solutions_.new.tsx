@@ -222,7 +222,8 @@ export function SolutionCreatePage() {
 
             <FormLayout>
               <Field
-                label={`${copy.problemLabel} (${copy.requiredLabel})`}
+                label={copy.problemLabel}
+                isRequired
                 inputID="solution-problem-picker"
                 description={copy.problemSelectionDescription}
                 {...(problemFieldError
@@ -296,7 +297,8 @@ export function SolutionCreatePage() {
               </Field>
 
               <Selector
-                label={`${copy.languageLabel} (${copy.requiredLabel})`}
+                label={copy.languageLabel}
+                isRequired
                 htmlName="language"
                 value={language}
                 onChange={(nextLanguage) => {
@@ -322,7 +324,7 @@ export function SolutionCreatePage() {
               >
                 <SolutionCodeEditor
                   ref={codeInputRef}
-                  label={`${copy.codeLabel} (${copy.requiredLabel})`}
+                  label={copy.codeLabel}
                   htmlName="code"
                   value={code}
                   language={language}
@@ -345,7 +347,7 @@ export function SolutionCreatePage() {
               </Suspense>
 
               <SolutionMarkdownEditor
-                label={`${copy.solutionDescriptionLabel} (${copy.optionalLabel})`}
+                label={`${copy.solutionDescriptionLabel} (${t.common.fieldLabels.optional})`}
                 value={description}
                 onChange={(nextDescription) => {
                   setDescription(nextDescription)
@@ -374,7 +376,8 @@ export function SolutionCreatePage() {
               <FormLayout direction="horizontal">
                 <NumberInput
                   ref={memoryUsageInputRef}
-                  label={`${copy.memoryUsageLabel} (${copy.optionalLabel})`}
+                  label={copy.memoryUsageLabel}
+                  isOptional
                   htmlName="memoryUsage"
                   description={copy.memoryUsageDescription}
                   value={memoryUsage}
@@ -409,7 +412,8 @@ export function SolutionCreatePage() {
                 />
                 <NumberInput
                   ref={timeElapsedInputRef}
-                  label={`${copy.timeElapsedLabel} (${copy.optionalLabel})`}
+                  label={copy.timeElapsedLabel}
+                  isOptional
                   htmlName="timeElapsed"
                   description={copy.timeElapsedDescription}
                   value={timeElapsed}
