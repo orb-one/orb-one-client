@@ -111,11 +111,11 @@ export function GroupDetailPage() {
 
           {/* 탭 메인 컨테이너 */}
           <Section
+            data-testid="group-tab-content"
             width="100%"
             padding={6}
             style={{
-              border:
-                '1px solid var(--astryxdesign-color-border-subtle, #e2e8f0)',
+              border: 'var(--border-width) solid var(--color-border)',
               borderRadius: '12px',
             }}
           >

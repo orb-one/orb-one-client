@@ -1,5 +1,6 @@
 import { Button } from '@astryxdesign/core/Button'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
+import { Divider } from '@astryxdesign/core/Divider'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
 import { Selector } from '@astryxdesign/core/Selector'
 import { TextInput } from '@astryxdesign/core/TextInput'
@@ -181,7 +182,7 @@ export function CreatePracticeModal({
             />
           </div>
 
-          <hr className="my-4 border-gray-200" />
+          <Divider className="my-4" />
 
           <Selector
             htmlName="provider"
