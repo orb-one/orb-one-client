@@ -6,6 +6,7 @@ import { EmptyState } from '@astryxdesign/core/EmptyState'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
+import { Link } from '@astryxdesign/core/Link'
 import { Pagination } from '@astryxdesign/core/Pagination'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
@@ -303,16 +304,18 @@ export function ProblemSetDetailPage() {
                 return (
                   <div
                     key={problem.problemId}
+                    data-testid="problem-set-problem"
+                    className="bg-surface"
                     style={{
-                      backgroundColor: 'var(--color-bg-surface, #ffffff)',
                       border: isExpanded
-                        ? '1px solid var(--color-border-accent, #3b82f6)'
-                        : '1px solid var(--color-border-subtle, #e2e8f0)',
-                      borderRadius: '12px',
+                        ? 'var(--border-width) solid var(--color-accent)'
+                        : 'var(--border-width) solid var(--color-border)',
+                      borderRadius: 'var(--radius-container)',
                       boxShadow: isExpanded
-                        ? '0 4px 12px rgba(0, 0, 0, 0.05)'
-                        : '0 1px 3px rgba(0, 0, 0, 0.02)',
-                      transition: 'all 0.2s ease-in-out',
+                        ? 'var(--shadow-med)'
+                        : 'var(--shadow-low)',
+                      transition:
+                        'border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard)',
                       overflow: 'hidden',
                     }}
                   >
@@ -337,9 +340,9 @@ export function ProblemSetDetailPage() {
                         {/* 번호 + 플랫폼 + 문제명 + 번호 */}
                         <HStack vAlign="center" gap={3} style={{ minWidth: 0 }}>
                           <span
+                            className="text-secondary"
                             style={{
                               fontWeight: 700,
-                              color: 'var(--color-text-secondary, #64748b)',
                               fontSize: '14px',
                               minWidth: '24px',
                             }}
@@ -351,8 +354,8 @@ export function ProblemSetDetailPage() {
                             <strong>{problem.name}</strong>
                           </Text>
                           <span
+                            className="text-secondary"
                             style={{
-                              color: 'var(--color-text-tertiary, #94a3b8)',
                               fontSize: '13px',
                             }}
                           >
@@ -387,11 +390,11 @@ export function ProblemSetDetailPage() {
                             }}
                           />
                           <div
+                            className="text-secondary"
                             style={{
                               padding: '4px',
                               display: 'flex',
                               alignItems: 'center',
-                              color: 'var(--color-text-secondary, #64748b)',
                             }}
                           >
                             <Icon
@@ -407,11 +410,11 @@ export function ProblemSetDetailPage() {
                     {/* 문제 상세 */}
                     {isExpanded && (
                       <div
+                        className="bg-muted"
                         style={{
                           padding: '16px 20px',
-                          backgroundColor: 'var(--color-bg-subtle, #f8fafc)',
                           borderTop:
-                            '1px solid var(--color-border-subtle, #e2e8f0)',
+                            'var(--border-width) solid var(--color-border)',
                         }}
                       >
                         <VStack gap={3} width="100%">
@@ -422,15 +425,15 @@ export function ProblemSetDetailPage() {
                             vAlign="center"
                           >
                             <VStack gap={0.5}>
-                              <Text type="supporting" color="secondary">
+                              <Text type="supporting" color="primary">
                                 플랫폼
                               </Text>
                               <Text type="body">
                                 <code
+                                  className="bg-surface"
                                   style={{
                                     fontSize: '12px',
                                     padding: '2px 6px',
-                                    backgroundColor: '#e2e8f0',
                                     borderRadius: '4px',
                                   }}
                                 >
@@ -440,15 +443,15 @@ export function ProblemSetDetailPage() {
                             </VStack>
 
                             <VStack gap={0.5}>
-                              <Text type="supporting" color="secondary">
+                              <Text type="supporting" color="primary">
                                 문제 번호
                               </Text>
                               <Text type="body">
                                 <code
+                                  className="bg-surface"
                                   style={{
                                     fontSize: '12px',
                                     padding: '2px 6px',
-                                    backgroundColor: '#e2e8f0',
                                     borderRadius: '4px',
                                   }}
                                 >
@@ -458,7 +461,7 @@ export function ProblemSetDetailPage() {
                             </VStack>
 
                             <VStack gap={0.5}>
-                              <Text type="supporting" color="secondary">
+                              <Text type="supporting" color="primary">
                                 난이도 수준
                               </Text>
                               <HStack vAlign="center" gap={1}>
@@ -479,56 +482,48 @@ export function ProblemSetDetailPage() {
                           {/* 외부 문제 링크 */}
                           {problem.url ? (
                             <div
+                              className="bg-surface"
                               style={{
                                 marginTop: '4px',
                                 padding: '10px 14px',
-                                backgroundColor: '#ffffff',
                                 borderRadius: '8px',
                                 border:
-                                  '1px solid var(--color-border-subtle, #e2e8f0)',
+                                  'var(--border-width) solid var(--color-border)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                gap: 'var(--spacing-3)',
                               }}
                             >
                               <HStack
                                 gap={2}
                                 vAlign="center"
-                                style={{ minWidth: 0 }}
+                                className="min-w-0 flex-1"
                               >
                                 <Icon
                                   icon={ExternalLink}
                                   size="sm"
                                   color="accent"
                                 />
-                                <Text type="body" color="secondary">
-                                  <span
-                                    style={{
-                                      maxWidth: '500px',
-                                      display: 'inline-block',
-                                      whiteSpace: 'nowrap',
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
-                                      verticalAlign: 'bottom',
-                                    }}
-                                  >
-                                    {problem.url}
-                                  </span>
+                                <Text
+                                  type="body"
+                                  color="secondary"
+                                  maxLines={1}
+                                  className="min-w-0"
+                                >
+                                  {problem.url}
                                 </Text>
                               </HStack>
-                              <a
+                              <Link
                                 href={problem.url}
-                                target="_blank"
-                                rel="noreferrer noopener"
-                                style={{
-                                  color: '#2563eb',
-                                  fontSize: '13px',
-                                  fontWeight: 600,
-                                  textDecoration: 'none',
-                                }}
+                                isExternalLink
+                                isStandalone
+                                newTabLabel="(새 탭에서 열림)"
+                                className="shrink-0"
                               >
-                                문제 원문 열기 ↗
-                              </a>
+                                문제 원문 열기
+                              </Link>
                             </div>
                           ) : null}
                         </VStack>
