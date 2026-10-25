@@ -182,35 +182,58 @@ export const problemSetHandlers = [
         groupId: string
         problemSetId: string
       }
+
       const body = (await request.json()) as AddProblemsRequest
-      const now = new Date().toISOString()
-
-      const newProblems: ProblemResponse[] = body.problems.map((p) => ({
-        problemId: crypto.randomUUID(),
-        provider: p.provider,
-        externalProblemId: p.externalProblemId,
-        name: p.name,
-        url: p.url,
-        difficulty: p.difficulty,
-      }))
-
       const detail = mockProblemSetDetails[problemSetId]
-      if (detail) {
-        detail.problems = [...detail.problems, ...newProblems]
-        detail.updatedAt = now
+
+      if (detail?.groupId !== groupId) {
+        return HttpResponse.json(
+          { message: '문제집을 찾을 수 없습니다.' },
+          { status: 404 },
+        )
       }
 
-      const summary = mockProblemSetList.find(
-        (ps) => ps.problemSetId === problemSetId,
+      const newProblems: ProblemResponse[] = []
+      const existingProblemIds = new Set(
+        detail.problems.map((problem) => problem.problemId),
       )
+
+      // 모든 UUID를 확인한 뒤 문제집에 반영합니다.
+      for (const problemId of [...new Set(body.problemIds)]) {
+        const problem = mockProblems.find(
+          (item) => item.problemId === problemId,
+        )
+
+        if (!problem) {
+          return HttpResponse.json(
+            { message: '등록된 문제를 찾을 수 없습니다.' },
+            { status: 404 },
+          )
+        }
+
+        // 이미 연결된 문제는 중복 추가하지 않습니다.
+        if (!existingProblemIds.has(problemId)) {
+          newProblems.push({ ...problem })
+        }
+      }
+
+      const now = new Date().toISOString()
+
+      detail.problems = [...detail.problems, ...newProblems]
+      detail.updatedAt = now
+
+      const summary = mockProblemSetList.find(
+        (item) => item.problemSetId === problemSetId,
+      )
+
       if (summary) {
-        summary.problemCount += newProblems.length
+        summary.problemCount = detail.problems.length
       }
 
       const responseData: AddProblemsResponse = {
         problemSetId,
         groupId,
-        problems: detail ? detail.problems : newProblems,
+        problems: detail.problems,
         updatedAt: now,
       }
 

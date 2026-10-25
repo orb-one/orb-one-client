@@ -81,7 +81,7 @@ export interface ProblemSetCreateResponse {
 
 // 7) [문제집 내 문제 추가 요청 본문 DTO] (POST /groups/{groupId}/problem-sets/{problemSetId}/problems)
 export interface AddProblemsRequest {
-  problems: ProblemCreateItemDto[]
+  problemIds: string[]
 }
 
 // 8) [문제집 내 문제 추가 응답 본문 DTO] (POST /groups/{groupId}/problem-sets/{problemSetId}/problems)
@@ -247,17 +247,9 @@ export function toProblemSetCreateRequest(
 }
 
 // 6) 문제집 내 문제 추가 요청 폼 -> 문제집 내 문제 추가 요청 DTO 변환
-export function toAddProblemsRequest(
-  problems: ProblemFormItem[],
-): AddProblemsRequest {
+export function toAddProblemsRequest(problemIds: string[]): AddProblemsRequest {
   return {
-    problems: problems.map((p) => ({
-      provider: p.provider.trim(),
-      externalProblemId: p.externalProblemId.trim(),
-      name: p.name.trim(),
-      url: p.url.trim(),
-      difficulty: p.difficulty.trim(),
-    })),
+    problemIds: [...new Set(problemIds)],
   }
 }
 
