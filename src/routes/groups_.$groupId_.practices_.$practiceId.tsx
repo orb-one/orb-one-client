@@ -31,19 +31,17 @@ function PracticeDetailPage() {
 
   const removeProblem = useRemovePracticeProblem(groupId, practiceId)
 
-  const handleDeleteProblem = (problemId: string) => {
-    removeProblem.mutate(problemId, {
-      onSuccess: () => {
-        showToast({ body: '문제가 삭제되었습니다.' })
-      },
-      onError: (error: unknown) => {
-        const message = getReadableErrorMessage(
-          error,
-          '문제 삭제에 실패했습니다.',
-        )
-        showToast({ body: message, type: 'error' })
-      },
-    })
+  const handleDeleteProblem = async (problemId: string) => {
+    try {
+      await removeProblem.mutateAsync(problemId)
+      showToast({ body: '문제가 삭제되었습니다.' })
+    } catch (error) {
+      const message = getReadableErrorMessage(
+        error,
+        '문제 삭제에 실패했습니다.',
+      )
+      showToast({ body: message, type: 'error' })
+    }
   }
 
   return (
@@ -96,7 +94,9 @@ function PracticeDetailPage() {
               <PracticeDetailTable
                 practice={practice}
                 isDeleteMode={isDeleteMode}
-                onDeleteProblem={handleDeleteProblem}
+                onDeleteProblem={(problemId) => {
+                  void handleDeleteProblem(problemId)
+                }}
               />
             ) : (
               <div className="text-secondary p-8 text-center">
