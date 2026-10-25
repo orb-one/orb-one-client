@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 const apiBaseUrl = process.env.VITE_API_BASE_URL
 if (!apiBaseUrl) {
@@ -66,6 +66,16 @@ function apiUrl(path: string) {
   return new URL(path.replace(/^\/+/, ''), apiBase).href
 }
 
+function mockPracticeDetail(page: Page, detail: unknown) {
+  return page.route(apiUrl(practicePath), (route) => {
+    if (route.request().isNavigationRequest()) {
+      return route.fallback()
+    }
+
+    return route.fulfill({ json: detail })
+  })
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route(apiUrl('/users/me'), (route) =>
     route.fulfill({
@@ -81,9 +91,7 @@ test.beforeEach(async ({ page }) => {
       json: { token: 'practice-e2e-csrf', headerName: 'X-XSRF-TOKEN' },
     }),
   )
-  await page.route(apiUrl(practicePath), (route) =>
-    route.fulfill({ json: practice }),
-  )
+  await mockPracticeDetail(page, practice)
 })
 
 for (const error of removalErrors) {
@@ -93,11 +101,10 @@ for (const error of removalErrors) {
     const isLastProblem = error.code === 'PRACTICE_MINIMUM_PROBLEM_REQUIRED'
     if (isLastProblem) {
       await page.setViewportSize({ width: 390, height: 844 })
-      await page.route(apiUrl(practicePath), (route) =>
-        route.fulfill({
-          json: { ...practice, problems: problems.slice(0, 1) },
-        }),
-      )
+      await mockPracticeDetail(page, {
+        ...practice,
+        problems: problems.slice(0, 1),
+      })
     }
     await page.route(apiUrl(`${practicePath}/problems/problem-1`), (route) =>
       route.fulfill({
@@ -134,9 +141,7 @@ test('shows a success message and refreshes the problem list after deletion', as
   await page.route(
     apiUrl(`${practicePath}/problems/problem-1`),
     async (route) => {
-      await page.route(apiUrl(practicePath), (detailRoute) =>
-        detailRoute.fulfill({ json: { ...practice, problems: [problems[1]] } }),
-      )
+      await mockPracticeDetail(page, { ...practice, problems: [problems[1]] })
       await route.fulfill({ status: 204 })
     },
   )
