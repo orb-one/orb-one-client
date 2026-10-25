@@ -36,6 +36,8 @@ export interface CurrentUserResponse {
   id: string
   email: string
   nickname: string
+  // 권한을 반환하지 않는 이전 서버 응답은 관리자 권한 없음으로 처리한다.
+  role?: 'USER' | 'ADMIN'
 }
 
 // route에서 auth API path와 request shape 직접 관리 방지

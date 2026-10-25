@@ -100,7 +100,7 @@ export const problemSetHandlers = [
         )
       }
 
-      createdProblems.push({ ...problem })
+      createdProblems.push({ ...problem, url: problem.url ?? '' })
     }
 
     mockProblemSetList.unshift({
@@ -213,7 +213,7 @@ export const problemSetHandlers = [
 
         // 이미 연결된 문제는 중복 추가하지 않습니다.
         if (!existingProblemIds.has(problemId)) {
-          newProblems.push({ ...problem })
+          newProblems.push({ ...problem, url: problem.url ?? '' })
         }
       }
 

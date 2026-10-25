@@ -1,6 +1,12 @@
 import { afterEach, expect, it, vi } from 'vitest'
 
-import { getProblem, getProblems } from '@/lib/api/problems'
+import {
+  createCatalogProblem,
+  deleteCatalogProblem,
+  getProblem,
+  getProblems,
+  updateCatalogProblem,
+} from '@/lib/api/problems'
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -113,4 +119,83 @@ it('gets and maps a problem detail', async () => {
     'http://localhost:8080/problems/problem%2Fid',
     expect.objectContaining({ credentials: 'include' }),
   )
+})
+
+it.each(['create', 'update'] as const)(
+  'sends a full admin %s request with CSRF and nullable optional fields',
+  async (operation) => {
+    vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
+    const request = {
+      provider: 'LEETCODE' as const,
+      externalProblemId: 'two-sum',
+      name: 'Two Sum',
+      url: null,
+      difficulty: null,
+    }
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ token: 'catalog-csrf', headerName: 'X-XSRF-TOKEN' }),
+          { headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ problemId: 'problem/id', ...request }), {
+          status: operation === 'create' ? 201 : 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const action =
+      operation === 'create'
+        ? createCatalogProblem(request)
+        : updateCatalogProblem('problem/id', request)
+    await expect(action).resolves.toEqual({
+      id: 'problem/id',
+      provider: 'LEETCODE',
+      externalId: 'two-sum',
+      name: 'Two Sum',
+      url: '',
+      difficulty: null,
+    })
+    const [url, options] = fetchMock.mock.calls[1] ?? []
+    expect(url).toBe(
+      operation === 'create'
+        ? 'http://localhost:8080/admin/problems'
+        : 'http://localhost:8080/admin/problems/problem%2Fid',
+    )
+    expect(options).toMatchObject({
+      method: operation === 'create' ? 'POST' : 'PUT',
+      credentials: 'include',
+      body: JSON.stringify(request),
+    })
+    expect(new Headers(options?.headers).get('X-XSRF-TOKEN')).toBe(
+      'catalog-csrf',
+    )
+  },
+)
+
+it('deletes a catalog problem and accepts an empty 204 response', async () => {
+  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8080')
+  const fetchMock = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ token: 'catalog-csrf', headerName: 'X-XSRF-TOKEN' }),
+        { headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+    .mockResolvedValueOnce(new Response(null, { status: 204 }))
+  vi.stubGlobal('fetch', fetchMock)
+
+  await expect(deleteCatalogProblem('problem/id')).resolves.toBeUndefined()
+  expect(fetchMock).toHaveBeenLastCalledWith(
+    'http://localhost:8080/admin/problems/problem%2Fid',
+    expect.objectContaining({ method: 'DELETE', credentials: 'include' }),
+  )
+  expect(
+    new Headers(fetchMock.mock.calls[1]?.[1]?.headers).get('X-XSRF-TOKEN'),
+  ).toBe('catalog-csrf')
 })

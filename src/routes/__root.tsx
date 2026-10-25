@@ -124,6 +124,11 @@ function RootAuthNav() {
     return (
       <HStack gap={2} vAlign="center">
         <RootPrimaryLinks />
+        {currentUser.role === 'ADMIN' ? (
+          <Link href="/admin/problems" isStandalone>
+            {copy.adminProblems}
+          </Link>
+        ) : null}
         <Link href="/mypage" label={copy.mypage} isStandalone>
           <HStack gap={1.5} vAlign="center" data-testid="current-user">
             <Avatar

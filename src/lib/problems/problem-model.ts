@@ -1,4 +1,12 @@
-export type ProblemProvider = 'BOJ' | 'JUNGOL' | 'SWEA' | 'PROGRAMMERS'
+export const problemProviders = [
+  'BOJ',
+  'JUNGOL',
+  'SWEA',
+  'PROGRAMMERS',
+  'LEETCODE',
+] as const
+
+export type ProblemProvider = (typeof problemProviders)[number]
 
 export interface Problem {
   id: string

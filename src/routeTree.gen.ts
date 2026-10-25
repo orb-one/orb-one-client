@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SolutionsNewRouteImport } from './routes/solutions_.new'
 import { Route as SolutionsSolutionIdRouteImport } from './routes/solutions_.$solutionId'
 import { Route as GroupsGroupIdRouteImport } from './routes/groups_.$groupId'
+import { Route as AdminProblemsRouteImport } from './routes/admin.problems'
 import { Route as SolutionsSolutionIdEditRouteImport } from './routes/solutions_.$solutionId_.edit'
 import { Route as GroupsGroupIdProblemSetsProblemSetIdRouteImport } from './routes/groups_.$groupId_.problem-sets.$problemSetId'
 import { Route as GroupsGroupIdPracticesPracticeIdRouteImport } from './routes/groups_.$groupId_.practices_.$practiceId'
@@ -67,6 +68,11 @@ const GroupsGroupIdRoute = GroupsGroupIdRouteImport.update({
   path: '/groups/$groupId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminProblemsRoute = AdminProblemsRouteImport.update({
+  id: '/admin/problems',
+  path: '/admin/problems',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SolutionsSolutionIdEditRoute = SolutionsSolutionIdEditRouteImport.update({
   id: '/solutions_/$solutionId_/edit',
   path: '/solutions/$solutionId/edit',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/mypage': typeof MypageRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
+  '/admin/problems': typeof AdminProblemsRoute
   '/groups/$groupId': typeof GroupsGroupIdRoute
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/mypage': typeof MypageRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
+  '/admin/problems': typeof AdminProblemsRoute
   '/groups/$groupId': typeof GroupsGroupIdRoute
   '/solutions/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions/new': typeof SolutionsNewRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/mypage': typeof MypageRoute
   '/register': typeof RegisterRoute
   '/solutions': typeof SolutionsRoute
+  '/admin/problems': typeof AdminProblemsRoute
   '/groups_/$groupId': typeof GroupsGroupIdRoute
   '/solutions_/$solutionId': typeof SolutionsSolutionIdRoute
   '/solutions_/new': typeof SolutionsNewRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/mypage'
     | '/register'
     | '/solutions'
+    | '/admin/problems'
     | '/groups/$groupId'
     | '/solutions/$solutionId'
     | '/solutions/new'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/mypage'
     | '/register'
     | '/solutions'
+    | '/admin/problems'
     | '/groups/$groupId'
     | '/solutions/$solutionId'
     | '/solutions/new'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/mypage'
     | '/register'
     | '/solutions'
+    | '/admin/problems'
     | '/groups_/$groupId'
     | '/solutions_/$solutionId'
     | '/solutions_/new'
@@ -180,6 +192,7 @@ export interface RootRouteChildren {
   MypageRoute: typeof MypageRoute
   RegisterRoute: typeof RegisterRoute
   SolutionsRoute: typeof SolutionsRoute
+  AdminProblemsRoute: typeof AdminProblemsRoute
   GroupsGroupIdRoute: typeof GroupsGroupIdRoute
   SolutionsSolutionIdRoute: typeof SolutionsSolutionIdRoute
   SolutionsNewRoute: typeof SolutionsNewRoute
@@ -253,6 +266,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroupsGroupIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/problems': {
+      id: '/admin/problems'
+      path: '/admin/problems'
+      fullPath: '/admin/problems'
+      preLoaderRoute: typeof AdminProblemsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/solutions_/$solutionId_/edit': {
       id: '/solutions_/$solutionId_/edit'
       path: '/solutions/$solutionId/edit'
@@ -284,6 +304,7 @@ const rootRouteChildren: RootRouteChildren = {
   MypageRoute: MypageRoute,
   RegisterRoute: RegisterRoute,
   SolutionsRoute: SolutionsRoute,
+  AdminProblemsRoute: AdminProblemsRoute,
   GroupsGroupIdRoute: GroupsGroupIdRoute,
   SolutionsSolutionIdRoute: SolutionsSolutionIdRoute,
   SolutionsNewRoute: SolutionsNewRoute,

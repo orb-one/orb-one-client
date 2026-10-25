@@ -10,7 +10,7 @@ import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
-import { logoutAccount } from '@/lib/api/auth'
+import { logoutAccount, type CurrentUserResponse } from '@/lib/api/auth'
 import { currentUserQueryKey } from '@/lib/auth/auth-queries'
 import { messages } from '@/lib/i18n/messages'
 import { useAppStore } from '@/stores/use-app-store'
@@ -127,6 +127,36 @@ it('announces when the sign-in state is loading', () => {
   )
 })
 
+it('shows the catalog management link only for global administrators', () => {
+  renderRoot({
+    id: 'admin-1',
+    email: 'admin@example.com',
+    nickname: 'admin',
+    role: 'ADMIN',
+  })
+
+  expect(screen.getByRole('link', { name: '문제 관리' })).toHaveAttribute(
+    'href',
+    '/admin/problems',
+  )
+})
+
+it.each([{}, { role: 'USER' as const }])(
+  'does not show admin navigation without the ADMIN role: %s',
+  (role) => {
+    renderRoot({
+      id: 'user-1',
+      email: 'user@example.com',
+      nickname: 'user',
+      ...role,
+    })
+
+    expect(
+      screen.queryByRole('link', { name: '문제 관리' }),
+    ).not.toBeInTheDocument()
+  },
+)
+
 it('uses the active locale for the application navigation', () => {
   useAppStore.getState().setLocale('en')
 
@@ -229,8 +259,4 @@ function renderWithClient(queryClient: QueryClient, children: ReactNode) {
   )
 }
 
-type CurrentUser = {
-  id: string
-  email: string
-  nickname: string
-} | null
+type CurrentUser = CurrentUserResponse | null
