@@ -2,7 +2,6 @@ import { Badge } from '@astryxdesign/core/Badge'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
-import { Dialog } from '@astryxdesign/core/Dialog'
 import { EmptyState } from '@astryxdesign/core/EmptyState'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
@@ -10,7 +9,6 @@ import { Icon } from '@astryxdesign/core/Icon'
 import { Pagination } from '@astryxdesign/core/Pagination'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
-import { TextInput } from '@astryxdesign/core/TextInput'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -27,14 +25,13 @@ import {
 import { useState } from 'react'
 
 import { PageBackLink } from '@/components/navigation/page-back-link'
+import { ProblemSetAddProblemsDialog } from '@/components/problems/problem-set-add-problems-dialog'
 import {
   addProblemsToProblemSet,
   deleteProblemFromProblemSet,
   getProblemSetDetail,
-  toAddProblemsRequest,
   type AddProblemsRequest,
   type AddProblemsResponse,
-  type ProblemFormItem,
 } from '@/lib/api/problem-sets'
 
 export const Route = createFileRoute(
@@ -50,22 +47,6 @@ interface ApiErrorResponse extends Error {
   }
 }
 
-const PROVIDER_OPTIONS = [
-  { value: 'BOJ', label: 'BOJ' },
-  { value: 'JUNGOL', label: 'JUNGOL' },
-  { value: 'SWEA', label: 'SWEA' },
-  { value: 'PROGRAMMERS', label: 'PROGRAMMERS' },
-  { value: 'LEETCODE', label: 'LEETCODE' },
-]
-
-const INITIAL_PROBLEM: ProblemFormItem = {
-  provider: 'BOJ',
-  externalProblemId: '',
-  name: '',
-  difficulty: '',
-  url: '',
-}
-
 export function ProblemSetDetailPage() {
   const { groupId, problemSetId } = Route.useParams()
   const navigate = useNavigate()
@@ -79,11 +60,7 @@ export function ProblemSetDetailPage() {
     null,
   )
 
-  // 문제 추가 모달 상태 관리
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [problemsToAdd, setProblemsToAdd] = useState<ProblemFormItem[]>([
-    { ...INITIAL_PROBLEM },
-  ])
 
   // 2. 문제집 상세 및 문제 목록 조회 Query
   const {
@@ -124,30 +101,20 @@ export function ProblemSetDetailPage() {
     onSuccess: () => {
       alert('문제가 성공적으로 추가되었습니다.')
       handleCloseAddModal()
+
       void queryClient.invalidateQueries({
         queryKey: ['problemSetDetail', groupId, problemSetId],
       })
     },
-    onError: (err) => {
-      const status = err.response?.status
-      const serverMessage = err.response?.data?.message
-
-      if (status !== undefined) {
-        // 서버 응답 에러
-        alert(
-          serverMessage ??
-            `오류가 발생했습니다. (상태 코드: ${String(status)})`,
-        )
-      } else {
-        alert(
-          serverMessage ??
-            (err.message !== ''
-              ? err.message
-              : '문제 추가 중 오류가 발생했습니다.'),
-        )
-      }
-    },
   })
+
+  // 추가 실패 시 모달에 표시
+  const addProblemsErrorMessage = addProblemsMutation.isError
+    ? (addProblemsMutation.error.response?.data?.message ??
+      (addProblemsMutation.error.message.trim() !== ''
+        ? addProblemsMutation.error.message
+        : '문제 추가 중 오류가 발생했습니다.'))
+    : null
 
   // 4. 문제 삭제 Mutation
   const deleteProblemMutation = useMutation({
@@ -169,7 +136,6 @@ export function ProblemSetDetailPage() {
       const serverMessage = err.response?.data?.message
 
       if (status !== undefined) {
-        // 서버 응답 에러
         alert(
           serverMessage ??
             `오류가 발생했습니다. (상태 코드: ${String(status)})`,
@@ -185,71 +151,26 @@ export function ProblemSetDetailPage() {
     },
   })
 
-  // 문제 추가 폼 유효성 검증
-  const isAddFormValid =
-    problemsToAdd.length > 0 &&
-    problemsToAdd.every(
-      (p) =>
-        Boolean(p.provider.trim()) &&
-        Boolean(p.externalProblemId.trim()) &&
-        Boolean(p.name.trim()) &&
-        Boolean(p.url.trim()),
-    )
-
   function handleOpenAddModal() {
-    setProblemsToAdd([{ ...INITIAL_PROBLEM }])
+    if (addProblemsMutation.isPending) return
+
+    // 이전 요청의 오류를 초기화
+    addProblemsMutation.reset()
     setIsAddModalOpen(true)
   }
 
   function handleCloseAddModal() {
-    setProblemsToAdd([{ ...INITIAL_PROBLEM }])
     setIsAddModalOpen(false)
   }
 
-  function handleProblemChange(
-    index: number,
-    field: keyof ProblemFormItem,
-    value: string,
-  ) {
-    setProblemsToAdd((prev) =>
-      prev.map((item, idx) =>
-        idx === index ? { ...item, [field]: value } : item,
-      ),
-    )
-  }
-
-  function handleAddProblemField() {
-    setProblemsToAdd((prev) => [...prev, { ...INITIAL_PROBLEM }])
-  }
-
-  function handleRemoveProblemField(index: number) {
-    if (problemsToAdd.length === 1) {
-      alert('최소 1개 이상의 문제가 포함되어야 합니다.')
+  function handleSubmitAddProblems(problemIds: string[]) {
+    if (addProblemsMutation.isPending || problemIds.length === 0) {
       return
     }
-    setProblemsToAdd((prev) => prev.filter((_, idx) => idx !== index))
-  }
 
-  function handleSubmitAddProblems() {
-    for (let i = 0; i < problemsToAdd.length; i++) {
-      const p = problemsToAdd[i]
-      if (!p) continue
-
-      if (
-        !p.provider.trim() ||
-        !p.externalProblemId.trim() ||
-        !p.name.trim() ||
-        !p.url.trim()
-      ) {
-        alert(
-          `${String(i + 1)}번째 문제의 모든 필수 항목(플랫폼, 번호, 이름, 링크)을 입력해 주세요.`,
-        )
-        return
-      }
-    }
-
-    const requestDto = toAddProblemsRequest(problemsToAdd)
-    addProblemsMutation.mutate(requestDto)
+    addProblemsMutation.mutate({
+      problemIds: [...new Set(problemIds)],
+    })
   }
 
   function handleToggleExpand(problemId: string) {
@@ -323,10 +244,13 @@ export function ProblemSetDetailPage() {
                 </HStack>
 
                 <Button
-                  label="문제 추가"
+                  label={
+                    addProblemsMutation.isPending ? '추가 중...' : '문제 추가'
+                  }
                   size="sm"
                   variant="primary"
                   icon={<Icon icon={Plus} size="sm" />}
+                  isDisabled={addProblemsMutation.isPending}
                   onClick={() => {
                     handleOpenAddModal()
                   }}
@@ -360,7 +284,7 @@ export function ProblemSetDetailPage() {
         ) : problems.length === 0 ? (
           <EmptyState
             title="등록된 문제가 없습니다."
-            description="우측 상단의 '문제 추가' 버튼을 눌러 새 문제를 추가해 보세요."
+            description="우측 상단의 '문제 추가' 버튼을 눌러 문제를 선택해 보세요."
             icon={<Icon icon={Code2} size="lg" color="secondary" />}
             headingLevel={2}
           />
@@ -480,7 +404,7 @@ export function ProblemSetDetailPage() {
                       </HStack>
                     </div>
 
-                    {/* 상세 패널 */}
+                    {/* 문제 상세 */}
                     {isExpanded && (
                       <div
                         style={{
@@ -552,7 +476,7 @@ export function ProblemSetDetailPage() {
                             </VStack>
                           </HStack>
 
-                          {/* 외부 링크 바로가기 바 */}
+                          {/* 외부 문제 링크 */}
                           {problem.url ? (
                             <div
                               style={{
@@ -629,248 +553,15 @@ export function ProblemSetDetailPage() {
           </VStack>
         )}
 
-        {/* 문제 추가 전용 모달 */}
-        <Dialog
-          isOpen={isAddModalOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              handleCloseAddModal()
-            }
-          }}
-        >
-          <VStack
-            width="100%"
-            gap={4}
-            padding={4}
-            style={{
-              maxHeight: '80vh',
-              overflowY: 'auto',
-              overflowX: 'hidden',
-              boxSizing: 'border-box',
-            }}
-          >
-            <h2 style={{ fontWeight: 'bold', margin: 0 }}>문제 추가</h2>
-            <Text type="body">
-              현재 문제집에 추가할 문제들을 입력해 주세요.
-            </Text>
-
-            <VStack gap={3} width="100%" style={{ boxSizing: 'border-box' }}>
-              <HStack width="100%" vAlign="center">
-                <Text type="body">
-                  {`포함할 문제 목록 (${String(problemsToAdd.length)}개)`}
-                  <strong>
-                    <span style={{ color: '#ef4444', marginLeft: '2px' }}>
-                      *
-                    </span>
-                  </strong>
-                </Text>
-                <div style={{ flex: 1 }} />
-                <Button
-                  label="문제 추가"
-                  size="sm"
-                  variant="secondary"
-                  icon={<Icon icon={Plus} size="sm" />}
-                  onClick={() => {
-                    handleAddProblemField()
-                  }}
-                />
-              </HStack>
-
-              {problemsToAdd.map((problem, index) => (
-                <VStack
-                  key={index}
-                  width="100%"
-                  gap={3}
-                  padding={4}
-                  style={{
-                    border: '1px solid var(--color-border-subtle, #e2e8f0)',
-                    borderRadius: '10px',
-                    boxSizing: 'border-box',
-                    backgroundColor: '#ffffff',
-                  }}
-                >
-                  <HStack width="100%" vAlign="center">
-                    <Text type="body">
-                      <strong>{`문제 #${String(index + 1)}`}</strong>
-                    </Text>
-                    <div style={{ flex: 1 }} />
-                    {problemsToAdd.length > 1 && (
-                      <Button
-                        label="삭제"
-                        size="sm"
-                        variant="destructive"
-                        icon={<Icon icon={Trash2} size="sm" />}
-                        onClick={() => {
-                          handleRemoveProblemField(index)
-                        }}
-                      />
-                    )}
-                  </HStack>
-
-                  {/* 플랫폼 + 문제 번호 */}
-                  <HStack width="100%" gap={3}>
-                    <VStack gap={1} style={{ flex: 1, minWidth: 0 }}>
-                      <label
-                        style={{
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          color: 'var(--color-text-secondary, #6b7280)',
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        플랫폼
-                      </label>
-                      <div style={{ position: 'relative', width: '100%' }}>
-                        <select
-                          value={problem.provider}
-                          onChange={(e) => {
-                            handleProblemChange(
-                              index,
-                              'provider',
-                              e.target.value,
-                            )
-                          }}
-                          style={{
-                            width: '100%',
-                            height: '42px',
-                            padding: '0 32px 0 12px',
-                            borderRadius: '8px',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: '#ffffff',
-                            color: '#111827',
-                            fontSize: '13px',
-                            appearance: 'none',
-                            WebkitAppearance: 'none',
-                            MozAppearance: 'none',
-                            outline: 'none',
-                            cursor: 'pointer',
-                            boxSizing: 'border-box',
-                          }}
-                        >
-                          {PROVIDER_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '50%',
-                            right: '10px',
-                            transform: 'translateY(-50%)',
-                            pointerEvents: 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: '#6b7280',
-                          }}
-                        >
-                          <Icon icon={ChevronDown} size="sm" />
-                        </div>
-                      </div>
-                    </VStack>
-
-                    <div style={{ flex: 1, minWidth: 0, fontSize: '13px' }}>
-                      <TextInput
-                        label="문제 번호"
-                        placeholder="예: 1204"
-                        value={problem.externalProblemId}
-                        onChange={(v: unknown) => {
-                          const val =
-                            typeof v === 'string'
-                              ? v
-                              : v && typeof v === 'object' && 'target' in v
-                                ? (v as React.ChangeEvent<HTMLInputElement>)
-                                    .target.value
-                                : ''
-                          handleProblemChange(index, 'externalProblemId', val)
-                        }}
-                      />
-                    </div>
-                  </HStack>
-
-                  {/* 문제 이름 + 난이도 */}
-                  <HStack width="100%" gap={3}>
-                    <div style={{ flex: 1, minWidth: 0, fontSize: '13px' }}>
-                      <TextInput
-                        label="문제 이름"
-                        placeholder="예: 최빈수 구하기"
-                        value={problem.name}
-                        onChange={(v: unknown) => {
-                          const val =
-                            typeof v === 'string'
-                              ? v
-                              : v && typeof v === 'object' && 'target' in v
-                                ? (v as React.ChangeEvent<HTMLInputElement>)
-                                    .target.value
-                                : ''
-                          handleProblemChange(index, 'name', val)
-                        }}
-                      />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0, fontSize: '13px' }}>
-                      <TextInput
-                        label="난이도"
-                        placeholder="예: GOLD_3"
-                        value={problem.difficulty}
-                        onChange={(v: unknown) => {
-                          const val =
-                            typeof v === 'string'
-                              ? v
-                              : v && typeof v === 'object' && 'target' in v
-                                ? (v as React.ChangeEvent<HTMLInputElement>)
-                                    .target.value
-                                : ''
-                          handleProblemChange(index, 'difficulty', val)
-                        }}
-                      />
-                    </div>
-                  </HStack>
-
-                  {/* 문제 URL */}
-                  <div style={{ width: '100%', fontSize: '13px' }}>
-                    <TextInput
-                      label="문제 URL"
-                      placeholder="https://..."
-                      value={problem.url}
-                      onChange={(v: unknown) => {
-                        const val =
-                          typeof v === 'string'
-                            ? v
-                            : v && typeof v === 'object' && 'target' in v
-                              ? (v as React.ChangeEvent<HTMLInputElement>)
-                                  .target.value
-                              : ''
-                        handleProblemChange(index, 'url', val)
-                      }}
-                    />
-                  </div>
-                </VStack>
-              ))}
-            </VStack>
-
-            <HStack width="100%" hAlign="end" gap={2}>
-              <Button
-                label="취소"
-                variant="secondary"
-                isDisabled={addProblemsMutation.isPending}
-                onClick={() => {
-                  handleCloseAddModal()
-                }}
-              />
-              <Button
-                label={
-                  addProblemsMutation.isPending ? '추가 중...' : '추가하기'
-                }
-                variant="primary"
-                isDisabled={!isAddFormValid || addProblemsMutation.isPending}
-                onClick={() => {
-                  handleSubmitAddProblems()
-                }}
-              />
-            </HStack>
-          </VStack>
-        </Dialog>
+        {/* 성공 시에만 닫고, 실패하면 선택 상태 유지 */}
+        {isAddModalOpen && (
+          <ProblemSetAddProblemsDialog
+            isSubmitting={addProblemsMutation.isPending}
+            errorMessage={addProblemsErrorMessage}
+            onClose={handleCloseAddModal}
+            onSubmit={handleSubmitAddProblems}
+          />
+        )}
       </VStack>
     </Center>
   )
