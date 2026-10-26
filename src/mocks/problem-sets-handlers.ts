@@ -4,13 +4,15 @@ import type {
   AddProblemsRequest,
   AddProblemsResponse,
   GetProblemSetsResponse,
-  ProblemResponse,
   ProblemSetCreateRequest,
   ProblemSetCreateResponse,
   ProblemSetDetailResponse,
 } from '@/lib/api/problem-sets'
 
-import { mockProblems } from './problem-handlers'
+import {
+  resolveMockProblemReferences,
+  problemReferenceError,
+} from './problem-references'
 import { mockProblemSetDetails, mockProblemSetList } from './problem-sets'
 
 export const problemSetHandlers = [
@@ -87,21 +89,8 @@ export const problemSetHandlers = [
     const newProblemSetId = crypto.randomUUID()
     const now = new Date().toISOString()
 
-    const createdProblems: ProblemResponse[] = []
-
-    // 등록된 문제를 UUID로 조회
-    for (const problemId of body.problemIds) {
-      const problem = mockProblems.find((item) => item.problemId === problemId)
-
-      if (!problem) {
-        return HttpResponse.json(
-          { message: '등록된 문제를 찾을 수 없습니다.' },
-          { status: 404 },
-        )
-      }
-
-      createdProblems.push({ ...problem })
-    }
+    const createdProblems = resolveMockProblemReferences(body)
+    if (createdProblems instanceof Response) return createdProblems
 
     mockProblemSetList.unshift({
       problemSetId: newProblemSetId,
@@ -193,28 +182,20 @@ export const problemSetHandlers = [
         )
       }
 
-      const newProblems: ProblemResponse[] = []
-      const existingProblemIds = new Set(
-        detail.problems.map((problem) => problem.problemId),
-      )
-
-      // 모든 UUID를 확인한 뒤 문제집에 반영합니다.
-      for (const problemId of [...new Set(body.problemIds)]) {
-        const problem = mockProblems.find(
-          (item) => item.problemId === problemId,
+      const newProblems = resolveMockProblemReferences(body)
+      if (newProblems instanceof Response) return newProblems
+      if (
+        newProblems.some((problem) =>
+          detail.problems.some(
+            (existing) => existing.problemId === problem.problemId,
+          ),
         )
-
-        if (!problem) {
-          return HttpResponse.json(
-            { message: '등록된 문제를 찾을 수 없습니다.' },
-            { status: 404 },
-          )
-        }
-
-        // 이미 연결된 문제는 중복 추가하지 않습니다.
-        if (!existingProblemIds.has(problemId)) {
-          newProblems.push({ ...problem })
-        }
+      ) {
+        return problemReferenceError(
+          'PROBLEM_ALREADY_IN_SET',
+          '이미 문제집에 포함된 문제가 있습니다.',
+          409,
+        )
       }
 
       const now = new Date().toISOString()

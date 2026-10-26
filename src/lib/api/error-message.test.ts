@@ -33,6 +33,21 @@ describe('getReadableErrorMessage', () => {
     )
   })
 
+  it('UUID 선택 오류의 배열 필드를 문제로 표시합니다', () => {
+    const body = {
+      fieldErrors: [{ field: 'problemIds[0]', reason: 'REQUIRED' }],
+    }
+    const error = new ApiError(
+      '검증 실패',
+      400,
+      new Response(null, { status: 400 }),
+      body,
+    )
+    expect(getReadableErrorMessage(error, '실패')).toBe(
+      '검증 실패 (문제: 필수 입력)',
+    )
+  })
+
   it('알 수 없는 필드명인 경우 원래 필드명을 유지합니다', () => {
     const response = new Response(null, { status: 400 })
     const body = {

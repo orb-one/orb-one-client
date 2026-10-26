@@ -1,13 +1,17 @@
+import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
-import { FormLayout } from '@astryxdesign/core/FormLayout'
-import { Selector } from '@astryxdesign/core/Selector'
-import { TextInput } from '@astryxdesign/core/TextInput'
+import { HStack } from '@astryxdesign/core/HStack'
+import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
 import { useToast } from '@astryxdesign/core/Toast'
-import { useState } from 'react'
+import { VStack } from '@astryxdesign/core/VStack'
+import { useEffect, useId, useRef, useState } from 'react'
+
+import { ProblemPickerDialog } from '@/components/problems/problem-picker-dialog'
+import { PracticeProblemField } from '@/components/practice/practice-problem-field'
 import { useAddPracticeProblem } from '@/lib/api/practice'
-import { getReadableErrorMessage } from '@/lib/api/error-message'
-import { PRACTICE_PROVIDER_OPTIONS } from '@/lib/practice/provider-options'
+import type { Problem } from '@/lib/problems/problem-model'
+import { getProblemReferenceErrorMessage } from '@/lib/problems/problem-reference-errors'
 
 interface AddPracticeProblemModalProps {
   groupId: string
@@ -16,163 +20,127 @@ interface AddPracticeProblemModalProps {
   onClose: () => void
 }
 
-export function AddPracticeProblemModal({
+export function AddPracticeProblemModal(props: AddPracticeProblemModalProps) {
+  if (!props.isOpen) return null
+
+  return <AddPracticeProblemModalContent key={props.practiceId} {...props} />
+}
+
+function AddPracticeProblemModalContent({
   groupId,
   practiceId,
-  isOpen,
   onClose,
 }: AddPracticeProblemModalProps) {
-  const [providerSelect, setProviderSelect] = useState('JUNGOL')
-  const [customProvider, setCustomProvider] = useState('')
-  const [externalProblemId, setExternalProblemId] = useState('')
-  const [name, setName] = useState('')
-  const [url, setUrl] = useState('')
-
+  const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const formId = useId()
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
   const showToast = useToast()
   const addProblem = useAddPracticeProblem(groupId, practiceId)
+  const isSubmitting = addProblem.isPending
+  const errorMessage = addProblem.isError
+    ? getProblemReferenceErrorMessage(
+        addProblem.error,
+        '문제 등록에 실패했습니다.',
+      )
+    : null
 
-  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault()
-
-    const effectiveProvider =
-      providerSelect === 'CUSTOM'
-        ? customProvider.trim()
-        : providerSelect.trim()
-
-    if (!effectiveProvider) {
-      showToast({
-        body: '플랫폼을 선택하거나 직접 입력해주세요.',
-        type: 'error',
-      })
-      return
+  useEffect(() => {
+    if (errorMessage && scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = 0
     }
+  }, [errorMessage])
 
-    if (!externalProblemId.trim() || !name.trim() || !url.trim()) {
-      showToast({
-        body: '모든 문제 정보를 입력해주세요.',
-        type: 'error',
-      })
-      return
-    }
+  function handleClose(open: boolean) {
+    if (!open && !isSubmitting) onClose()
+  }
+
+  function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (isSubmitting || !selectedProblem) return
 
     addProblem.mutate(
-      {
-        provider: effectiveProvider,
-        externalProblemId: externalProblemId.trim(),
-        name: name.trim(),
-        url: url.trim(),
-      },
+      { problemIds: [selectedProblem.id] },
       {
         onSuccess: () => {
           showToast({ body: '문제가 성공적으로 등록되었습니다.' })
-          setProviderSelect('JUNGOL')
-          setCustomProvider('')
-          setExternalProblemId('')
-          setName('')
-          setUrl('')
           onClose()
-        },
-        onError: (error: unknown) => {
-          const message = getReadableErrorMessage(
-            error,
-            '문제 등록에 실패했습니다.',
-          )
-          showToast({ body: message, type: 'error' })
         },
       },
     )
   }
 
   return (
-    <Dialog
-      isOpen={isOpen}
-      onOpenChange={(open: boolean) => {
-        if (!open) {
-          setProviderSelect('JUNGOL')
-          setCustomProvider('')
-          setExternalProblemId('')
-          setName('')
-          setUrl('')
-          onClose()
-        }
-      }}
-    >
-      <DialogHeader
-        title="문제 추가하기"
-        onOpenChange={(open: boolean) => {
-          if (!open) {
-            setProviderSelect('JUNGOL')
-            setCustomProvider('')
-            setExternalProblemId('')
-            setName('')
-            setUrl('')
-            onClose()
+    <>
+      <Dialog
+        isOpen
+        onOpenChange={handleClose}
+        purpose="form"
+        width={560}
+        maxHeight="calc(100dvh - 1rem)"
+      >
+        <Layout
+          height="fill"
+          defaultHasDividers
+          header={
+            <DialogHeader title="문제 추가하기" onOpenChange={handleClose} />
           }
+          content={
+            <LayoutContent
+              ref={scrollAreaRef}
+              isScrollable
+              data-testid="practice-form-scroll-area"
+            >
+              <form id={formId} onSubmit={handleSubmit}>
+                <VStack gap={4}>
+                  {errorMessage && (
+                    <Banner status="error" title={errorMessage} />
+                  )}
+                  <PracticeProblemField
+                    selectedProblem={selectedProblem}
+                    isDisabled={isSubmitting}
+                    onOpenPicker={() => {
+                      setIsPickerOpen(true)
+                    }}
+                  />
+                </VStack>
+              </form>
+            </LayoutContent>
+          }
+          footer={
+            <LayoutFooter>
+              <HStack width="100%" hAlign="end" gap={2}>
+                <Button
+                  label="취소"
+                  variant="secondary"
+                  isDisabled={isSubmitting}
+                  onClick={() => {
+                    handleClose(false)
+                  }}
+                />
+                <Button
+                  type="submit"
+                  form={formId}
+                  label="추가하기"
+                  variant="primary"
+                  isDisabled={!selectedProblem || isSubmitting}
+                  isLoading={isSubmitting}
+                />
+              </HStack>
+            </LayoutFooter>
+          }
+        />
+      </Dialog>
+      <ProblemPickerDialog
+        isOpen={isPickerOpen}
+        onOpenChange={setIsPickerOpen}
+        selectedProblem={selectedProblem}
+        onSelect={(problem) => {
+          setSelectedProblem(problem)
+          addProblem.reset()
         }}
+        description="연습에 연결할 문제를 선택해 주세요."
       />
-      <form onSubmit={handleSubmit} className="p-4">
-        <FormLayout>
-          <Selector
-            htmlName="provider"
-            label="플랫폼"
-            value={providerSelect}
-            onChange={(val) => {
-              setProviderSelect(val)
-            }}
-            options={PRACTICE_PROVIDER_OPTIONS}
-            placeholder="플랫폼 선택"
-          />
-
-          {providerSelect === 'CUSTOM' && (
-            <TextInput
-              htmlName="customProvider"
-              label="플랫폼 직접 입력"
-              value={customProvider}
-              onChange={(val) => {
-                setCustomProvider(val)
-              }}
-              placeholder="플랫폼 이름을 입력하세요"
-            />
-          )}
-
-          <TextInput
-            htmlName="externalProblemId"
-            label="문제 ID"
-            value={externalProblemId}
-            onChange={(val) => {
-              setExternalProblemId(val)
-            }}
-            placeholder="예: 1000"
-          />
-          <TextInput
-            htmlName="name"
-            label="문제 이름"
-            value={name}
-            onChange={(val) => {
-              setName(val)
-            }}
-            placeholder="A+B"
-          />
-          <TextInput
-            htmlName="url"
-            label="문제 링크"
-            value={url}
-            onChange={(val) => {
-              setUrl(val)
-            }}
-            placeholder="https://"
-          />
-        </FormLayout>
-        <div className="mt-6 flex justify-end gap-2">
-          <Button label="취소" variant="secondary" onClick={onClose} />
-          <Button
-            type="submit"
-            label="추가하기"
-            variant="primary"
-            isLoading={addProblem.isPending}
-          />
-        </div>
-      </form>
-    </Dialog>
+    </>
   )
 }

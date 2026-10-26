@@ -1,3 +1,4 @@
+import { getProblemReferenceErrorMessage } from '@/lib/problems/problem-reference-errors'
 import { Badge } from '@astryxdesign/core/Badge'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
@@ -111,10 +112,10 @@ export function ProblemSetDetailPage() {
 
   // 추가 실패 시 모달에 표시
   const addProblemsErrorMessage = addProblemsMutation.isError
-    ? (addProblemsMutation.error.response?.data?.message ??
-      (addProblemsMutation.error.message.trim() !== ''
-        ? addProblemsMutation.error.message
-        : '문제 추가 중 오류가 발생했습니다.'))
+    ? getProblemReferenceErrorMessage(
+        addProblemsMutation.error,
+        '문제 추가 중 오류가 발생했습니다.',
+      )
     : null
 
   // 4. 문제 삭제 Mutation

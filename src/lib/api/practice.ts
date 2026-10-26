@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from './client'
+import { problemQueryKeys } from '@/lib/problems/problem-queries'
+import { isMissingProblemReference } from '@/lib/problems/problem-reference-errors'
 
 export interface PracticeResponse {
   id?: string
@@ -95,17 +97,11 @@ export function usePracticeDetail(groupId: string, practiceId: string) {
   })
 }
 
-interface CreatePracticeRequest {
+export interface CreatePracticeRequest {
   title: string
   startDate: string
   endDate: string
-  problems: {
-    provider: string
-    externalProblemId: string
-    name: string
-    url?: string
-    difficulty?: string
-  }[]
+  problemIds: string[]
 }
 
 export function useCreatePractice(groupId: string) {
@@ -113,12 +109,11 @@ export function useCreatePractice(groupId: string) {
 
   return useMutation({
     mutationFn: async (data: CreatePracticeRequest) => {
-      // Map domain format to DTO before sending
       const payload = {
         title: data.title,
         startDate: data.startDate,
         endDate: data.endDate,
-        problems: data.problems,
+        problemIds: data.problemIds,
       }
 
       const response = await apiClient<PracticeResponse>(
@@ -134,6 +129,13 @@ export function useCreatePractice(groupId: string) {
       void queryClient.invalidateQueries({
         queryKey: ['groups', groupId, 'practices'],
       })
+    },
+    onError: (error) => {
+      if (isMissingProblemReference(error)) {
+        void queryClient.invalidateQueries({
+          queryKey: problemQueryKeys.lists(),
+        })
+      }
     },
   })
 }
@@ -191,11 +193,7 @@ export function useUpdatePractice(groupId: string, practiceId: string) {
 }
 
 export interface AddPracticeProblemRequest {
-  provider: string
-  externalProblemId: string
-  name: string
-  url?: string
-  difficulty?: string
+  problemIds: string[]
 }
 
 export function useAddPracticeProblem(groupId: string, practiceId: string) {
@@ -204,15 +202,7 @@ export function useAddPracticeProblem(groupId: string, practiceId: string) {
   return useMutation({
     mutationFn: async (data: AddPracticeProblemRequest) => {
       const payload = {
-        problems: [
-          {
-            provider: data.provider,
-            externalProblemId: data.externalProblemId,
-            name: data.name,
-            url: data.url,
-            difficulty: data.difficulty,
-          },
-        ],
+        problemIds: data.problemIds,
       }
       return apiClient(`/groups/${groupId}/practices/${practiceId}/problems`, {
         method: 'POST',
@@ -221,8 +211,15 @@ export function useAddPracticeProblem(groupId: string, practiceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ['groups', groupId, 'practices', practiceId],
+        queryKey: ['groups', groupId, 'practices'],
       })
+    },
+    onError: (error) => {
+      if (isMissingProblemReference(error)) {
+        void queryClient.invalidateQueries({
+          queryKey: problemQueryKeys.lists(),
+        })
+      }
     },
   })
 }

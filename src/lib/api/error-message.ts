@@ -7,6 +7,7 @@ const FIELD_LABEL_MAP: Record<string, string> = {
   end_date: '종료 일시',
   title: '연습 이름',
   problems: '문제',
+  problemIds: '문제',
   provider: '플랫폼',
   externalProblemId: '문제 ID',
   external_problem_id: '문제 ID',
@@ -34,7 +35,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function formatFieldError(item: FieldErrorItem): string | null {
   const fieldName = item.field
-  const label = fieldName ? (FIELD_LABEL_MAP[fieldName] ?? fieldName) : ''
+  const labelKey = fieldName?.replace(/\[\d+\]/g, '')
+  const label = labelKey ? (FIELD_LABEL_MAP[labelKey] ?? fieldName) : ''
   const reasonText = item.reason
     ? (REASON_LABEL_MAP[item.reason] ?? item.reason)
     : item.message
