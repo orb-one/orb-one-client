@@ -89,6 +89,7 @@ export function AccountDeletionSection({
 
         {isUserOwnsGroupError ? (
           <Banner
+            role="alert"
             status="error"
             title={copy.accountDeletionGroupOwnerError}
             description={copy.accountDeletionGroupOwnerGuidance}
@@ -96,7 +97,11 @@ export function AccountDeletionSection({
         ) : null}
 
         {hasDeletionError ? (
-          <Banner status="error" title={copy.accountDeletionError} />
+          <Banner
+            role="alert"
+            status="error"
+            title={copy.accountDeletionError}
+          />
         ) : null}
 
         <HStack hAlign="end">

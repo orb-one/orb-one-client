@@ -372,6 +372,7 @@ export function MemberTab({ groupId }: MemberTabProps) {
         <MemberListSkeleton />
       ) : groupQuery.isError ? (
         <Banner
+          role={isAuthRequired ? 'status' : 'alert'}
           status={isAuthRequired ? 'info' : 'error'}
           title={
             isAuthRequired

@@ -85,8 +85,6 @@ export function SolutionCreatePage() {
   const [isSolved, setIsSolved] = useState(false)
   const [memoryUsage, setMemoryUsage] = useState<number | null>(null)
   const [timeElapsed, setTimeElapsed] = useState<number | null>(null)
-  const [memoryUsageInput, setMemoryUsageInput] = useState('')
-  const [timeElapsedInput, setTimeElapsedInput] = useState('')
   const [formError, setFormError] = useState<SolutionCreateFormError | null>(
     null,
   )
@@ -159,8 +157,8 @@ export function SolutionCreatePage() {
       {
         description,
         isSolved,
-        memoryUsage: memoryUsageInput,
-        timeElapsed: timeElapsedInput,
+        memoryUsage: memoryUsage === null ? '' : String(memoryUsage),
+        timeElapsed: timeElapsed === null ? '' : String(timeElapsed),
       },
     )
 
@@ -205,6 +203,7 @@ export function SolutionCreatePage() {
           <VStack gap={5} hAlign="stretch">
             {createMutation.isError ? (
               <Banner
+                role={isAuthRequired ? 'status' : 'alert'}
                 status={isAuthRequired ? 'info' : 'error'}
                 title={isAuthRequired ? copy.authRequired : copy.genericError}
                 endContent={
@@ -371,6 +370,7 @@ export function SolutionCreatePage() {
                 isDisabled={isSubmitting}
               />
 
+              {/* 범위 검증은 폼에서 처리해 입력값이 자동 보정되지 않도록 합니다. */}
               <FormLayout direction="horizontal">
                 <NumberInput
                   ref={memoryUsageInputRef}
@@ -380,19 +380,8 @@ export function SolutionCreatePage() {
                   value={memoryUsage}
                   onChange={(nextValue) => {
                     setMemoryUsage(nextValue)
-                    setMemoryUsageInput(
-                      nextValue === null ? '' : String(nextValue),
-                    )
                     clearFeedback('memoryUsageInvalid')
                   }}
-                  onInput={(event) => {
-                    setMemoryUsageInput(
-                      (event.currentTarget as HTMLInputElement).value,
-                    )
-                    clearFeedback('memoryUsageInvalid')
-                  }}
-                  min={0}
-                  max={2_147_483_647}
                   units="KB"
                   isIntegerOnly
                   hasClear
@@ -415,19 +404,8 @@ export function SolutionCreatePage() {
                   value={timeElapsed}
                   onChange={(nextValue) => {
                     setTimeElapsed(nextValue)
-                    setTimeElapsedInput(
-                      nextValue === null ? '' : String(nextValue),
-                    )
                     clearFeedback('timeElapsedInvalid')
                   }}
-                  onInput={(event) => {
-                    setTimeElapsedInput(
-                      (event.currentTarget as HTMLInputElement).value,
-                    )
-                    clearFeedback('timeElapsedInvalid')
-                  }}
-                  min={0}
-                  max={2_147_483_647}
                   units="ms"
                   isIntegerOnly
                   hasClear

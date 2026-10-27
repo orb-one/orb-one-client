@@ -82,7 +82,9 @@ it('shows the Korean server message for invalid login credentials', async () => 
   await userEvent.type(screen.getByLabelText('비밀번호'), 'wrong-password')
   await userEvent.click(screen.getByRole('button', { name: '로그인' }))
 
-  expect(await screen.findByRole('alert')).toHaveTextContent(serverMessage)
+  await waitFor(() =>
+    expect(screen.getByRole('alert')).toHaveTextContent(serverMessage),
+  )
   expect(captchaMock.reset).toHaveBeenCalledOnce()
 
   await userEvent.clear(emailInput)
@@ -163,7 +165,9 @@ it.each([
 
     const targetInput = screen.getByLabelText(targetLabel, { exact: true })
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(message),
+    )
     expect(targetInput).toHaveAttribute('aria-invalid', 'true')
     expect(targetInput).toHaveAccessibleDescription(message)
     await waitFor(() => expect(targetInput).toHaveFocus())
@@ -187,7 +191,9 @@ it('shows the Korean server message for duplicate registration emails', async ()
   await userEvent.type(screen.getByLabelText('비밀번호 확인'), 'password123!')
   await userEvent.click(screen.getByRole('button', { name: '회원가입' }))
 
-  expect(await screen.findByRole('alert')).toHaveTextContent(serverMessage)
+  await waitFor(() =>
+    expect(screen.getByRole('alert')).toHaveTextContent(serverMessage),
+  )
   expect(captchaMock.reset).toHaveBeenCalledOnce()
 
   await userEvent.clear(emailInput)
@@ -213,8 +219,10 @@ it('keeps native registration field semantics and marks invalid input', async ()
 
   await userEvent.click(screen.getByRole('button', { name: '회원가입' }))
 
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    '이메일을 입력해 주세요.',
+  await waitFor(() =>
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      '이메일을 입력해 주세요.',
+    ),
   )
   expect(emailInput).toHaveAttribute('aria-invalid', 'true')
   expect(emailInput).toHaveAccessibleDescription('이메일을 입력해 주세요.')
@@ -222,7 +230,11 @@ it('keeps native registration field semantics and marks invalid input', async ()
 
   await userEvent.type(emailInput, 'user@example.com')
 
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  expect(
+    screen.queryByText('이메일을 입력해 주세요.', {
+      selector: ':not([data-astryx-live-region])',
+    }),
+  ).not.toBeInTheDocument()
   expect(emailInput).not.toHaveAttribute('aria-invalid')
 })
 
@@ -268,7 +280,9 @@ it.each([
 
     const targetInput = screen.getByLabelText(targetLabel, { exact: true })
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(message),
+    )
     expect(targetInput).toHaveAttribute('aria-invalid', 'true')
     expect(targetInput).toHaveAccessibleDescription(message)
     await waitFor(() => expect(targetInput).toHaveFocus())
@@ -288,8 +302,10 @@ it('shows the client translation when the app locale is English', async () => {
   await userEvent.type(screen.getByLabelText('Password'), 'wrong-password')
   await userEvent.click(screen.getByRole('button', { name: 'Log in' }))
 
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    'The email or password is incorrect.',
+  await waitFor(() =>
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The email or password is incorrect.',
+    ),
   )
 })
 

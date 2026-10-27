@@ -205,6 +205,7 @@ export function ProblemSetAddProblemsDialog({
                 <ProblemListSkeleton />
               ) : !showSelectedOnly && problemsQuery.isError ? (
                 <Banner
+                  role={isAuthRequired ? 'status' : 'alert'}
                   status={isAuthRequired ? 'info' : 'error'}
                   title={
                     isAuthRequired
@@ -268,7 +269,9 @@ export function ProblemSetAddProblemsDialog({
                 </List>
               )}
 
-              {errorMessage && <Banner status="error" title={errorMessage} />}
+              {errorMessage && (
+                <Banner role="alert" status="error" title={errorMessage} />
+              )}
             </VStack>
           </LayoutContent>
         }
