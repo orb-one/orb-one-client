@@ -108,7 +108,9 @@ it('shows an inline error and focuses the current password when it is incorrect'
 
   const currentPasswordInput = screen.getByLabelText('현재 비밀번호')
   expect(
-    await screen.findByText('현재 비밀번호가 올바르지 않습니다.'),
+    await screen.findByText('현재 비밀번호가 올바르지 않습니다.', {
+      selector: ':not([data-astryx-live-region])',
+    }),
   ).toBeVisible()
   await waitFor(() => expect(currentPasswordInput).toHaveFocus())
 })

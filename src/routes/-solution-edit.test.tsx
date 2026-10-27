@@ -247,8 +247,16 @@ it('rejects execution metrics outside the server integer range', async () => {
   expect(
     await screen.findByText(
       '메모리 사용량은 -2,147,483,648부터 2,147,483,647 사이의 정수로 입력해 주세요.',
+      { selector: ':not([data-astryx-live-region])' },
     ),
   ).toBeVisible()
+  await waitFor(() => {
+    expect(
+      screen.getAllByRole('alert').map((alert) => alert.textContent),
+    ).toContain(
+      '메모리 사용량은 -2,147,483,648부터 2,147,483,647 사이의 정수로 입력해 주세요.',
+    )
+  })
   await waitFor(() => expect(memoryUsageInput).toHaveFocus())
   expect(memoryUsageInput).toHaveValue('2147483648')
   expect(updateSolution).not.toHaveBeenCalled()
