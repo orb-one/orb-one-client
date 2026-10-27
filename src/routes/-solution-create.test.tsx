@@ -59,10 +59,16 @@ it('connects required-field feedback to the problem picker', async () => {
 
   const problemPicker = screen.getByRole('button', { name: '문제 선택' })
 
-  expect(await screen.findByText('문제를 선택해 주세요.')).toHaveAttribute(
-    'role',
-    'alert',
-  )
+  expect(
+    await screen.findByText('문제를 선택해 주세요.', {
+      selector: ':not([data-astryx-live-region])',
+    }),
+  ).toBeVisible()
+  await waitFor(() => {
+    expect(
+      screen.getAllByRole('alert').map((alert) => alert.textContent),
+    ).toContain('문제를 선택해 주세요.')
+  })
   expect(problemPicker).toHaveAttribute('aria-invalid', 'true')
   expect(problemPicker).toHaveAccessibleDescription(
     '제공처와 문제 번호를 확인하고 풀이를 연결할 문제를 선택해 주세요. 문제를 선택해 주세요.',
@@ -93,10 +99,16 @@ it('connects required-field feedback and focus to the code editor', async () => 
 
   const codeEditor = await screen.findByRole('textbox', { name: /소스 코드/ })
 
-  expect(await screen.findByText('소스 코드를 입력해 주세요.')).toHaveAttribute(
-    'role',
-    'alert',
-  )
+  expect(
+    await screen.findByText('소스 코드를 입력해 주세요.', {
+      selector: ':not([data-astryx-live-region])',
+    }),
+  ).toBeVisible()
+  await waitFor(() => {
+    expect(
+      screen.getAllByRole('alert').map((alert) => alert.textContent),
+    ).toContain('소스 코드를 입력해 주세요.')
+  })
   expect(codeEditor).toHaveAttribute('aria-invalid', 'true')
   expect(codeEditor).toHaveAccessibleDescription(
     '제출할 소스 코드를 그대로 입력해 주세요. 소스 코드를 입력해 주세요.',
@@ -270,19 +282,107 @@ it.each([
     )
     await userEvent.click(screen.getByRole('button', { name: '풀이 저장' }))
 
-    expect(await screen.findByText(errorMessage)).toHaveAttribute(
-      'role',
-      'alert',
-    )
+    expect(
+      await screen.findByText(errorMessage, {
+        selector: ':not([data-astryx-live-region])',
+      }),
+    ).toBeVisible()
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole('alert').map((alert) => alert.textContent),
+      ).toContain(errorMessage)
+    })
     expect(createSolution).not.toHaveBeenCalled()
     await waitFor(() =>
       expect(
         screen.getByRole('spinbutton', { name: new RegExp(label) }),
       ).toHaveFocus(),
     )
-    expect(screen.getByText(errorMessage)).toBeVisible()
+    expect(
+      screen.getByText(errorMessage, {
+        selector: ':not([data-astryx-live-region])',
+      }),
+    ).toBeVisible()
   },
 )
+
+it.each([
+  ['메모리 사용량', 'memoryUsage', '0x10'],
+  ['실행 시간', 'timeElapsed', '0x10'],
+  ['메모리 사용량', 'memoryUsage', '1.5'],
+  ['실행 시간', 'timeElapsed', '1.5'],
+] as const)(
+  'submits null when an uncommitted %s input is rejected (%s, %s)',
+  async (label, field, input) => {
+    vi.mocked(createSolution).mockResolvedValue({ id: 'solution-1' })
+    renderRoute(<SolutionCreatePage />)
+    await fillCreateForm()
+
+    const metric = screen.getByRole('spinbutton', { name: new RegExp(label) })
+    await userEvent.type(metric, input)
+    await userEvent.tab()
+    expect(metric).toHaveValue('')
+
+    await userEvent.click(screen.getByRole('button', { name: '풀이 저장' }))
+
+    await waitFor(() => {
+      expect(createSolution).toHaveBeenCalledWith(
+        expect.objectContaining({ [field]: null }),
+      )
+    })
+  },
+)
+
+it.each([
+  ['메모리 사용량', 'memoryUsage'],
+  ['실행 시간', 'timeElapsed'],
+] as const)(
+  'preserves the committed %s when a replacement is rejected',
+  async (label, field) => {
+    vi.mocked(createSolution).mockResolvedValue({ id: 'solution-1' })
+    renderRoute(<SolutionCreatePage />)
+    await fillCreateForm()
+
+    const metric = screen.getByRole('spinbutton', { name: new RegExp(label) })
+    await userEvent.type(metric, '123')
+    await userEvent.tab()
+    await userEvent.clear(metric)
+    await userEvent.type(metric, '0x10')
+    await userEvent.click(screen.getByRole('button', { name: '풀이 저장' }))
+
+    expect(metric).toHaveValue('123')
+    await waitFor(() => {
+      expect(createSolution).toHaveBeenCalledWith(
+        expect.objectContaining({ [field]: 123 }),
+      )
+    })
+  },
+)
+
+it('submits null for metrics cleared with the button or keyboard', async () => {
+  vi.mocked(createSolution).mockResolvedValue({ id: 'solution-1' })
+  renderRoute(<SolutionCreatePage />)
+  await fillCreateForm()
+
+  await userEvent.type(
+    screen.getByRole('spinbutton', { name: /메모리 사용량/ }),
+    '123',
+  )
+  const timeInput = screen.getByRole('spinbutton', { name: /실행 시간/ })
+  await userEvent.type(timeInput, '45')
+  await userEvent.tab()
+  await userEvent.click(
+    screen.getByRole('button', { name: /^Clear 메모리 사용량/ }),
+  )
+  await userEvent.clear(timeInput)
+  await userEvent.click(screen.getByRole('button', { name: '풀이 저장' }))
+
+  await waitFor(() => {
+    expect(createSolution).toHaveBeenCalledWith(
+      expect.objectContaining({ memoryUsage: null, timeElapsed: null }),
+    )
+  })
+})
 
 it('indents code with spaces when Tab is pressed in the editor', async () => {
   renderRoute(<SolutionCreatePage />)

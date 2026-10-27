@@ -190,7 +190,9 @@ export function ProblemMultiPickerDialog({
             data-testid="problem-multi-picker-scroll-area"
           >
             <VStack gap={3} width="100%">
-              {errorMessage && <Banner status="error" title={errorMessage} />}
+              {errorMessage && (
+                <Banner role="alert" status="error" title={errorMessage} />
+              )}
               <Text type="body" size="sm" color="secondary">
                 {description}
               </Text>
@@ -241,6 +243,7 @@ export function ProblemMultiPickerDialog({
                 <ProblemListSkeleton />
               ) : !showSelectedOnly && problemsQuery.isError ? (
                 <Banner
+                  role={isAuthRequired ? 'status' : 'alert'}
                   status={isAuthRequired ? 'info' : 'error'}
                   title={
                     isAuthRequired

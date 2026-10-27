@@ -452,7 +452,7 @@ it('prevents duplicate restore requests while one is pending', async () => {
   await userEvent.click(undoButton)
   await waitFor(() => {
     expect(restoreSolution).toHaveBeenCalledOnce()
-    expect(undoButton).toBeDisabled()
+    expect(undoButton).toHaveAttribute('aria-disabled', 'true')
   })
 
   await userEvent.click(undoButton)
@@ -639,7 +639,8 @@ it('renders an empty solution description as supporting text', async () => {
   const emptyDescription =
     await screen.findByText('작성된 풀이 설명이 없습니다.')
 
-  expect(emptyDescription).toHaveClass('astryx-text', 'supporting')
+  expect(emptyDescription).toHaveClass('astryx-text')
+  expect(emptyDescription).toHaveAttribute('data-type', 'supporting')
   expect(screen.queryByTestId('solution-description')).not.toBeInTheDocument()
 })
 

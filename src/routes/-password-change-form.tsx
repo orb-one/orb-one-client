@@ -147,11 +147,16 @@ export function PasswordChangeForm({
         <form noValidate onSubmit={handleSubmit}>
           <VStack gap={4}>
             {genericMutationError ? (
-              <Banner status="error" title={copy.passwordChangeError} />
+              <Banner
+                role="alert"
+                status="error"
+                title={copy.passwordChangeError}
+              />
             ) : null}
 
             {logoutError ? (
               <Banner
+                role="alert"
                 status="error"
                 title={copy.passwordChangedLogoutError}
                 endContent={
@@ -168,7 +173,11 @@ export function PasswordChangeForm({
             ) : null}
 
             {signOutMutation.isSuccess ? (
-              <Banner status="success" title={copy.passwordChangeSuccess} />
+              <Banner
+                role="status"
+                status="success"
+                title={copy.passwordChangeSuccess}
+              />
             ) : null}
 
             <FormLayout direction="horizontal-labels">

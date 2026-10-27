@@ -126,7 +126,7 @@ function CreatePracticeModalContent({
               <form id={formId} onSubmit={handleSubmit}>
                 <FormLayout>
                   {errorMessage && (
-                    <Banner status="error" title={errorMessage} />
+                    <Banner role="alert" status="error" title={errorMessage} />
                   )}
                   <TextInput
                     htmlName="title"

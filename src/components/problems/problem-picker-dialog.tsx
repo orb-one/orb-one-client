@@ -105,6 +105,7 @@ export function ProblemPickerDialog({
                 <ProblemPickerSkeleton label={copy.problemPickerLoading} />
               ) : problemsQuery.isError ? (
                 <Banner
+                  role={isAuthRequired ? 'status' : 'alert'}
                   status={isAuthRequired ? 'info' : 'error'}
                   title={
                     isAuthRequired

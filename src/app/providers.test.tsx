@@ -1,7 +1,9 @@
+import { TextInput } from '@astryxdesign/core/TextInput'
 import { QueryClient } from '@tanstack/react-query'
-import { cleanup } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 
+import { AppProviders } from '@/app/providers'
 import {
   createAppQueryClient,
   handleAuthSessionExpiredError,
@@ -169,3 +171,27 @@ function rateLimitError() {
     undefined,
   )
 }
+
+it('keeps Astryx controls in sync with the app locale', () => {
+  render(
+    <AppProviders>
+      <TextInput
+        label="검색"
+        value="문제"
+        onChange={() => undefined}
+        hasClear
+      />
+    </AppProviders>,
+  )
+
+  expect(screen.getByRole('button', { name: '검색 지우기' })).toBeVisible()
+
+  act(() => {
+    useAppStore.getState().setLocale('en')
+  })
+
+  expect(screen.getByRole('button', { name: 'Clear 검색' })).toBeVisible()
+  expect(
+    screen.queryByRole('button', { name: '검색 지우기' }),
+  ).not.toBeInTheDocument()
+})

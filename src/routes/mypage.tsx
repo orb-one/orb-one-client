@@ -111,6 +111,7 @@ export function MyPage() {
     return (
       <MyPageFrame>
         <Banner
+          role="alert"
           status="error"
           title={copy.loadError}
           endContent={
@@ -207,11 +208,11 @@ function ProfileForm({ currentUser }: { currentUser: CurrentUserResponse }) {
         <form noValidate onSubmit={handleSubmit}>
           <VStack gap={4}>
             {mutationError ? (
-              <Banner status="error" title={mutationError} />
+              <Banner role="alert" status="error" title={mutationError} />
             ) : null}
 
             {updateMutation.isSuccess ? (
-              <Banner status="success" title={copy.saveSuccess} />
+              <Banner role="status" status="success" title={copy.saveSuccess} />
             ) : null}
 
             <FormLayout direction="horizontal-labels">
