@@ -126,12 +126,18 @@ for (const error of removalErrors) {
       .getByRole('button', { name: '삭제', exact: true })
       .click()
 
-    const errorMessage = page.getByText(error.message, { exact: true })
+    const errorMessage = page
+      .getByLabel('알림', { exact: true })
+      .getByText(error.message, { exact: true })
     await expect(errorMessage).toBeVisible()
     await expect(errorMessage).toBeInViewport()
     await expect(page.getByText('A+B', { exact: true })).toBeVisible()
     await expect(deleteButtons).toHaveCount(isLastProblem ? 1 : problems.length)
-    await expect(page.getByText('문제가 삭제되었습니다.')).toHaveCount(0)
+    await expect(
+      page
+        .getByLabel('알림', { exact: true })
+        .getByText('문제가 삭제되었습니다.'),
+    ).toHaveCount(0)
   })
 }
 
@@ -154,7 +160,11 @@ test('shows a success message and refreshes the problem list after deletion', as
     .getByRole('button', { name: '삭제', exact: true })
     .click()
 
-  await expect(page.getByText('문제가 삭제되었습니다.')).toBeVisible()
+  await expect(
+    page
+      .getByLabel('알림', { exact: true })
+      .getByText('문제가 삭제되었습니다.'),
+  ).toBeVisible()
   await expect(page.getByText('A+B', { exact: true })).toHaveCount(0)
   await expect(page.getByText('A-B', { exact: true })).toBeVisible()
 })
@@ -211,13 +221,17 @@ test('shows errors for both requests when problems are deleted consecutively', a
     .getByRole('button', { name: '삭제', exact: true })
     .click()
   await expect(
-    page.getByText('연습에는 최소 1개의 문제가 필요합니다.', { exact: true }),
+    page
+      .getByLabel('알림', { exact: true })
+      .getByText('연습에는 최소 1개의 문제가 필요합니다.', { exact: true }),
   ).toBeVisible()
 
   releaseFirstResponse()
 
   await expect(
-    page.getByText('연습에 포함된 문제를 찾을 수 없습니다.', { exact: true }),
+    page
+      .getByLabel('알림', { exact: true })
+      .getByText('연습에 포함된 문제를 찾을 수 없습니다.', { exact: true }),
   ).toBeVisible()
   await expect(page.getByText('A+B', { exact: true })).toBeVisible()
   await expect(page.getByText('A-B', { exact: true })).toBeVisible()

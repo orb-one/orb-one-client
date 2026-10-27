@@ -269,6 +269,7 @@ export function ProblemSetDetailPage() {
           </VStack>
         ) : isError ? (
           <Banner
+            role="alert"
             status="error"
             title="문제 목록을 불러오지 못했습니다."
             endContent={

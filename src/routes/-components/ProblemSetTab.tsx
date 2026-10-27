@@ -140,6 +140,7 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
         <Skeleton width="100%" height={48} radius={2} />
       ) : problemSetsQuery.isError ? (
         <Banner
+          role="alert"
           status="error"
           title="문제집 목록을 불러오는 데 실패했습니다."
           endContent={

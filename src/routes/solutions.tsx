@@ -125,6 +125,7 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
           solutionsQuery.isError ||
           solutions.length > 0) ? (
           <Banner
+            role="status"
             status="info"
             title={copy.problemFilterTitle}
             endContent={
@@ -142,6 +143,7 @@ export function SolutionsPage({ problemId }: SolutionsPageProps = {}) {
           <SolutionListSkeleton label={copy.loading} />
         ) : solutionsQuery.isError ? (
           <Banner
+            role={isAuthRequired ? 'status' : 'alert'}
             status={isAuthRequired ? 'info' : 'error'}
             title={isAuthRequired ? t.solutions.authRequired : copy.loadError}
             endContent={

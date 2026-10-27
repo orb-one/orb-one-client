@@ -26,7 +26,7 @@ test('shows the first registration error in view on a short viewport', async ({
   await page.getByRole('button', { name: '회원가입', exact: true }).click()
 
   const emailInput = page.getByLabel('이메일')
-  const emailError = page.getByText('이메일을 입력해 주세요.')
+  const emailError = page.locator('form').getByText('이메일을 입력해 주세요.')
 
   await expect(emailInput).toBeFocused()
   await expect(emailInput).toBeInViewport()
@@ -65,7 +65,7 @@ test('shows the first login error in view on a short viewport', async ({
   await page.getByRole('button', { name: '로그인', exact: true }).click()
 
   const emailInput = page.getByLabel('이메일')
-  const emailError = page.getByText('이메일을 입력해 주세요.')
+  const emailError = page.locator('form').getByText('이메일을 입력해 주세요.')
 
   await expect(emailInput).toBeFocused()
   await expect(emailInput).toBeInViewport()
@@ -279,7 +279,9 @@ test('updates the nickname across the my page and application header', async ({
   await page.getByLabel('닉네임').fill('after-update')
   await page.getByRole('button', { name: '변경사항 저장' }).click()
 
-  await expect(page.getByText('닉네임을 변경했습니다.')).toBeVisible()
+  await expect(
+    page.getByRole('main').getByText('닉네임을 변경했습니다.'),
+  ).toBeVisible()
   await expect(page.getByLabel('닉네임')).toHaveValue('after-update')
   await expect(page.getByTestId('current-user')).toContainText('after-update')
   expect(nicknameUpdateRequest).toEqual({ nickname: 'after-update' })
@@ -445,7 +447,11 @@ test('deletes the account only after explicit consent', async ({ page }) => {
   expect(deletionResponse.status()).toBe(204)
   expect(deletionRequestCount).toBe(1)
   await page.waitForURL((url) => url.pathname === '/')
-  await expect(page.getByText('회원탈퇴가 완료되었습니다.')).toBeVisible()
+  await expect(
+    page
+      .getByLabel('알림', { exact: true })
+      .getByText('회원탈퇴가 완료되었습니다.'),
+  ).toBeVisible()
   await expect(
     page
       .getByRole('navigation', { name: '주요 탐색' })
@@ -755,7 +761,9 @@ test('keeps the signed-in state and shows a toast when logout fails', async ({
 
   expect(logoutResponse.status()).toBe(500)
   await expect(
-    page.getByText('로그아웃에 실패했습니다. 다시 시도해 주세요.'),
+    page
+      .getByLabel('알림', { exact: true })
+      .getByText('로그아웃에 실패했습니다. 다시 시도해 주세요.'),
   ).toBeVisible()
   await expect(page.getByTestId('current-user')).toContainText(account.nickname)
   await expect(

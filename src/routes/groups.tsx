@@ -174,6 +174,7 @@ export function GroupListPage() {
           <GroupListSkeleton label={copy.loading} />
         ) : groupsQuery.isError ? (
           <Banner
+            role={isAuthRequired ? 'status' : 'alert'}
             status={isAuthRequired ? 'info' : 'error'}
             title={isAuthRequired ? copy.authRequired : copy.loadError}
             endContent={

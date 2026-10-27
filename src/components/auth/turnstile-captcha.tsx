@@ -125,6 +125,7 @@ export const TurnstileCaptcha = forwardRef<
   if (!siteKey) {
     return (
       <Banner
+        role="alert"
         status="error"
         title={t.auth.captcha.configurationError}
         container="card"
@@ -188,6 +189,7 @@ export const TurnstileCaptcha = forwardRef<
 
       {feedback ? (
         <Banner
+          role="alert"
           status="error"
           title={t.auth.captcha[feedback]}
           container="card"

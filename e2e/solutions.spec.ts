@@ -293,7 +293,7 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
     { exact: true },
   )
   const problemSearchInput = page.getByRole('textbox', { name: '문제 검색' })
-  const problemPickerPagination = page.getByText('Page 1 of 2', {
+  const problemPickerPagination = page.getByText('2 페이지 중 1 페이지', {
     exact: true,
   })
   const problemScrollArea = page.getByTestId('problem-picker-list-scroll-area')
@@ -310,11 +310,11 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
     .toBeGreaterThanOrEqual(128)
   await page.setViewportSize({ width: 320, height: 667 })
 
-  await page.getByRole('button', { name: 'Go to next page' }).click()
+  await page.getByRole('button', { name: '다음 페이지' }).click()
   await expect(
     page
       .getByRole('navigation', { name: '문제 목록 페이지' })
-      .getByText('Page 2 of 2', { exact: true }),
+      .getByText('2 페이지 중 2 페이지', { exact: true }),
   ).toBeVisible()
   await problemSearchInput.fill('1009')
   await expect(page.getByRole('button', { name: /E2E 문제 9/ })).toBeVisible()
@@ -587,7 +587,9 @@ test('deletes an authored solution and restores it from the undo toast', async (
 
   expect((await deleteResponsePromise).status()).toBe(204)
   await page.waitForURL((url) => url.pathname === '/solutions')
-  await expect(page.getByText('풀이를 삭제했습니다.')).toBeVisible()
+  await expect(
+    page.getByLabel('알림', { exact: true }).getByText('풀이를 삭제했습니다.'),
+  ).toBeVisible()
   await expect(page.getByRole('link', { name: /A\+B/ })).toHaveCount(0)
 
   const restoreResponsePromise = page.waitForResponse(
@@ -600,7 +602,9 @@ test('deletes an authored solution and restores it from the undo toast', async (
   await page.getByRole('button', { name: '실행 취소' }).click()
 
   expect((await restoreResponsePromise).status()).toBe(204)
-  await expect(page.getByText('풀이를 복구했습니다.')).toBeVisible()
+  await expect(
+    page.getByLabel('알림', { exact: true }).getByText('풀이를 복구했습니다.'),
+  ).toBeVisible()
   await expect(page.getByRole('link', { name: /A\+B/ })).toBeVisible()
 })
 

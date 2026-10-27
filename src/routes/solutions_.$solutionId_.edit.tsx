@@ -108,6 +108,7 @@ export function SolutionEditPage({ solutionId }: SolutionEditPageProps) {
           <SolutionEditSkeleton label={copy.loading} />
         ) : solutionQuery.isError || currentUserQuery.isError ? (
           <Banner
+            role={isAuthRequired ? 'status' : 'alert'}
             status={isAuthRequired ? 'info' : 'error'}
             title={
               isAuthRequired
@@ -142,6 +143,7 @@ export function SolutionEditPage({ solutionId }: SolutionEditPageProps) {
           />
         ) : currentUserQuery.data === null ? (
           <Banner
+            role="status"
             status="info"
             title={copy.authRequired}
             endContent={
@@ -154,7 +156,7 @@ export function SolutionEditPage({ solutionId }: SolutionEditPageProps) {
             }
           />
         ) : solutionQuery.data.userId !== currentUserQuery.data.id ? (
-          <Banner status="error" title={copy.forbidden} />
+          <Banner role="alert" status="error" title={copy.forbidden} />
         ) : (
           <SolutionEditForm
             key={solutionQuery.data.id}
@@ -176,12 +178,6 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
   const [isSolved, setIsSolved] = useState(solution.isSolved)
   const [memoryUsage, setMemoryUsage] = useState(solution.memoryUsage)
   const [timeElapsed, setTimeElapsed] = useState(solution.timeElapsed)
-  const [memoryUsageInput, setMemoryUsageInput] = useState(
-    solution.memoryUsage === null ? '' : String(solution.memoryUsage),
-  )
-  const [timeElapsedInput, setTimeElapsedInput] = useState(
-    solution.timeElapsed === null ? '' : String(solution.timeElapsed),
-  )
   const [formError, setFormError] = useState<SolutionUpdateFormError | null>(
     null,
   )
@@ -244,8 +240,6 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
       isDraft: solution.isDraft,
       memoryUsage,
       timeElapsed,
-      memoryUsageInput,
-      timeElapsedInput,
     })
 
     resetFeedback()
@@ -289,6 +283,7 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
         <VStack gap={5} hAlign="stretch">
           {updateMutation.isError ? (
             <Banner
+              role={isAuthRequired ? 'status' : 'alert'}
               status={isAuthRequired ? 'info' : 'error'}
               title={mutationErrorMessage}
               endContent={
@@ -380,6 +375,7 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
               isDisabled={isSubmitting}
             />
 
+            {/* 범위 검증은 폼에서 처리해 입력값이 자동 보정되지 않도록 합니다. */}
             <FormLayout direction="horizontal">
               <NumberInput
                 ref={memoryUsageInputRef}
@@ -388,28 +384,8 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
                 value={memoryUsage}
                 onChange={(nextValue) => {
                   setMemoryUsage(nextValue)
-                  setMemoryUsageInput(
-                    nextValue === null ? '' : String(nextValue),
-                  )
                   clearFeedback('memoryUsageInvalid')
                 }}
-                onInput={(event) => {
-                  const inputElement = event.currentTarget as HTMLInputElement
-                  const input = inputElement.value
-                  const parsedValue = Number(input)
-
-                  setMemoryUsageInput(
-                    getNumberInputValidationValue(inputElement),
-                  )
-                  if (!input.trim() || !Number.isFinite(parsedValue)) {
-                    setMemoryUsage(null)
-                  } else {
-                    setMemoryUsage(parsedValue)
-                  }
-                  clearFeedback('memoryUsageInvalid')
-                }}
-                min={-2_147_483_648}
-                max={2_147_483_647}
                 units="KB"
                 isIntegerOnly
                 hasClear
@@ -432,28 +408,8 @@ function SolutionEditForm({ solution }: { solution: SolutionDetail }) {
                 value={timeElapsed}
                 onChange={(nextValue) => {
                   setTimeElapsed(nextValue)
-                  setTimeElapsedInput(
-                    nextValue === null ? '' : String(nextValue),
-                  )
                   clearFeedback('timeElapsedInvalid')
                 }}
-                onInput={(event) => {
-                  const inputElement = event.currentTarget as HTMLInputElement
-                  const input = inputElement.value
-                  const parsedValue = Number(input)
-
-                  setTimeElapsedInput(
-                    getNumberInputValidationValue(inputElement),
-                  )
-                  if (!input.trim() || !Number.isFinite(parsedValue)) {
-                    setTimeElapsed(null)
-                  } else {
-                    setTimeElapsed(parsedValue)
-                  }
-                  clearFeedback('timeElapsedInvalid')
-                }}
-                min={-2_147_483_648}
-                max={2_147_483_647}
                 units="ms"
                 isIntegerOnly
                 hasClear
@@ -500,14 +456,6 @@ function SolutionEditSkeleton({ label }: { label: string }) {
 
 interface SolutionEditPageProps {
   solutionId: string
-}
-
-/**
- * Preserves native bad-input state because number inputs expose its value as
- * an empty string, which would otherwise be indistinguishable from clearing.
- */
-function getNumberInputValidationValue(input: HTMLInputElement) {
-  return input.validity.badInput ? String(Number.NaN) : input.value
 }
 
 function getLanguageOptions(currentLanguage: string | null) {
