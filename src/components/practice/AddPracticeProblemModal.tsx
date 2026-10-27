@@ -1,20 +1,12 @@
-import { Banner } from '@astryxdesign/core/Banner'
-import { Button } from '@astryxdesign/core/Button'
-import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
-import { HStack } from '@astryxdesign/core/HStack'
-import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
 import { useToast } from '@astryxdesign/core/Toast'
-import { VStack } from '@astryxdesign/core/VStack'
-import { useEffect, useId, useRef, useState } from 'react'
 
-import { ProblemPickerDialog } from '@/components/problems/problem-picker-dialog'
-import { PracticeProblemField } from '@/components/practice/practice-problem-field'
+import { ProblemMultiPickerDialog } from '@/components/problems/problem-multi-picker-dialog'
 import { useAddPracticeProblem } from '@/lib/api/practice'
-import type { Problem } from '@/lib/problems/problem-model'
 import { getProblemReferenceErrorMessage } from '@/lib/problems/problem-reference-errors'
 
 interface AddPracticeProblemModalProps {
   groupId: string
+  existingProblemIds?: readonly string[]
   practiceId: string
   isOpen: boolean
   onClose: () => void
@@ -28,42 +20,27 @@ export function AddPracticeProblemModal(props: AddPracticeProblemModalProps) {
 
 function AddPracticeProblemModalContent({
   groupId,
+  existingProblemIds,
   practiceId,
   onClose,
 }: AddPracticeProblemModalProps) {
-  const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
-  const [isPickerOpen, setIsPickerOpen] = useState(false)
-  const formId = useId()
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
   const showToast = useToast()
   const addProblem = useAddPracticeProblem(groupId, practiceId)
-  const isSubmitting = addProblem.isPending
   const errorMessage = addProblem.isError
     ? getProblemReferenceErrorMessage(
         addProblem.error,
-        '문제 등록에 실패했습니다.',
+        '문제를 추가하지 못했습니다.',
       )
     : null
 
-  useEffect(() => {
-    if (errorMessage && scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = 0
-    }
-  }, [errorMessage])
-
-  function handleClose(open: boolean) {
-    if (!open && !isSubmitting) onClose()
-  }
-
-  function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (isSubmitting || !selectedProblem) return
+  function handleSubmit(problemIds: string[]) {
+    if (addProblem.isPending || problemIds.length === 0) return
 
     addProblem.mutate(
-      { problemIds: [selectedProblem.id] },
+      { problemIds },
       {
         onSuccess: () => {
-          showToast({ body: '문제가 성공적으로 등록되었습니다.' })
+          showToast({ body: '문제를 추가했습니다.' })
           onClose()
         },
       },
@@ -71,76 +48,15 @@ function AddPracticeProblemModalContent({
   }
 
   return (
-    <>
-      <Dialog
-        isOpen
-        onOpenChange={handleClose}
-        purpose="form"
-        width={560}
-        maxHeight="calc(100dvh - 1rem)"
-      >
-        <Layout
-          height="fill"
-          defaultHasDividers
-          header={
-            <DialogHeader title="문제 추가하기" onOpenChange={handleClose} />
-          }
-          content={
-            <LayoutContent
-              ref={scrollAreaRef}
-              isScrollable
-              data-testid="practice-form-scroll-area"
-            >
-              <form id={formId} onSubmit={handleSubmit}>
-                <VStack gap={4}>
-                  {errorMessage && (
-                    <Banner status="error" title={errorMessage} />
-                  )}
-                  <PracticeProblemField
-                    selectedProblem={selectedProblem}
-                    isDisabled={isSubmitting}
-                    onOpenPicker={() => {
-                      setIsPickerOpen(true)
-                    }}
-                  />
-                </VStack>
-              </form>
-            </LayoutContent>
-          }
-          footer={
-            <LayoutFooter>
-              <HStack width="100%" hAlign="end" gap={2}>
-                <Button
-                  label="취소"
-                  variant="secondary"
-                  isDisabled={isSubmitting}
-                  onClick={() => {
-                    handleClose(false)
-                  }}
-                />
-                <Button
-                  type="submit"
-                  form={formId}
-                  label="추가하기"
-                  variant="primary"
-                  isDisabled={!selectedProblem || isSubmitting}
-                  isLoading={isSubmitting}
-                />
-              </HStack>
-            </LayoutFooter>
-          }
-        />
-      </Dialog>
-      <ProblemPickerDialog
-        isOpen={isPickerOpen}
-        onOpenChange={setIsPickerOpen}
-        selectedProblem={selectedProblem}
-        onSelect={(problem) => {
-          setSelectedProblem(problem)
-          addProblem.reset()
-        }}
-        description="연습에 연결할 문제를 선택해 주세요."
-      />
-    </>
+    <ProblemMultiPickerDialog
+      existingProblemIds={existingProblemIds ?? []}
+      title="문제 추가하기"
+      description="연습에 추가할 문제를 선택해 주세요. 여러 문제를 선택할 수 있습니다."
+      isSubmitting={addProblem.isPending}
+      errorMessage={errorMessage}
+      onSelectionChange={addProblem.reset}
+      onClose={onClose}
+      onSubmit={handleSubmit}
+    />
   )
 }

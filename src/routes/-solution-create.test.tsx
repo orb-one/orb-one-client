@@ -233,7 +233,7 @@ it('shows a dedicated empty state when a problem search has no matches', async (
 
   expect(await screen.findByText('검색 결과가 없습니다')).toBeVisible()
   expect(
-    screen.getByText('다른 문제명 또는 문제 번호로 검색해 주세요.'),
+    screen.getByText('다른 문제 이름이나 번호로 검색해 주세요.'),
   ).toBeVisible()
   expect(screen.queryByText('선택할 문제가 없습니다')).not.toBeInTheDocument()
 })

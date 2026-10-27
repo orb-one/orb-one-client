@@ -74,6 +74,7 @@ function PracticeDetailPage() {
                 />
                 <Button
                   label="문제 추가"
+                  isDisabled={!practice || isLoading}
                   size="sm"
                   variant="primary"
                   icon={<Icon icon={Plus} size="sm" />}
@@ -110,6 +111,9 @@ function PracticeDetailPage() {
       <AddPracticeProblemModal
         groupId={groupId}
         practiceId={practiceId}
+        existingProblemIds={
+          practice?.problems?.map((problem) => problem.problemId) ?? []
+        }
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false)

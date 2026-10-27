@@ -23,6 +23,14 @@ const catalog = [
     url: 'https://www.acmicpc.net/problem/2557',
     difficulty: null,
   },
+  {
+    problemId: '10000000-0000-4000-8000-000000000003',
+    provider: 'BOJ',
+    externalProblemId: '1001',
+    name: 'A-B',
+    url: 'https://www.acmicpc.net/problem/1001',
+    difficulty: null,
+  },
 ]
 type FormKind = 'create' | 'add'
 
@@ -71,7 +79,7 @@ test.beforeEach(async ({ page }) => {
             title: '모달 테스트 연습',
             startDate: '2030-01-01T00:00:00',
             endDate: '2030-01-03T23:59:59',
-            problems: catalog.slice(0, 1),
+            problems: catalog.slice(2, 3),
           },
         }),
   )
@@ -113,9 +121,12 @@ async function openForm(page: Page, kind: FormKind) {
 }
 
 async function openPicker(page: Page) {
-  await page
-    .getByRole('button', { name: /문제 선택|문제 변경/, exact: true })
-    .click()
+  const button = page.getByRole('button', {
+    name: /문제 선택|문제 변경/,
+    exact: true,
+  })
+  if (await button.count()) await button.click()
+  else await page.getByRole('textbox', { name: '문제 검색' }).focus()
   await expect(page.getByRole('textbox', { name: '문제 검색' })).toBeFocused()
 }
 
@@ -124,9 +135,15 @@ async function chooseProblem(page: Page, name: string) {
     .getByRole('button')
     .filter({ has: page.getByText(name, { exact: true }) })
     .click()
-  await expect(
-    page.getByRole('heading', { name: '문제 선택', exact: true }),
-  ).toBeHidden()
+  if (
+    !(await page
+      .getByRole('heading', { name: '문제 추가하기', exact: true })
+      .count())
+  ) {
+    await expect(
+      page.getByRole('heading', { name: '문제 선택', exact: true }),
+    ).toBeHidden()
+  }
 }
 
 for (const kind of ['create', 'add'] as const) {
@@ -160,13 +177,13 @@ for (const kind of ['create', 'add'] as const) {
     await chooseProblem(page, 'A+B')
     await page
       .getByRole('button', {
-        name: kind === 'create' ? '생성하기' : '추가하기',
+        name: kind === 'create' ? '생성하기' : '선택한 문제 추가',
         exact: true,
       })
       .click()
     await expect(
       page.getByRole('heading', {
-        name: kind === 'create' ? '연습 및 첫 문제 등록' : '문제 추가하기',
+        name: kind === 'create' ? '연습 만들기' : '문제 추가하기',
         exact: true,
       }),
     ).toBeHidden()
@@ -178,16 +195,23 @@ for (const kind of ['create', 'add'] as const) {
             endDate: '2030-01-03T23:59:59',
             problemIds: [catalog[0]?.problemId],
           }
-        : { problemIds: [catalog[0]?.problemId] },
+        : { problemIds: [catalog[1]?.problemId, catalog[0]?.problemId] },
     ])
   })
 
-  test(`${kind}: picker Escape keeps the parent draft and restores focus`, async ({
+  test(`${kind}: Escape closes the picker and restores the appropriate draft state`, async ({
     page,
   }) => {
     await openForm(page, kind)
     await openPicker(page)
     await chooseProblem(page, 'Hello World')
+    if (kind === 'add') {
+      await page.keyboard.press('Escape')
+      await expect(page.getByRole('dialog')).toHaveCount(0)
+      await page.getByRole('button', { name: '문제 추가', exact: true }).click()
+      await expect(page.getByText('0개 선택됨')).toBeVisible()
+      return
+    }
     await openPicker(page)
     await page.getByRole('textbox', { name: '문제 검색' }).press('Escape')
     await expect(
@@ -195,7 +219,7 @@ for (const kind of ['create', 'add'] as const) {
     ).toBeHidden()
     await expect(
       page.getByRole('heading', {
-        name: kind === 'create' ? '연습 및 첫 문제 등록' : '문제 추가하기',
+        name: '연습 만들기',
         exact: true,
       }),
     ).toBeVisible()
@@ -205,27 +229,25 @@ for (const kind of ['create', 'add'] as const) {
     await expect(
       page.getByText('Hello World', { exact: true }).filter({ visible: true }),
     ).toBeVisible()
-    if (kind === 'create') {
-      await expect(
-        page.getByRole('textbox', { name: '연습 이름' }),
-      ).toHaveValue('보존할 초안')
-      await expect(
-        page.getByRole('textbox', { name: '시작 일시' }),
-      ).toHaveValue('2030-01-01')
-      await expect(
-        page.getByRole('textbox', { name: '종료 일시' }),
-      ).toHaveValue('2030-01-03')
-    }
+    await expect(page.getByRole('textbox', { name: '연습 이름' })).toHaveValue(
+      '보존할 초안',
+    )
+    await expect(page.getByRole('textbox', { name: '시작 일시' })).toHaveValue(
+      '2030-01-01',
+    )
+    await expect(page.getByRole('textbox', { name: '종료 일시' })).toHaveValue(
+      '2030-01-03',
+    )
     await page.keyboard.press('Escape')
     await expect(
       page.getByRole('heading', {
-        name: kind === 'create' ? '연습 및 첫 문제 등록' : '문제 추가하기',
+        name: '연습 만들기',
         exact: true,
       }),
     ).toBeHidden()
   })
 
-  test(`${kind}: browser Back releases both dialog scroll locks`, async ({
+  test(`${kind}: browser Back releases dialog scroll locks`, async ({
     page,
   }) => {
     await page.route(apiUrl(`${groupPath}/problem-sets`) + '?**', (route) =>
@@ -281,8 +303,14 @@ for (const kind of ['create', 'add'] as const) {
     await openForm(page, kind)
     await openPicker(page)
     const picker = page.getByRole('dialog').filter({
-      has: page.getByRole('heading', { name: '문제 선택', exact: true }),
+      has: page.getByRole('heading', {
+        name: kind === 'create' ? '문제 선택' : '문제 추가하기',
+        exact: true,
+      }),
     })
+    await expect(
+      picker.getByText('로그인이 필요합니다.', { exact: true }),
+    ).toBeVisible()
     await picker.getByRole('link', { name: '로그인', exact: true }).click()
     await expect(page).toHaveURL(/\/login$/)
     await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -329,46 +357,61 @@ for (const viewport of [
   { width: 390, height: 430 },
   { width: 844, height: 390 },
 ]) {
-  test(`keeps actions visible while the form body scrolls at ${String(viewport.width)}x${String(viewport.height)}`, async ({
-    page,
-  }) => {
-    await page.setViewportSize(viewport)
-    await page.route(apiUrl(`${groupPath}/practices`), (route) =>
-      route.request().method() === 'POST'
-        ? route.fulfill({
-            status: 400,
-            json: {
-              code: 'INVALID_FIELD',
-              message: '요청 값이 올바르지 않습니다.',
-            },
-          })
-        : route.fallback(),
-    )
-    await openForm(page, 'create')
-    await openPicker(page)
-    await chooseProblem(page, 'Hello World')
-    const submit = page.getByRole('button', { name: '생성하기', exact: true })
-    await expectPointerReachable(submit)
-    const body = page.getByTestId('practice-form-scroll-area')
-    const rect = await body.boundingBox()
-    if (!rect) throw new Error('Practice form body is missing')
-    await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2)
-    await page.mouse.wheel(0, -1000)
-    await expect
-      .poll(() => body.evaluate((element) => element.scrollTop))
-      .toBe(0)
-    await page.mouse.wheel(0, 1000)
-    await expect
-      .poll(() => body.evaluate((element) => element.scrollTop))
-      .toBeGreaterThan(0)
-    await expectPointerReachable(submit)
-    await submit.click()
-    await expect(
-      page.getByText('요청 값이 올바르지 않습니다.', { exact: true }),
-    ).toBeInViewport({ ratio: 1 })
-    await expectPointerReachable(submit)
-    await page.screenshot({
-      path: test.info().outputPath('short-practice-form.png'),
+  for (const kind of ['create', 'add'] as const) {
+    test(`keeps ${kind} actions visible while the form body scrolls at ${String(viewport.width)}x${String(viewport.height)}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport)
+      await page.route(
+        apiUrl(
+          kind === 'create'
+            ? `${groupPath}/practices`
+            : `${practicePath}/problems`,
+        ),
+        (route) =>
+          route.request().method() === 'POST'
+            ? route.fulfill({
+                status: 400,
+                json: {
+                  code: 'INVALID_FIELD',
+                  message: '요청 값이 올바르지 않습니다.',
+                },
+              })
+            : route.fallback(),
+      )
+      await openForm(page, kind)
+      await openPicker(page)
+      await chooseProblem(page, 'Hello World')
+      const submit = page.getByRole('button', {
+        name: kind === 'create' ? '생성하기' : '선택한 문제 추가',
+        exact: true,
+      })
+      await expectPointerReachable(submit)
+      const body = page.getByTestId(
+        kind === 'create'
+          ? 'practice-form-scroll-area'
+          : 'problem-multi-picker-scroll-area',
+      )
+      const rect = await body.boundingBox()
+      if (!rect) throw new Error('Practice form body is missing')
+      await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2)
+      await page.mouse.wheel(0, -1000)
+      await expect
+        .poll(() => body.evaluate((element) => element.scrollTop))
+        .toBe(0)
+      await page.mouse.wheel(0, 1000)
+      await expect
+        .poll(() => body.evaluate((element) => element.scrollTop))
+        .toBeGreaterThan(0)
+      await expectPointerReachable(submit)
+      await submit.click()
+      await expect(
+        page.getByText('요청 값이 올바르지 않습니다.', { exact: true }),
+      ).toBeInViewport({ ratio: 1 })
+      await expectPointerReachable(submit)
+      await page.screenshot({
+        path: test.info().outputPath(`short-practice-${kind}.png`),
+      })
     })
-  })
+  }
 }

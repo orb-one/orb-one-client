@@ -59,13 +59,16 @@ function renderModal(children: ReactNode) {
 }
 
 async function selectProblem(name = 'A+B') {
-  await userEvent.click(
-    screen.getByRole('button', { name: /문제 선택|문제 변경/ }),
-  )
+  const pickerButton = screen.queryByRole('button', {
+    name: /문제 선택|문제 변경/,
+  })
+  if (pickerButton) await userEvent.click(pickerButton)
   await userEvent.click(await screen.findByText(name))
-  await waitFor(() =>
-    expect(screen.getByRole('button', { name: '문제 변경' })).toBeVisible(),
-  )
+  if (pickerButton) {
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '문제 변경' })).toBeVisible(),
+    )
+  }
 }
 
 async function fillDates() {
@@ -120,7 +123,7 @@ it('creates a practice with the selected catalog UUID and invalidates the list',
   expect(queryClient.getQueryState(listKey)?.isInvalidated).toBe(true)
 })
 
-it('adds a catalog UUID and invalidates practice detail and list', async () => {
+it('adds multiple catalog UUIDs in one request and invalidates practice detail and list', async () => {
   let body: unknown
   server.use(
     http.post(`${practicePath}/practice-1/problems`, async ({ request }) => {
@@ -141,14 +144,22 @@ it('adds a catalog UUID and invalidates practice detail and list', async () => {
   queryClient.setQueryData(listKey, [])
   queryClient.setQueryData(detailKey, {})
 
-  expect(screen.getByRole('button', { name: '추가하기' })).toBeDisabled()
+  expect(
+    screen.getByRole('button', { name: '선택한 문제 추가' }),
+  ).toBeDisabled()
   await selectProblem()
-  await userEvent.click(screen.getByRole('button', { name: '추가하기' }))
+  await selectProblem('Hello World')
+  expect(screen.getByText('2개 선택됨')).toBeVisible()
+  await userEvent.click(
+    screen.getByRole('button', { name: '선택한 문제 추가' }),
+  )
 
   await waitFor(() => {
     expect(onClose).toHaveBeenCalledOnce()
   })
-  expect(body).toEqual({ problemIds: [mockProblems[0]?.problemId] })
+  expect(body).toEqual({
+    problemIds: [mockProblems[0]?.problemId, mockProblems[1]?.problemId],
+  })
   expect(queryClient.getQueryState(listKey)?.isInvalidated).toBe(true)
   expect(queryClient.getQueryState(detailKey)?.isInvalidated).toBe(true)
 })
@@ -178,7 +189,7 @@ it('keeps creation input after a missing UUID and lets the user reselect and ret
 
   expect(
     await screen.findByText(
-      '선택한 문제를 찾을 수 없습니다. 문제를 다시 선택해 주세요.',
+      '선택한 문제를 찾을 수 없습니다. 다른 문제를 선택해 주세요.',
     ),
   ).toBeVisible()
   expect(screen.getByRole('textbox', { name: '연습 이름' })).toHaveValue(
@@ -200,7 +211,7 @@ it('keeps creation input after a missing UUID and lets the user reselect and ret
 it.each([
   [400, 'INVALID_FIELD', '요청 값이 올바르지 않습니다.'],
   [409, 'PROBLEM_ALREADY_IN_PRACTICE', '이미 연습에 포함된 문제가 있습니다.'],
-  [409, 'PRACTICE_ALREADY_ENDED', '종료된 연습은 수정할 수 없습니다.'],
+  [409, 'PRACTICE_ALREADY_ENDED', '종료된 연습에는 문제를 추가할 수 없습니다.'],
 ])(
   'keeps the selected problem after add failure %s %s',
   async (status, code, message) => {
@@ -218,12 +229,16 @@ it.each([
       />,
     )
     await selectProblem()
-    await userEvent.click(screen.getByRole('button', { name: '추가하기' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: '선택한 문제 추가' }),
+    )
 
     expect(await screen.findByText(message)).toBeVisible()
-    expect(screen.getByText('BOJ 1000', { exact: true })).toBeVisible()
+    expect(screen.getByText('1개 선택됨')).toBeVisible()
     expect(onClose).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: '추가하기' })).toBeEnabled()
+    expect(
+      screen.getByRole('button', { name: '선택한 문제 추가' }),
+    ).toBeEnabled()
   },
 )
 
@@ -259,11 +274,13 @@ it('refreshes catalog lists after a deleted UUID without invalidating a successf
     totalPages: 0,
   })
   queryClient.setQueryData(detailKey, {})
-  await userEvent.click(screen.getByRole('button', { name: '추가하기' }))
+  await userEvent.click(
+    screen.getByRole('button', { name: '선택한 문제 추가' }),
+  )
 
   expect(
     await screen.findByText(
-      '선택한 문제를 찾을 수 없습니다. 문제를 다시 선택해 주세요.',
+      '선택한 문제를 찾을 수 없습니다. 다른 문제를 선택해 주세요.',
     ),
   ).toBeVisible()
   expect(queryClient.getQueryState(catalogKey)?.isInvalidated).toBe(true)
@@ -297,54 +314,251 @@ it('discards the selection when a modal is closed and reopened', async () => {
       onClose={onClose}
     />,
   )
-  expect(screen.getByRole('button', { name: '추가하기' })).toBeDisabled()
+  expect(
+    screen.getByRole('button', { name: '선택한 문제 추가' }),
+  ).toBeDisabled()
+})
+
+it('keeps the creation picker outside the form and preserves its draft on Escape', async () => {
+  renderModal(
+    <CreatePracticeModal groupId="group-1" isOpen onClose={onClose} />,
+  )
+  await fillDates()
+  await selectProblem()
+  await userEvent.click(screen.getByRole('button', { name: '문제 변경' }))
+  const search = screen.getByRole<HTMLInputElement>('textbox', {
+    name: '문제 검색',
+  })
+  expect(search.form).toBeNull()
+  await userEvent.keyboard('{Escape}')
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: '문제 변경' })).toHaveFocus(),
+  )
+  expect(screen.getByText('BOJ 1000', { exact: true })).toBeVisible()
+  expect(onClose).not.toHaveBeenCalled()
+  expect(screen.getByRole('textbox', { name: '연습 이름' })).toHaveValue(
+    '1주차 연습',
+  )
+  expect(screen.getByRole('textbox', { name: '시작 일시' })).toHaveValue(
+    '2030-01-01',
+  )
+  expect(screen.getByRole('textbox', { name: '종료 일시' })).toHaveValue(
+    '2030-01-03',
+  )
+})
+
+it('marks existing practice problems and only submits newly selected UUIDs', async () => {
+  let body: unknown
+  server.use(
+    http.post(`${practicePath}/practice-1/problems`, async ({ request }) => {
+      body = await request.json()
+      return new HttpResponse(null, { status: 200 })
+    }),
+  )
+  renderModal(
+    <AddPracticeProblemModal
+      groupId="group-1"
+      practiceId="practice-1"
+      existingProblemIds={[String(mockProblems[0]?.problemId)]}
+      isOpen
+      onClose={onClose}
+    />,
+  )
+  const existing = await screen.findByRole('button', { name: /A\+B/ })
+  expect(existing).toBeDisabled()
+  expect(screen.getByText('이미 추가됨')).toBeVisible()
+  await userEvent.click(existing)
+  expect(screen.getByText('0개 선택됨')).toBeVisible()
+  await selectProblem('Hello World')
+  await userEvent.click(
+    screen.getByRole('button', { name: '선택한 문제만 보기' }),
+  )
+  expect(screen.queryByText('A+B')).not.toBeInTheDocument()
+  expect(screen.getByText('1개 선택됨')).toBeVisible()
+  await userEvent.click(
+    screen.getByRole('button', { name: '선택한 문제 추가' }),
+  )
+  await waitFor(() => {
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+  expect(body).toEqual({ problemIds: [mockProblems[1]?.problemId] })
+})
+
+it('removes a selected problem when it becomes part of the practice while the dialog is open', async () => {
+  let body: unknown
+  server.use(
+    http.post(`${practicePath}/practice-1/problems`, async ({ request }) => {
+      body = await request.json()
+      return new HttpResponse(null, { status: 200 })
+    }),
+  )
+  const { rerender } = renderModal(
+    <AddPracticeProblemModal
+      groupId="group-1"
+      practiceId="practice-1"
+      isOpen
+      onClose={onClose}
+    />,
+  )
+  await selectProblem()
+  await selectProblem('Hello World')
+  rerender(
+    <AddPracticeProblemModal
+      groupId="group-1"
+      practiceId="practice-1"
+      existingProblemIds={[String(mockProblems[0]?.problemId)]}
+      isOpen
+      onClose={onClose}
+    />,
+  )
+  await waitFor(() => expect(screen.getByText('1개 선택됨')).toBeVisible())
+  expect(screen.getByRole('button', { name: /A\+B/ })).toBeDisabled()
+  rerender(
+    <AddPracticeProblemModal
+      groupId="group-1"
+      practiceId="practice-1"
+      existingProblemIds={[]}
+      isOpen
+      onClose={onClose}
+    />,
+  )
+  expect(screen.getByText('1개 선택됨')).toBeVisible()
+  await userEvent.click(
+    screen.getByRole('button', { name: '선택한 문제 추가' }),
+  )
+  await waitFor(() => {
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+  expect(body).toEqual({ problemIds: [mockProblems[1]?.problemId] })
+})
+
+it('keeps multiple selections across searches and allows deselection in the selected-only view', async () => {
+  renderModal(
+    <AddPracticeProblemModal
+      groupId="group-1"
+      practiceId="practice-1"
+      isOpen
+      onClose={onClose}
+    />,
+  )
+  await selectProblem()
+  const search = screen.getByRole('textbox', { name: '문제 검색' })
+  await userEvent.type(search, '1204')
+  await waitFor(() => expect(screen.queryByText('A+B')).not.toBeInTheDocument())
+  await selectProblem('최빈수 구하기')
+  expect(screen.getByText('2개 선택됨')).toBeVisible()
+  await userEvent.click(
+    screen.getByRole('button', { name: '선택한 문제만 보기' }),
+  )
+  expect(screen.getByText('A+B')).toBeVisible()
+  expect(screen.getByText('최빈수 구하기')).toBeVisible()
+  expect(screen.queryByText('Hello World')).not.toBeInTheDocument()
+  await userEvent.click(screen.getByText('A+B'))
+  expect(screen.getByText('1개 선택됨')).toBeVisible()
+  await userEvent.click(screen.getByText('최빈수 구하기'))
+  expect(
+    screen.getByRole('button', { name: '선택한 문제 추가' }),
+  ).toBeDisabled()
+})
+
+it('keeps selections across catalog pages and submits both UUIDs together', async () => {
+  const problems = Array.from({ length: 11 }, (_, index) => ({
+    problemId: `20000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+    provider: 'BOJ',
+    externalProblemId: String(index + 1),
+    name: `페이지 문제 ${String(index + 1)}`,
+    url: `https://www.acmicpc.net/problem/${String(index + 1)}`,
+    difficulty: null,
+  }))
+  let body: unknown
+  server.use(
+    http.get(`${apiBase}/problems`, ({ request }) => {
+      const page = Number(new URL(request.url).searchParams.get('page') ?? 0)
+      return HttpResponse.json({
+        problems: problems.slice(page * 10, page * 10 + 10),
+        page,
+        size: 10,
+        totalElements: 11,
+        totalPages: 2,
+      })
+    }),
+    http.post(`${practicePath}/practice-1/problems`, async ({ request }) => {
+      body = await request.json()
+      return new HttpResponse(null, { status: 200 })
+    }),
+  )
+  renderModal(
+    <AddPracticeProblemModal
+      groupId="group-1"
+      practiceId="practice-1"
+      isOpen
+      onClose={onClose}
+    />,
+  )
+  await selectProblem('페이지 문제 1')
+  await userEvent.click(screen.getByRole('button', { name: 'Go to next page' }))
+  await selectProblem('페이지 문제 11')
+  expect(screen.getByText('2개 선택됨')).toBeVisible()
+  await userEvent.click(
+    screen.getByRole('button', { name: '선택한 문제만 보기' }),
+  )
+  expect(screen.getByText('페이지 문제 1')).toBeVisible()
+  expect(screen.getByText('페이지 문제 11')).toBeVisible()
+  await userEvent.click(
+    screen.getByRole('button', { name: '선택한 문제 추가' }),
+  )
+  await waitFor(() => {
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+  expect(body).toEqual({
+    problemIds: [problems[0]?.problemId, problems[10]?.problemId],
+  })
+})
+
+it('locks selection and closing while a bulk addition is pending', async () => {
+  let release: (() => void) | undefined
+  server.use(
+    http.post(`${practicePath}/practice-1/problems`, async () => {
+      await new Promise<void>((resolve) => {
+        release = resolve
+      })
+      return new HttpResponse(null, { status: 200 })
+    }),
+  )
+  renderModal(
+    <AddPracticeProblemModal
+      groupId="group-1"
+      practiceId="practice-1"
+      isOpen
+      onClose={onClose}
+    />,
+  )
+  await selectProblem()
+  await selectProblem('Hello World')
+  await userEvent.click(
+    screen.getByRole('button', { name: '선택한 문제 추가' }),
+  )
+  try {
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: '문제 검색' })).toBeDisabled(),
+    )
+    expect(
+      screen.getByRole('button', { name: '선택한 문제만 보기' }),
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: '취소' })).toBeDisabled()
+    await userEvent.keyboard('{Escape}')
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByText('2개 선택됨')).toBeVisible()
+  } finally {
+    release?.()
+  }
+  await waitFor(() => {
+    expect(onClose).toHaveBeenCalledOnce()
+  })
 })
 
 it.each(['create', 'add'] as const)(
-  '%s: keeps the picker outside the form and preserves the draft on Escape',
-  async (kind) => {
-    renderModal(
-      kind === 'create' ? (
-        <CreatePracticeModal groupId="group-1" isOpen onClose={onClose} />
-      ) : (
-        <AddPracticeProblemModal
-          groupId="group-1"
-          practiceId="practice-1"
-          isOpen
-          onClose={onClose}
-        />
-      ),
-    )
-    if (kind === 'create') await fillDates()
-    await selectProblem()
-    await userEvent.click(screen.getByRole('button', { name: '문제 변경' }))
-    const search = screen.getByRole<HTMLInputElement>('textbox', {
-      name: '문제 검색',
-    })
-    expect(search.form).toBeNull()
-    await userEvent.keyboard('{Escape}')
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: '문제 변경' })).toHaveFocus()
-    })
-    expect(screen.getByText('BOJ 1000', { exact: true })).toBeVisible()
-    expect(onClose).not.toHaveBeenCalled()
-    if (kind === 'create') {
-      expect(screen.getByRole('textbox', { name: '연습 이름' })).toHaveValue(
-        '1주차 연습',
-      )
-      expect(screen.getByRole('textbox', { name: '시작 일시' })).toHaveValue(
-        '2030-01-01',
-      )
-      expect(screen.getByRole('textbox', { name: '종료 일시' })).toHaveValue(
-        '2030-01-03',
-      )
-    }
-  },
-)
-
-it.each(['create', 'add'] as const)(
-  '%s: restores the original body styles when both dialogs unmount together',
+  '%s: restores the original body styles when its dialogs unmount',
   async (kind) => {
     const originalStyle = document.body.getAttribute('style')
     document.body.style.cssText =
@@ -364,7 +578,8 @@ it.each(['create', 'add'] as const)(
           )}
         </StrictMode>,
       )
-      await userEvent.click(screen.getByRole('button', { name: '문제 선택' }))
+      if (kind === 'create')
+        await userEvent.click(screen.getByRole('button', { name: '문제 선택' }))
       expect(document.body.style.position).toBe('fixed')
       unmount()
       expect(document.body.style).toMatchObject({

@@ -14,7 +14,7 @@ import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useQuery } from '@tanstack/react-query'
 import { Check, Search } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
 
@@ -22,10 +22,15 @@ import { AuthSessionExpiredError } from '@/lib/api/client'
 import type { Problem } from '@/lib/problems/problem-model'
 import { problemListQueryOptions } from '@/lib/problems/problem-queries'
 
+const EMPTY_PROBLEM_IDS: readonly string[] = []
 const PAGE_SIZE = 10
 const SEARCH_DEBOUNCE_MS = 300
 
-interface ProblemSetAddProblemsDialogProps {
+interface ProblemMultiPickerDialogProps {
+  existingProblemIds?: readonly string[]
+  title?: string
+  description?: string
+  onSelectionChange?: () => void
   isSubmitting: boolean
   errorMessage?: string | null
   onClose: () => void
@@ -40,12 +45,21 @@ interface FormState {
   showSelectedOnly: boolean
 }
 
-export function ProblemSetAddProblemsDialog({
+export function ProblemMultiPickerDialog({
+  existingProblemIds = EMPTY_PROBLEM_IDS,
+  title = '문제 추가',
+  description = '추가할 문제를 선택해 주세요. 여러 문제를 선택할 수 있습니다.',
+  onSelectionChange,
   isSubmitting,
   errorMessage,
   onClose,
   onSubmit,
-}: ProblemSetAddProblemsDialogProps) {
+}: ProblemMultiPickerDialogProps) {
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (errorMessage && scrollAreaRef.current)
+      scrollAreaRef.current.scrollTop = 0
+  }, [errorMessage])
   // 모달 인스턴스별로 선택 상태를 관리합니다.
   const [store] = useState(() =>
     createStore<FormState>(() => ({
@@ -57,8 +71,26 @@ export function ProblemSetAddProblemsDialog({
     })),
   )
 
-  const { page, searchQuery, keyword, selectedProblems, showSelectedOnly } =
-    useStore(store)
+  const {
+    page,
+    searchQuery,
+    keyword,
+    selectedProblems: storedSelections,
+    showSelectedOnly,
+  } = useStore(store)
+  const existingIds = new Set(existingProblemIds)
+  const selectedProblems = storedSelections.filter(
+    (problem) => !existingIds.has(problem.id),
+  )
+
+  // 열린 동안 다른 경로에서 추가된 문제도 선택 목록에서 제외합니다.
+  useEffect(() => {
+    const ids = new Set(existingProblemIds)
+    const current = store.getState().selectedProblems
+    const remaining = current.filter((problem) => !ids.has(problem.id))
+    if (remaining.length !== current.length)
+      store.setState({ selectedProblems: remaining })
+  }, [existingProblemIds, store])
 
   const problemsQuery = useQuery({
     ...problemListQueryOptions({
@@ -105,7 +137,7 @@ export function ProblemSetAddProblemsDialog({
   }
 
   function toggleProblem(problem: Problem) {
-    if (isSubmitting) return
+    if (isSubmitting || existingIds.has(problem.id)) return
 
     // 페이지가 바뀌어도 선택한 문제는 유지합니다.
     store.setState((state) => ({
@@ -117,6 +149,7 @@ export function ProblemSetAddProblemsDialog({
           )
         : [...state.selectedProblems, problem],
     }))
+    onSelectionChange?.()
   }
 
   function handleSubmit() {
@@ -136,7 +169,7 @@ export function ProblemSetAddProblemsDialog({
     ? '전체 목록에서 추가할 문제를 선택해 주세요.'
     : keyword
       ? '다른 문제 이름이나 번호로 검색해 주세요.'
-      : '전역 문제 목록에 등록된 문제만 추가할 수 있습니다.'
+      : undefined
 
   return (
     <Dialog
@@ -147,17 +180,19 @@ export function ProblemSetAddProblemsDialog({
       purpose="form"
     >
       <Layout
-        height="auto"
+        height="fill"
         defaultHasDividers
-        header={
-          <DialogHeader title="문제 추가" onOpenChange={handleOpenChange} />
-        }
+        header={<DialogHeader title={title} onOpenChange={handleOpenChange} />}
         content={
-          <LayoutContent isScrollable>
+          <LayoutContent
+            ref={scrollAreaRef}
+            isScrollable
+            data-testid="problem-multi-picker-scroll-area"
+          >
             <VStack gap={3} width="100%">
+              {errorMessage && <Banner status="error" title={errorMessage} />}
               <Text type="body" size="sm" color="secondary">
-                문제집에 추가할 문제를 선택해 주세요. 여러 문제를 선택할 수
-                있습니다.
+                {description}
               </Text>
 
               {!showSelectedOnly && (
@@ -167,6 +202,7 @@ export function ProblemSetAddProblemsDialog({
                   value={searchQuery}
                   startIcon={Search}
                   hasClear
+                  hasAutoFocus
                   isDisabled={isSubmitting}
                   isLoading={isSearching || problemsQuery.isFetching}
                   onChange={(value) => {
@@ -236,13 +272,16 @@ export function ProblemSetAddProblemsDialog({
               ) : visibleProblems.length === 0 ? (
                 <EmptyState
                   title={emptyTitle}
-                  description={emptyDescription}
+                  {...(emptyDescription
+                    ? { description: emptyDescription }
+                    : {})}
                   headingLevel={2}
                 />
               ) : (
                 <List density="balanced" hasDividers>
                   {visibleProblems.map((problem) => {
                     const isSelected = selectedIds.has(problem.id)
+                    const isExisting = existingIds.has(problem.id)
 
                     return (
                       <ListItem
@@ -250,12 +289,16 @@ export function ProblemSetAddProblemsDialog({
                         label={problem.name}
                         description={formatProblemMetadata(problem)}
                         isSelected={isSelected}
-                        isDisabled={isSubmitting}
+                        isDisabled={isSubmitting || isExisting}
                         onClick={() => {
                           toggleProblem(problem)
                         }}
                         endContent={
-                          isSelected ? (
+                          isExisting ? (
+                            <Text type="supporting" color="secondary">
+                              이미 추가됨
+                            </Text>
+                          ) : isSelected ? (
                             <>
                               <Icon icon={Check} size="sm" color="accent" />
                               <VisuallyHidden>선택됨</VisuallyHidden>
@@ -267,8 +310,6 @@ export function ProblemSetAddProblemsDialog({
                   })}
                 </List>
               )}
-
-              {errorMessage && <Banner status="error" title={errorMessage} />}
             </VStack>
           </LayoutContent>
         }

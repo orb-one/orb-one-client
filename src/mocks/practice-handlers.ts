@@ -186,7 +186,7 @@ export const practiceHandlers = [
       if (new Date(practice.endDate).getTime() <= Date.now()) {
         return problemReferenceError(
           'PRACTICE_ALREADY_ENDED',
-          '종료된 연습은 수정할 수 없습니다.',
+          '종료된 연습에는 문제를 추가할 수 없습니다.',
           409,
         )
       }

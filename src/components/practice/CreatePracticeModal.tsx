@@ -51,7 +51,7 @@ function CreatePracticeModalContent({
     (createPractice.isError
       ? getProblemReferenceErrorMessage(
           createPractice.error,
-          '연습 생성에 실패했습니다.',
+          '연습을 만들지 못했습니다.',
         )
       : null)
 
@@ -70,7 +70,7 @@ function CreatePracticeModalContent({
     if (isSubmitting) return
 
     if (!title.trim()) {
-      setValidationError('연습 이름을 입력해주세요.')
+      setValidationError('연습 이름을 입력해 주세요.')
       return
     }
 
@@ -95,7 +95,7 @@ function CreatePracticeModalContent({
       },
       {
         onSuccess: () => {
-          showToast({ body: '연습이 성공적으로 생성되었습니다.' })
+          showToast({ body: '연습을 만들었습니다.' })
           onClose()
         },
       },
@@ -115,10 +115,7 @@ function CreatePracticeModalContent({
           height="fill"
           defaultHasDividers
           header={
-            <DialogHeader
-              title="연습 및 첫 문제 등록"
-              onOpenChange={handleClose}
-            />
+            <DialogHeader title="연습 만들기" onOpenChange={handleClose} />
           }
           content={
             <LayoutContent
@@ -205,7 +202,7 @@ function CreatePracticeModalContent({
           setValidationError(null)
           createPractice.reset()
         }}
-        description="연습에 연결할 문제를 선택해 주세요."
+        description="연습에 추가할 문제를 선택해 주세요."
       />
     </>
   )

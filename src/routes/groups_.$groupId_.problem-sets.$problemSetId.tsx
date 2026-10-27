@@ -27,7 +27,7 @@ import {
 import { useState } from 'react'
 
 import { PageBackLink } from '@/components/navigation/page-back-link'
-import { ProblemSetAddProblemsDialog } from '@/components/problems/problem-set-add-problems-dialog'
+import { ProblemMultiPickerDialog } from '@/components/problems/problem-multi-picker-dialog'
 import {
   addProblemsToProblemSet,
   deleteProblemFromProblemSet,
@@ -551,7 +551,9 @@ export function ProblemSetDetailPage() {
 
         {/* 성공 시에만 닫고, 실패하면 선택 상태 유지 */}
         {isAddModalOpen && (
-          <ProblemSetAddProblemsDialog
+          <ProblemMultiPickerDialog
+            description="문제집에 추가할 문제를 선택해 주세요. 여러 문제를 선택할 수 있습니다."
+            onSelectionChange={addProblemsMutation.reset}
             isSubmitting={addProblemsMutation.isPending}
             errorMessage={addProblemsErrorMessage}
             onClose={handleCloseAddModal}

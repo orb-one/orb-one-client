@@ -107,7 +107,9 @@ export function ProblemPickerDialog({
                 <Banner
                   status={isAuthRequired ? 'info' : 'error'}
                   title={
-                    isAuthRequired ? copy.authRequired : copy.problemPickerError
+                    isAuthRequired
+                      ? copy.problemPickerAuthRequired
+                      : copy.problemPickerError
                   }
                   endContent={
                     isAuthRequired ? (
@@ -134,11 +136,9 @@ export function ProblemPickerDialog({
                       ? copy.problemSearchEmptyTitle
                       : copy.problemPickerEmptyTitle
                   }
-                  description={
-                    keyword
-                      ? copy.problemSearchEmptyDescription
-                      : copy.problemPickerEmptyDescription
-                  }
+                  {...(keyword
+                    ? { description: copy.problemSearchEmptyDescription }
+                    : {})}
                   icon={
                     <Icon
                       icon={keyword ? SearchX : ListChecks}

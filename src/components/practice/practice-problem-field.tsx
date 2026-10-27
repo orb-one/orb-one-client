@@ -22,9 +22,9 @@ export function PracticeProblemField({
 
   return (
     <Field
-      label="연결할 문제 (필수)"
+      label="첫 문제 (필수)"
       inputID={id}
-      description="전역 문제 목록에 등록된 문제만 연결할 수 있습니다."
+      description="문제 목록에서 선택해 주세요."
       descriptionID={`${id}-description`}
       isDisabled={isDisabled}
     >

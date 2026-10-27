@@ -16,7 +16,7 @@ export function getProblemReferenceErrorMessage(
   fallback: string,
 ) {
   if (isMissingProblemReference(error)) {
-    return '선택한 문제를 찾을 수 없습니다. 문제를 다시 선택해 주세요.'
+    return '선택한 문제를 찾을 수 없습니다. 다른 문제를 선택해 주세요.'
   }
 
   return getReadableErrorMessage(error, fallback)

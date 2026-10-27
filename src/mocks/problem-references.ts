@@ -32,7 +32,7 @@ export function resolveMockProblemReferences(
     return HttpResponse.json(
       {
         code: 'INVALID_FIELD',
-        message: '문제를 최소 1개 이상 선택해 주세요.',
+        message: '문제를 1개 이상 선택해 주세요.',
         timestamp: new Date().toISOString(),
         fieldErrors: [{ field: 'problemIds', reason: 'REQUIRED' }],
       },
@@ -71,7 +71,7 @@ export function resolveMockProblemReferences(
   if (new Set(ids).size !== ids.length) {
     return problemReferenceError(
       'DUPLICATE_PROBLEM_IN_REQUEST',
-      '요청에 중복된 문제가 포함되어 있습니다.',
+      '같은 문제를 중복해서 선택할 수 없습니다.',
       400,
     )
   }

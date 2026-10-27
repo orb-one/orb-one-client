@@ -23,6 +23,14 @@ const catalog = [
     url: 'https://www.acmicpc.net/problem/2557',
     difficulty: null,
   },
+  {
+    problemId: '10000000-0000-4000-8000-000000000003',
+    provider: 'SWEA',
+    externalProblemId: '1204',
+    name: '최빈수 구하기',
+    url: 'https://swexpertacademy.com/main/code/problem/problemDetail.do?contestProbId=AV13zo1KAAACFAYh',
+    difficulty: null,
+  },
 ]
 
 function apiUrl(path: string) {
@@ -40,7 +48,7 @@ async function selectProblem(page: Page, name: string, keyword?: string) {
     .getByRole('button', { name: /문제 선택|문제 변경/, exact: true })
     .click()
   await expect(
-    page.getByText('연습에 연결할 문제를 선택해 주세요.', { exact: true }),
+    page.getByText('연습에 추가할 문제를 선택해 주세요.', { exact: true }),
   ).toBeVisible()
   if (keyword)
     await page.getByRole('textbox', { name: '문제 검색' }).fill(keyword)
@@ -168,7 +176,7 @@ for (const viewport of [
     await page.getByRole('button', { name: '생성하기', exact: true }).click()
     await expect(
       page.getByText(
-        '선택한 문제를 찾을 수 없습니다. 문제를 다시 선택해 주세요.',
+        '선택한 문제를 찾을 수 없습니다. 다른 문제를 선택해 주세요.',
         { exact: true },
       ),
     ).toBeVisible()
@@ -182,7 +190,7 @@ for (const viewport of [
     await selectProblem(page, 'A+B', '1000')
     await page.getByRole('button', { name: '생성하기', exact: true }).click()
     await expect(
-      page.getByRole('heading', { name: '연습 및 첫 문제 등록', exact: true }),
+      page.getByRole('heading', { name: '연습 만들기', exact: true }),
     ).toBeHidden()
     expect(createBodies).toEqual([
       {
@@ -201,26 +209,51 @@ for (const viewport of [
 
     await page.getByRole('link', { name: practice.title, exact: true }).click()
     await page.getByRole('button', { name: '문제 추가', exact: true }).click()
-    await expect(
-      page.getByRole('button', { name: '추가하기', exact: true }),
-    ).toBeDisabled()
-    await selectProblem(page, 'A+B')
-    await page.getByRole('button', { name: '추가하기', exact: true }).click()
+    const submit = page.getByRole('button', {
+      name: '선택한 문제 추가',
+      exact: true,
+    })
+    await expect(submit).toBeDisabled()
+    const row = (name: string) =>
+      page
+        .getByRole('dialog')
+        .getByRole('button')
+        .filter({ has: page.getByText(name, { exact: true }) })
+    await expect(row('A+B')).toBeDisabled()
+    await expect(page.getByText('이미 추가됨')).toBeVisible()
+    await page.getByRole('textbox', { name: '문제 검색' }).fill('2557')
+    await row('Hello World').click()
+    await page.getByRole('textbox', { name: '문제 검색' }).fill('1204')
+    await row('최빈수 구하기').click()
+    await expect(page.getByText('2개 선택됨')).toBeVisible()
+    await submit.click()
     await expect(
       page.getByText('이미 연습에 포함된 문제가 있습니다.', { exact: true }),
     ).toBeVisible()
-    await selectProblem(page, 'Hello World', '2557')
+    await expect(page.getByText('2개 선택됨')).toBeVisible()
+    await page.getByRole('button', { name: '선택한 문제만 보기' }).click()
+    await expect(row('Hello World')).toBeVisible()
+    await expect(row('최빈수 구하기')).toBeVisible()
+    await row('Hello World').click()
+    await expect(page.getByText('1개 선택됨')).toBeVisible()
+    await page.getByRole('button', { name: '전체 목록 보기' }).click()
+    await page.getByRole('textbox', { name: '문제 검색' }).fill('2557')
+    await row('Hello World').click()
+    await page.getByRole('button', { name: '선택한 문제만 보기' }).click()
     await page.screenshot({ path: test.info().outputPath('add-selected.png') })
-    await page.getByRole('button', { name: '추가하기', exact: true }).click()
+    await submit.click()
     await expect(
       page.getByRole('heading', { name: '문제 추가하기', exact: true }),
     ).toBeHidden()
     await expect(
       page.getByRole('cell', { name: 'Hello World', exact: true }),
     ).toBeVisible()
+    await expect(
+      page.getByRole('cell', { name: '최빈수 구하기', exact: true }),
+    ).toBeVisible()
     expect(addBodies).toEqual([
-      { problemIds: [catalog[0]?.problemId] },
-      { problemIds: [catalog[1]?.problemId] },
+      { problemIds: [catalog[1]?.problemId, catalog[2]?.problemId] },
+      { problemIds: [catalog[2]?.problemId, catalog[1]?.problemId] },
     ])
   })
 }
