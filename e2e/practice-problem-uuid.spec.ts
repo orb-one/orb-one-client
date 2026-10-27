@@ -69,6 +69,7 @@ for (const viewport of [
     page,
   }) => {
     await page.setViewportSize(viewport)
+    await page.clock.setFixedTime(new Date('2030-01-01T12:00:00Z'))
     const practice = {
       practiceId: 'practice-uuid',
       groupId: 'uuid-group',
@@ -170,8 +171,9 @@ for (const viewport of [
       0,
     )
     await page.getByRole('textbox', { name: '연습 이름' }).fill(practice.title)
-    await page.getByRole('textbox', { name: '시작 일시' }).fill('20300101')
-    await page.getByRole('textbox', { name: '종료 일시' }).fill('20300103')
+    await page.getByRole('button', { name: /^연습 기간:/ }).click()
+    await page.locator('button[data-date="2030-01-01"]').click()
+    await page.locator('button[data-date="2030-01-03"]').click()
     await selectProblem(page, 'Hello World', '2557')
     await page.getByRole('button', { name: '생성하기', exact: true }).click()
     await expect(
@@ -183,8 +185,8 @@ for (const viewport of [
     await expect(page.getByRole('textbox', { name: '연습 이름' })).toHaveValue(
       practice.title,
     )
-    await expect(page.getByRole('textbox', { name: '시작 일시' })).toHaveValue(
-      '2030-01-01',
+    await expect(page.getByRole('button', { name: /^연습 기간:/ })).toHaveText(
+      '1월 1일 – 1월 3일',
     )
     await page.screenshot({ path: test.info().outputPath('create-error.png') })
     await selectProblem(page, 'A+B', '1000')

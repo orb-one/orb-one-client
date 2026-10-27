@@ -7,7 +7,15 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { StrictMode, type ReactNode } from 'react'
-import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 
 import { AddPracticeProblemModal } from '@/components/practice/AddPracticeProblemModal'
 import { CreatePracticeModal } from '@/components/practice/CreatePracticeModal'
@@ -29,10 +37,16 @@ beforeAll(() => {
   server.listen({ onUnhandledRequest: 'error' })
 })
 
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2030, 0, 1, 12))
+})
+
 afterEach(() => {
   cleanup()
   server.resetHandlers()
   vi.clearAllMocks()
+  vi.useRealTimers()
 })
 
 afterAll(() => {
@@ -76,14 +90,16 @@ async function fillDates() {
     screen.getByRole('textbox', { name: '연습 이름' }),
     '1주차 연습',
   )
-  await userEvent.type(
-    screen.getByRole('textbox', { name: '시작 일시' }),
-    '20300101',
-  )
-  await userEvent.type(
-    screen.getByRole('textbox', { name: '종료 일시' }),
-    '20300103',
-  )
+  await userEvent.click(screen.getByRole('button', { name: /^연습 기간:/ }))
+  const dateLabel = (day: number) =>
+    new Intl.DateTimeFormat(undefined, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(new Date(2030, 0, day))
+  await userEvent.click(screen.getByRole('button', { name: dateLabel(1) }))
+  await userEvent.click(screen.getByRole('button', { name: dateLabel(3) }))
 }
 
 it('creates a practice with the selected catalog UUID and invalidates the list', async () => {
@@ -339,11 +355,16 @@ it('keeps the creation picker outside the form and preserves its draft on Escape
   expect(screen.getByRole('textbox', { name: '연습 이름' })).toHaveValue(
     '1주차 연습',
   )
-  expect(screen.getByRole('textbox', { name: '시작 일시' })).toHaveValue(
-    '2030-01-01',
-  )
-  expect(screen.getByRole('textbox', { name: '종료 일시' })).toHaveValue(
-    '2030-01-03',
+  const period = [1, 3]
+    .map((day) =>
+      new Intl.DateTimeFormat(undefined, {
+        month: 'short',
+        day: 'numeric',
+      }).format(new Date(2030, 0, day)),
+    )
+    .join(' – ')
+  expect(screen.getByRole('button', { name: /^연습 기간:/ })).toHaveTextContent(
+    period,
   )
 })
 

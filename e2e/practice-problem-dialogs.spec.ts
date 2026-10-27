@@ -45,6 +45,7 @@ test.skip(
 test.use({ serviceWorkers: 'block' })
 
 test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2030-01-01T12:00:00Z'))
   await page.route(apiUrl('/users/me'), (route) =>
     route.fulfill({
       json: { id: 'user-1', nickname: '테스터', email: 'user@example.com' },
@@ -115,8 +116,9 @@ async function openForm(page: Page, kind: FormKind) {
     .click()
   if (kind === 'create') {
     await page.getByRole('textbox', { name: '연습 이름' }).fill('보존할 초안')
-    await page.getByRole('textbox', { name: '시작 일시' }).fill('20300101')
-    await page.getByRole('textbox', { name: '종료 일시' }).fill('20300103')
+    await page.getByRole('button', { name: /^연습 기간:/ }).click()
+    await page.locator('button[data-date="2030-01-01"]').click()
+    await page.locator('button[data-date="2030-01-03"]').click()
   }
 }
 
@@ -144,6 +146,83 @@ async function chooseProblem(page: Page, name: string) {
       page.getByRole('heading', { name: '문제 선택', exact: true }),
     ).toBeHidden()
   }
+}
+
+for (const width of [1280, 390]) {
+  test(`selects and clears a calendar range across months at ${String(width)}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 800 })
+    const requests: unknown[] = []
+    await page.route(apiUrl(`${groupPath}/practices`), (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      requests.push(route.request().postDataJSON())
+      return route.fulfill({
+        status: 201,
+        json: { practiceId: 'range-practice', title: '기간 선택 연습' },
+      })
+    })
+    await page.goto(`${groupPath}?tab=practice`)
+    await page.getByRole('button', { name: '연습 생성', exact: true }).click()
+    await page
+      .getByRole('textbox', { name: '연습 이름' })
+      .fill('기간 선택 연습')
+    await openPicker(page)
+    await chooseProblem(page, 'Hello World')
+    const submit = page.getByRole('button', { name: '생성하기', exact: true })
+    const period = page.getByRole('button', { name: /^연습 기간:/ })
+    await expect(submit).toBeDisabled()
+    await period.click()
+    const calendar = page.getByRole('dialog', { name: '기간 선택' })
+    await expect(calendar.getByRole('grid')).toHaveCount(width < 640 ? 1 : 2)
+    await expectPointerReachable(
+      calendar.locator('button[data-date="2030-01-30"]').first(),
+    )
+    await calendar.locator('button[data-date="2030-01-30"]').first().click()
+    await expect(submit).toBeDisabled()
+    if (width < 640)
+      await calendar.getByRole('button', { name: '다음 달' }).click()
+    await calendar
+      .locator('button[data-date="2030-02-02"]:not([aria-disabled="true"])')
+      .click()
+    await expect(calendar).toBeHidden()
+    await expect(period).toHaveText('1월 30일 – 2월 2일')
+    await expect(submit).toBeEnabled()
+    await expect(period).toBeFocused()
+
+    await period.click()
+    await page.keyboard.press('Escape')
+    await expect(calendar).toBeHidden()
+    await expect(period).toBeFocused()
+    await expect(
+      page.getByRole('heading', { name: '연습 만들기' }),
+    ).toBeVisible()
+    await expect(period).toHaveText('1월 30일 – 2월 2일')
+    await page.getByRole('button', { name: '연습 기간 지우기' }).click()
+    await expect(period).toHaveText('시작일과 종료일을 선택해 주세요')
+    await expect(submit).toBeDisabled()
+    await period.click()
+    await expect(
+      calendar.getByRole('gridcell', { selected: true }),
+    ).toHaveCount(0)
+    await calendar.locator('button[data-date="2030-02-12"]').click()
+    await calendar.locator('button[data-date="2030-02-14"]').click()
+    await expect(calendar).toBeHidden()
+    await expect(period).toBeFocused()
+    await expect(period).toHaveText('2월 12일 – 2월 14일')
+    await submit.click()
+    await expect(
+      page.getByRole('heading', { name: '연습 만들기' }),
+    ).toBeHidden()
+    expect(requests).toEqual([
+      {
+        title: '기간 선택 연습',
+        startDate: '2030-02-12T00:00:00',
+        endDate: '2030-02-14T23:59:59',
+        problemIds: [catalog[1]?.problemId],
+      },
+    ])
+  })
 }
 
 for (const kind of ['create', 'add'] as const) {
@@ -232,11 +311,8 @@ for (const kind of ['create', 'add'] as const) {
     await expect(page.getByRole('textbox', { name: '연습 이름' })).toHaveValue(
       '보존할 초안',
     )
-    await expect(page.getByRole('textbox', { name: '시작 일시' })).toHaveValue(
-      '2030-01-01',
-    )
-    await expect(page.getByRole('textbox', { name: '종료 일시' })).toHaveValue(
-      '2030-01-03',
+    await expect(page.getByRole('button', { name: /^연습 기간:/ })).toHaveText(
+      '1월 1일 – 1월 3일',
     )
     await page.keyboard.press('Escape')
     await expect(
@@ -358,7 +434,7 @@ for (const viewport of [
   { width: 844, height: 390 },
 ]) {
   for (const kind of ['create', 'add'] as const) {
-    test(`keeps ${kind} actions visible while the form body scrolls at ${String(viewport.width)}x${String(viewport.height)}`, async ({
+    test(`keeps ${kind} actions visible and scrolls overflowing content at ${String(viewport.width)}x${String(viewport.height)}`, async ({
       page,
     }) => {
       await page.setViewportSize(viewport)
@@ -400,9 +476,18 @@ for (const viewport of [
         .poll(() => body.evaluate((element) => element.scrollTop))
         .toBe(0)
       await page.mouse.wheel(0, 1000)
-      await expect
-        .poll(() => body.evaluate((element) => element.scrollTop))
-        .toBeGreaterThan(0)
+      const hasOverflow = await body.evaluate(
+        (element) => element.scrollHeight > element.clientHeight,
+      )
+      if (hasOverflow) {
+        await expect
+          .poll(() => body.evaluate((element) => element.scrollTop))
+          .toBeGreaterThan(0)
+      } else {
+        await expect
+          .poll(() => body.evaluate((element) => element.scrollTop))
+          .toBe(0)
+      }
       await expectPointerReachable(submit)
       await submit.click()
       await expect(

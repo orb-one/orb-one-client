@@ -1,5 +1,9 @@
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
+import {
+  DateRangeInput,
+  type DateRange,
+} from '@astryxdesign/core/DateRangeInput'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
 import { Divider } from '@astryxdesign/core/Divider'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
@@ -7,15 +11,13 @@ import { HStack } from '@astryxdesign/core/HStack'
 import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { useToast } from '@astryxdesign/core/Toast'
+import { useMediaQuery } from '@astryxdesign/core/hooks'
 import { useEffect, useId, useRef, useState } from 'react'
 
 import { ProblemPickerDialog } from '@/components/problems/problem-picker-dialog'
 import { PracticeProblemField } from '@/components/practice/practice-problem-field'
 import { useCreatePractice } from '@/lib/api/practice'
-import {
-  formatDateInput,
-  validateAndFormatPracticeDates,
-} from '@/lib/practice/practice-date'
+import { validateAndFormatPracticeDates } from '@/lib/practice/practice-date'
 import type { Problem } from '@/lib/problems/problem-model'
 import { getProblemReferenceErrorMessage } from '@/lib/problems/problem-reference-errors'
 
@@ -36,8 +38,8 @@ function CreatePracticeModalContent({
   onClose,
 }: CreatePracticeModalProps) {
   const [title, setTitle] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [dateRange, setDateRange] = useState<DateRange | null>(null)
+  const hasWideCalendar = useMediaQuery('(min-width: 640px)')
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const formId = useId()
@@ -74,7 +76,12 @@ function CreatePracticeModalContent({
       return
     }
 
-    const dates = validateAndFormatPracticeDates(startDate, endDate)
+    if (!dateRange) {
+      setValidationError('연습 기간을 선택해 주세요.')
+      return
+    }
+
+    const dates = validateAndFormatPracticeDates(dateRange.start, dateRange.end)
     if (!dates.success) {
       setValidationError(dates.error)
       return
@@ -137,25 +144,19 @@ function CreatePracticeModalContent({
                     placeholder="1주차"
                     isDisabled={isSubmitting}
                   />
-                  <TextInput
-                    htmlName="startDate"
-                    label="시작 일시"
-                    value={startDate}
+                  <DateRangeInput
+                    label="연습 기간"
+                    placeholder="시작일과 종료일을 선택해 주세요"
+                    value={dateRange}
                     onChange={(value) => {
-                      setStartDate(formatDateInput(value))
+                      setDateRange(value)
+                      setValidationError(null)
                     }}
-                    placeholder="YYYYMMDD"
+                    min="1970-01-01"
+                    max="2100-12-31"
+                    numberOfMonths={hasWideCalendar ? 2 : 1}
                     isDisabled={isSubmitting}
-                  />
-                  <TextInput
-                    htmlName="endDate"
-                    label="종료 일시"
-                    value={endDate}
-                    onChange={(value) => {
-                      setEndDate(formatDateInput(value))
-                    }}
-                    placeholder="YYYYMMDD"
-                    isDisabled={isSubmitting}
+                    width="100%"
                   />
                   <Divider />
                   <PracticeProblemField
@@ -185,7 +186,7 @@ function CreatePracticeModalContent({
                   form={formId}
                   label="생성하기"
                   variant="primary"
-                  isDisabled={!selectedProblem || isSubmitting}
+                  isDisabled={!dateRange || !selectedProblem || isSubmitting}
                   isLoading={isSubmitting}
                 />
               </HStack>
