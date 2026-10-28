@@ -213,16 +213,15 @@ export const messages = {
         problemPickerTitle: '문제 선택',
         problemPickerDescription: '풀이를 등록할 문제를 선택해 주세요.',
         problemSearchLabel: '문제 검색',
-        problemSearchPlaceholder: '문제명 또는 문제 번호를 입력하세요',
+        problemSearchPlaceholder: '문제 이름 또는 번호로 검색',
         problemSearchEmptyTitle: '검색 결과가 없습니다',
         problemSearchEmptyDescription:
-          '다른 문제명 또는 문제 번호로 검색해 주세요.',
+          '다른 문제 이름이나 번호로 검색해 주세요.',
         problemPickerLoading: '문제 목록을 불러오는 중',
         problemPickerError: '문제 목록을 불러오지 못했습니다.',
+        problemPickerAuthRequired: '로그인이 필요합니다.',
         problemPickerRetry: '다시 시도',
         problemPickerEmptyTitle: '선택할 문제가 없습니다',
-        problemPickerEmptyDescription:
-          '등록된 문제가 있을 때 다시 확인해 주세요.',
         problemPickerPagination: '문제 목록 페이지',
         problemPrefillError:
           '진입 링크의 문제를 불러오지 못했습니다. 다른 문제를 선택해 주세요.',
@@ -578,10 +577,9 @@ export const messages = {
           'Try a different problem name or number.',
         problemPickerLoading: 'Loading problems',
         problemPickerError: 'Could not load the problem list.',
+        problemPickerAuthRequired: 'Sign in required.',
         problemPickerRetry: 'Try again',
         problemPickerEmptyTitle: 'No problems available',
-        problemPickerEmptyDescription:
-          'Check again after problems have been added.',
         problemPickerPagination: 'Problem list pages',
         problemPrefillError:
           'Could not load the problem from this link. Select another problem.',

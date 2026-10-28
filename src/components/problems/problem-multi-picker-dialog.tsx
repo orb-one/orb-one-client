@@ -14,7 +14,7 @@ import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useQuery } from '@tanstack/react-query'
 import { Check, Search } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
 
@@ -22,14 +22,23 @@ import { AuthSessionExpiredError } from '@/lib/api/client'
 import type { Problem } from '@/lib/problems/problem-model'
 import { problemListQueryOptions } from '@/lib/problems/problem-queries'
 
+const EMPTY_PROBLEM_IDS: readonly string[] = []
+const EMPTY_PROBLEMS: readonly Problem[] = []
 const PAGE_SIZE = 10
 const SEARCH_DEBOUNCE_MS = 300
 
-interface ProblemSetAddProblemsDialogProps {
+interface ProblemMultiPickerDialogProps {
+  existingProblemIds?: readonly string[]
+  initialSelectedProblems?: readonly Problem[]
+  submitLabel?: string
+  allowEmptySelection?: boolean
+  title?: string
+  description?: string
+  onSelectionChange?: () => void
   isSubmitting: boolean
   errorMessage?: string | null
   onClose: () => void
-  onSubmit: (problemIds: string[]) => void
+  onSubmit: (problemIds: string[], problems: Problem[]) => void
 }
 
 interface FormState {
@@ -40,25 +49,77 @@ interface FormState {
   showSelectedOnly: boolean
 }
 
-export function ProblemSetAddProblemsDialog({
+export function ProblemMultiPickerDialog({
+  existingProblemIds = EMPTY_PROBLEM_IDS,
+  initialSelectedProblems = EMPTY_PROBLEMS,
+  submitLabel = '선택한 문제 추가',
+  allowEmptySelection = false,
+  title = '문제 추가',
+  description = '추가할 문제를 선택해 주세요. 여러 문제를 선택할 수 있습니다.',
+  onSelectionChange,
   isSubmitting,
   errorMessage,
   onClose,
   onSubmit,
-}: ProblemSetAddProblemsDialogProps) {
+}: ProblemMultiPickerDialogProps) {
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const viewToggleRef = useRef<HTMLButtonElement>(null)
+  const rowRefs = useRef(new Map<string, HTMLLIElement>())
+  const pendingFocusIdRef = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    searchInputRef.current?.focus()
+  }, [])
+  useEffect(() => {
+    if (errorMessage && scrollAreaRef.current)
+      scrollAreaRef.current.scrollTop = 0
+  }, [errorMessage])
   // 모달 인스턴스별로 선택 상태를 관리합니다.
   const [store] = useState(() =>
     createStore<FormState>(() => ({
       page: 0,
       searchQuery: '',
       keyword: '',
-      selectedProblems: [],
+      selectedProblems: [...initialSelectedProblems],
       showSelectedOnly: false,
     })),
   )
 
-  const { page, searchQuery, keyword, selectedProblems, showSelectedOnly } =
-    useStore(store)
+  const {
+    page,
+    searchQuery,
+    keyword,
+    selectedProblems: storedSelections,
+    showSelectedOnly,
+  } = useStore(store)
+
+  useLayoutEffect(() => {
+    if (scrollAreaRef.current) scrollAreaRef.current.scrollTop = 0
+  }, [page, keyword, showSelectedOnly])
+
+  useLayoutEffect(() => {
+    const nextId = pendingFocusIdRef.current
+    if (nextId === undefined) return
+    pendingFocusIdRef.current = undefined
+    const nextButton = nextId
+      ? rowRefs.current.get(nextId)?.querySelector('button')
+      : null
+    const focusTarget = nextButton ?? viewToggleRef.current
+    focusTarget?.focus()
+  }, [storedSelections])
+  const existingIds = new Set(existingProblemIds)
+  const selectedProblems = storedSelections.filter(
+    (problem) => !existingIds.has(problem.id),
+  )
+
+  // 열린 동안 다른 경로에서 추가된 문제도 선택 목록에서 제외합니다.
+  useEffect(() => {
+    const ids = new Set(existingProblemIds)
+    const current = store.getState().selectedProblems
+    const remaining = current.filter((problem) => !ids.has(problem.id))
+    if (remaining.length !== current.length)
+      store.setState({ selectedProblems: remaining })
+  }, [existingProblemIds, store])
 
   const problemsQuery = useQuery({
     ...problemListQueryOptions({
@@ -78,7 +139,8 @@ export function ProblemSetAddProblemsDialog({
     : (problemsQuery.data?.problems ?? [])
 
   const isSearching = searchQuery.trim() !== keyword
-  const canSubmit = selectedProblems.length > 0 && !isSubmitting
+  const canSubmit =
+    (allowEmptySelection || selectedProblems.length > 0) && !isSubmitting
 
   // 검색어 변경 후 첫 페이지부터 조회합니다.
   useEffect(() => {
@@ -105,7 +167,19 @@ export function ProblemSetAddProblemsDialog({
   }
 
   function toggleProblem(problem: Problem) {
-    if (isSubmitting) return
+    if (isSubmitting || existingIds.has(problem.id)) return
+
+    const index = selectedProblems.findIndex((item) => item.id === problem.id)
+    if (
+      showSelectedOnly &&
+      index !== -1 &&
+      rowRefs.current.get(problem.id)?.contains(document.activeElement)
+    ) {
+      pendingFocusIdRef.current =
+        selectedProblems[index + 1]?.id ??
+        selectedProblems[index - 1]?.id ??
+        null
+    }
 
     // 페이지가 바뀌어도 선택한 문제는 유지합니다.
     store.setState((state) => ({
@@ -117,13 +191,17 @@ export function ProblemSetAddProblemsDialog({
           )
         : [...state.selectedProblems, problem],
     }))
+    onSelectionChange?.()
   }
 
   function handleSubmit() {
     if (!canSubmit) return
 
-    // API 호출과 성공 시 닫기는 부모에서 처리합니다.
-    onSubmit(selectedProblems.map((problem) => problem.id))
+    // 선택 확정과 저장 여부는 부모에서 처리합니다.
+    onSubmit(
+      selectedProblems.map((problem) => problem.id),
+      selectedProblems,
+    )
   }
 
   const emptyTitle = showSelectedOnly
@@ -136,7 +214,7 @@ export function ProblemSetAddProblemsDialog({
     ? '전체 목록에서 추가할 문제를 선택해 주세요.'
     : keyword
       ? '다른 문제 이름이나 번호로 검색해 주세요.'
-      : '전역 문제 목록에 등록된 문제만 추가할 수 있습니다.'
+      : undefined
 
   return (
     <Dialog
@@ -147,26 +225,32 @@ export function ProblemSetAddProblemsDialog({
       purpose="form"
     >
       <Layout
-        height="auto"
+        height="fill"
         defaultHasDividers
-        header={
-          <DialogHeader title="문제 추가" onOpenChange={handleOpenChange} />
-        }
+        header={<DialogHeader title={title} onOpenChange={handleOpenChange} />}
         content={
-          <LayoutContent isScrollable>
+          <LayoutContent
+            ref={scrollAreaRef}
+            isScrollable
+            data-testid="problem-multi-picker-scroll-area"
+          >
             <VStack gap={3} width="100%">
+              {errorMessage && (
+                <Banner role="alert" status="error" title={errorMessage} />
+              )}
               <Text type="body" size="sm" color="secondary">
-                문제집에 추가할 문제를 선택해 주세요. 여러 문제를 선택할 수
-                있습니다.
+                {description}
               </Text>
 
               {!showSelectedOnly && (
                 <TextInput
+                  ref={searchInputRef}
                   label="문제 검색"
                   placeholder="문제 이름 또는 번호로 검색"
                   value={searchQuery}
                   startIcon={Search}
                   hasClear
+                  hasAutoFocus
                   isDisabled={isSubmitting}
                   isLoading={isSearching || problemsQuery.isFetching}
                   onChange={(value) => {
@@ -187,6 +271,7 @@ export function ProblemSetAddProblemsDialog({
                 </Text>
 
                 <Button
+                  ref={viewToggleRef}
                   label={
                     showSelectedOnly ? '전체 목록 보기' : '선택한 문제만 보기'
                   }
@@ -237,26 +322,37 @@ export function ProblemSetAddProblemsDialog({
               ) : visibleProblems.length === 0 ? (
                 <EmptyState
                   title={emptyTitle}
-                  description={emptyDescription}
+                  {...(emptyDescription
+                    ? { description: emptyDescription }
+                    : {})}
                   headingLevel={2}
                 />
               ) : (
                 <List density="balanced" hasDividers>
                   {visibleProblems.map((problem) => {
                     const isSelected = selectedIds.has(problem.id)
+                    const isExisting = existingIds.has(problem.id)
 
                     return (
                       <ListItem
                         key={problem.id}
+                        ref={(element) => {
+                          if (element) rowRefs.current.set(problem.id, element)
+                          else rowRefs.current.delete(problem.id)
+                        }}
                         label={problem.name}
                         description={formatProblemMetadata(problem)}
                         isSelected={isSelected}
-                        isDisabled={isSubmitting}
+                        isDisabled={isSubmitting || isExisting}
                         onClick={() => {
                           toggleProblem(problem)
                         }}
                         endContent={
-                          isSelected ? (
+                          isExisting ? (
+                            <Text type="supporting" color="secondary">
+                              이미 추가됨
+                            </Text>
+                          ) : isSelected ? (
                             <>
                               <Icon icon={Check} size="sm" color="accent" />
                               <VisuallyHidden>선택됨</VisuallyHidden>
@@ -267,10 +363,6 @@ export function ProblemSetAddProblemsDialog({
                     )
                   })}
                 </List>
-              )}
-
-              {errorMessage && (
-                <Banner role="alert" status="error" title={errorMessage} />
               )}
             </VStack>
           </LayoutContent>
@@ -317,7 +409,7 @@ export function ProblemSetAddProblemsDialog({
                     }}
                   />
                   <Button
-                    label={isSubmitting ? '추가 중...' : '선택한 문제 추가'}
+                    label={isSubmitting ? '추가 중...' : submitLabel}
                     variant="primary"
                     isDisabled={!canSubmit}
                     onClick={handleSubmit}

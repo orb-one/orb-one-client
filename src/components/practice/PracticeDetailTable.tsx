@@ -11,12 +11,14 @@ interface PracticeDetailTableProps {
   practice: Practice
   isDeleteMode?: boolean
   onDeleteProblem?: (problemId: string) => void
+  deletingProblemIds?: readonly string[]
 }
 
 export function PracticeDetailTable({
   practice,
   isDeleteMode = false,
   onDeleteProblem,
+  deletingProblemIds = [],
 }: PracticeDetailTableProps) {
   if (!practice.problems || practice.problems.length === 0) {
     return (
@@ -78,6 +80,7 @@ export function PracticeDetailTable({
                 size="sm"
                 variant="secondary"
                 label="삭제"
+                isLoading={deletingProblemIds.includes(prob.problemId)}
                 icon={<Icon icon={Trash2} size="sm" />}
                 onClick={() => onDeleteProblem?.(prob.problemId)}
               />

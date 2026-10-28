@@ -1,18 +1,25 @@
+import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
+import {
+  DateRangeInput,
+  type DateRange,
+} from '@astryxdesign/core/DateRangeInput'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
 import { Divider } from '@astryxdesign/core/Divider'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
-import { Selector } from '@astryxdesign/core/Selector'
+import { HStack } from '@astryxdesign/core/HStack'
+import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { useToast } from '@astryxdesign/core/Toast'
-import { useState } from 'react'
+import { useMediaQuery } from '@astryxdesign/core/hooks'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+
+import { ProblemMultiPickerDialog } from '@/components/problems/problem-multi-picker-dialog'
+import { PracticeProblemField } from '@/components/practice/practice-problem-field'
 import { useCreatePractice } from '@/lib/api/practice'
-import { getReadableErrorMessage } from '@/lib/api/error-message'
-import {
-  formatDateInput,
-  validateAndFormatPracticeDates,
-} from '@/lib/practice/practice-date'
-import { PRACTICE_PROVIDER_OPTIONS } from '@/lib/practice/provider-options'
+import { validateAndFormatPracticeDates } from '@/lib/practice/practice-date'
+import type { Problem } from '@/lib/problems/problem-model'
+import { getProblemReferenceErrorMessage } from '@/lib/problems/problem-reference-errors'
 
 interface CreatePracticeModalProps {
   groupId: string
@@ -20,231 +27,211 @@ interface CreatePracticeModalProps {
   onClose: () => void
 }
 
-export function CreatePracticeModal({
+export function CreatePracticeModal(props: CreatePracticeModalProps) {
+  if (!props.isOpen) return null
+
+  return <CreatePracticeModalContent key={props.groupId} {...props} />
+}
+
+function CreatePracticeModalContent({
   groupId,
-  isOpen,
   onClose,
 }: CreatePracticeModalProps) {
   const [title, setTitle] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-
-  // 첫 문제 등록을 위한 상태들
-  const [providerSelect, setProviderSelect] = useState('JUNGOL')
-  const [customProvider, setCustomProvider] = useState('')
-  const [externalProblemId, setExternalProblemId] = useState('')
-  const [name, setName] = useState('')
-  const [url, setUrl] = useState('')
-
+  const [dateRange, setDateRange] = useState<DateRange | null>(null)
+  const hasWideCalendar = useMediaQuery('(min-width: 640px)')
+  const [selectedProblems, setSelectedProblems] = useState<Problem[]>([])
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const pickerButtonRef = useRef<HTMLButtonElement>(null)
+  const wasPickerOpenRef = useRef(false)
+  const formId = useId()
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const [validationError, setValidationError] = useState<string | null>(null)
   const showToast = useToast()
   const createPractice = useCreatePractice(groupId)
+  const isSubmitting = createPractice.isPending
+  const errorMessage =
+    validationError ??
+    (createPractice.isError
+      ? getProblemReferenceErrorMessage(
+          createPractice.error,
+          '연습을 만들지 못했습니다.',
+        )
+      : null)
 
-  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  useLayoutEffect(() => {
+    if (wasPickerOpenRef.current && !isPickerOpen) {
+      pickerButtonRef.current?.focus()
+    }
+    wasPickerOpenRef.current = isPickerOpen
+  }, [isPickerOpen])
+
+  useEffect(() => {
+    if (errorMessage && scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = 0
+    }
+  }, [errorMessage])
+
+  function handleClose(open: boolean) {
+    if (!open && !isSubmitting) onClose()
+  }
+
+  function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (isSubmitting) return
 
     if (!title.trim()) {
-      showToast({ body: '연습 이름을 입력해주세요.', type: 'error' })
+      setValidationError('연습 이름을 입력해 주세요.')
       return
     }
 
-    const dateValidation = validateAndFormatPracticeDates(startDate, endDate)
-    if (!dateValidation.success) {
-      showToast({ body: dateValidation.error, type: 'error' })
+    if (!dateRange) {
+      setValidationError('연습 기간을 선택해 주세요.')
       return
     }
 
-    const effectiveProvider =
-      providerSelect === 'CUSTOM'
-        ? customProvider.trim()
-        : providerSelect.trim()
-
-    if (!effectiveProvider) {
-      showToast({
-        body: '플랫폼을 선택하거나 직접 입력해주세요.',
-        type: 'error',
-      })
+    const dates = validateAndFormatPracticeDates(dateRange.start, dateRange.end)
+    if (!dates.success) {
+      setValidationError(dates.error)
       return
     }
 
-    if (!externalProblemId.trim() || !name.trim() || !url.trim()) {
-      showToast({
-        body: '모든 문제 정보를 입력해주세요.',
-        type: 'error',
-      })
+    if (selectedProblems.length === 0) {
+      setValidationError('문제를 선택해 주세요.')
       return
     }
 
+    setValidationError(null)
     createPractice.mutate(
       {
         title: title.trim(),
-        startDate: dateValidation.startDate,
-        endDate: dateValidation.endDate,
-        problems: [
-          {
-            provider: effectiveProvider,
-            externalProblemId: externalProblemId.trim(),
-            name: name.trim(),
-            url: url.trim(),
-          },
-        ],
+        startDate: dates.startDate,
+        endDate: dates.endDate,
+        problemIds: selectedProblems.map((problem) => problem.id),
       },
       {
         onSuccess: () => {
-          showToast({ body: '연습이 성공적으로 생성되었습니다.' })
-          setTitle('')
-          setStartDate('')
-          setEndDate('')
-          setProviderSelect('JUNGOL')
-          setCustomProvider('')
-          setExternalProblemId('')
-          setName('')
-          setUrl('')
+          showToast({ body: '연습을 만들었습니다.' })
           onClose()
-        },
-        onError: (error: unknown) => {
-          const message = getReadableErrorMessage(
-            error,
-            '연습 생성에 실패했습니다.',
-          )
-          showToast({ body: message, type: 'error' })
         },
       },
     )
   }
 
   return (
-    <Dialog
-      isOpen={isOpen}
-      onOpenChange={(open: boolean) => {
-        if (!open) {
-          setTitle('')
-          setStartDate('')
-          setEndDate('')
-          setProviderSelect('JUNGOL')
-          setCustomProvider('')
-          setExternalProblemId('')
-          setName('')
-          setUrl('')
-          onClose()
-        }
-      }}
-    >
-      <DialogHeader
-        title="연습 및 첫 문제 등록"
-        onOpenChange={(open: boolean) => {
-          if (!open) {
-            setTitle('')
-            setStartDate('')
-            setEndDate('')
-            setProviderSelect('JUNGOL')
-            setCustomProvider('')
-            setExternalProblemId('')
-            setName('')
-            setUrl('')
-            onClose()
-          }
-        }}
-      />
-      <form
-        onSubmit={handleSubmit}
-        className="p-4"
-        style={{ maxHeight: '70vh', overflowY: 'auto' }}
+    <>
+      <Dialog
+        isOpen
+        onOpenChange={handleClose}
+        purpose="form"
+        width={560}
+        maxHeight="calc(100dvh - 1rem)"
       >
-        <FormLayout>
-          <TextInput
-            htmlName="title"
-            label="연습 이름"
-            hasAutoFocus
-            value={title}
-            onChange={(val) => {
-              setTitle(val)
-            }}
-            placeholder="1주차"
-          />
-          <div className="flex flex-col gap-4">
-            <TextInput
-              htmlName="startDate"
-              label="시작 일시"
-              value={startDate}
-              onChange={(val) => {
-                setStartDate(formatDateInput(val))
-              }}
-              placeholder="YYYYMMDD"
-            />
-            <TextInput
-              htmlName="endDate"
-              label="종료 일시"
-              value={endDate}
-              onChange={(val) => {
-                setEndDate(formatDateInput(val))
-              }}
-              placeholder="YYYYMMDD"
-            />
-          </div>
-
-          <Divider className="my-4" />
-
-          <Selector
-            htmlName="provider"
-            label="플랫폼"
-            value={providerSelect}
-            onChange={(val) => {
-              setProviderSelect(val)
-            }}
-            options={PRACTICE_PROVIDER_OPTIONS}
-            placeholder="플랫폼 선택"
-          />
-
-          {providerSelect === 'CUSTOM' && (
-            <TextInput
-              htmlName="customProvider"
-              label="플랫폼 직접 입력"
-              value={customProvider}
-              onChange={(val) => {
-                setCustomProvider(val)
-              }}
-              placeholder="플랫폼 이름을 입력하세요"
-            />
-          )}
-
-          <TextInput
-            htmlName="externalProblemId"
-            label="문제 ID"
-            value={externalProblemId}
-            onChange={(val) => {
-              setExternalProblemId(val)
-            }}
-            placeholder="예: 1000"
-          />
-          <TextInput
-            htmlName="name"
-            label="문제 이름"
-            value={name}
-            onChange={(val) => {
-              setName(val)
-            }}
-            placeholder="A+B"
-          />
-          <TextInput
-            htmlName="url"
-            label="문제 링크"
-            value={url}
-            onChange={(val) => {
-              setUrl(val)
-            }}
-            placeholder="https://"
-          />
-        </FormLayout>
-        <div className="mt-6 flex justify-end gap-2">
-          <Button label="취소" variant="secondary" onClick={onClose} />
-          <Button
-            type="submit"
-            label="생성하기"
-            variant="primary"
-            isLoading={createPractice.isPending}
-          />
-        </div>
-      </form>
-    </Dialog>
+        <Layout
+          height="fill"
+          defaultHasDividers
+          header={
+            <DialogHeader title="연습 만들기" onOpenChange={handleClose} />
+          }
+          content={
+            <LayoutContent
+              ref={scrollAreaRef}
+              isScrollable
+              data-testid="practice-form-scroll-area"
+            >
+              <form id={formId} onSubmit={handleSubmit}>
+                <FormLayout>
+                  {errorMessage && (
+                    <Banner role="alert" status="error" title={errorMessage} />
+                  )}
+                  <TextInput
+                    htmlName="title"
+                    label="연습 이름"
+                    hasAutoFocus
+                    value={title}
+                    onChange={setTitle}
+                    placeholder="1주차"
+                    isDisabled={isSubmitting}
+                  />
+                  <DateRangeInput
+                    label="연습 기간"
+                    placeholder="시작일과 종료일을 선택해 주세요"
+                    value={dateRange}
+                    onChange={(value) => {
+                      setDateRange(value)
+                      setValidationError(null)
+                    }}
+                    min="1970-01-01"
+                    max="2100-12-31"
+                    numberOfMonths={hasWideCalendar ? 2 : 1}
+                    isDisabled={isSubmitting}
+                    width="100%"
+                  />
+                  <Divider />
+                  <PracticeProblemField
+                    pickerButtonRef={pickerButtonRef}
+                    selectedProblems={selectedProblems}
+                    isDisabled={isSubmitting}
+                    onRemoveProblem={(problemId) => {
+                      setSelectedProblems((current) =>
+                        current.filter((problem) => problem.id !== problemId),
+                      )
+                      setValidationError(null)
+                      createPractice.reset()
+                    }}
+                    onOpenPicker={() => {
+                      setIsPickerOpen(true)
+                    }}
+                  />
+                </FormLayout>
+              </form>
+            </LayoutContent>
+          }
+          footer={
+            <LayoutFooter>
+              <HStack width="100%" hAlign="end" gap={2}>
+                <Button
+                  label="취소"
+                  variant="secondary"
+                  isDisabled={isSubmitting}
+                  onClick={() => {
+                    handleClose(false)
+                  }}
+                />
+                <Button
+                  type="submit"
+                  form={formId}
+                  label="생성하기"
+                  variant="primary"
+                  isDisabled={
+                    !dateRange || selectedProblems.length === 0 || isSubmitting
+                  }
+                  isLoading={isSubmitting}
+                />
+              </HStack>
+            </LayoutFooter>
+          }
+        />
+      </Dialog>
+      {isPickerOpen && (
+        <ProblemMultiPickerDialog
+          title="문제 선택"
+          description="연습에 포함할 문제를 선택해 주세요. 여러 문제를 선택할 수 있습니다."
+          initialSelectedProblems={selectedProblems}
+          submitLabel="선택 완료"
+          allowEmptySelection
+          isSubmitting={false}
+          onClose={() => {
+            setIsPickerOpen(false)
+          }}
+          onSubmit={(_, problems) => {
+            setSelectedProblems(problems)
+            setIsPickerOpen(false)
+            setValidationError(null)
+            createPractice.reset()
+          }}
+        />
+      )}
+    </>
   )
 }

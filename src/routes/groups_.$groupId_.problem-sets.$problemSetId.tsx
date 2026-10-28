@@ -1,3 +1,4 @@
+import { getProblemReferenceErrorMessage } from '@/lib/problems/problem-reference-errors'
 import { Badge } from '@astryxdesign/core/Badge'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
@@ -26,7 +27,7 @@ import {
 import { useState } from 'react'
 
 import { PageBackLink } from '@/components/navigation/page-back-link'
-import { ProblemSetAddProblemsDialog } from '@/components/problems/problem-set-add-problems-dialog'
+import { ProblemMultiPickerDialog } from '@/components/problems/problem-multi-picker-dialog'
 import {
   addProblemsToProblemSet,
   deleteProblemFromProblemSet,
@@ -111,10 +112,10 @@ export function ProblemSetDetailPage() {
 
   // 추가 실패 시 모달에 표시
   const addProblemsErrorMessage = addProblemsMutation.isError
-    ? (addProblemsMutation.error.response?.data?.message ??
-      (addProblemsMutation.error.message.trim() !== ''
-        ? addProblemsMutation.error.message
-        : '문제 추가 중 오류가 발생했습니다.'))
+    ? getProblemReferenceErrorMessage(
+        addProblemsMutation.error,
+        '문제 추가 중 오류가 발생했습니다.',
+      )
     : null
 
   // 4. 문제 삭제 Mutation
@@ -551,7 +552,9 @@ export function ProblemSetDetailPage() {
 
         {/* 성공 시에만 닫고, 실패하면 선택 상태 유지 */}
         {isAddModalOpen && (
-          <ProblemSetAddProblemsDialog
+          <ProblemMultiPickerDialog
+            description="문제집에 추가할 문제를 선택해 주세요. 여러 문제를 선택할 수 있습니다."
+            onSelectionChange={addProblemsMutation.reset}
             isSubmitting={addProblemsMutation.isPending}
             errorMessage={addProblemsErrorMessage}
             onClose={handleCloseAddModal}

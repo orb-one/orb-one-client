@@ -1,178 +1,62 @@
-import { Button } from '@astryxdesign/core/Button'
-import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
-import { FormLayout } from '@astryxdesign/core/FormLayout'
-import { Selector } from '@astryxdesign/core/Selector'
-import { TextInput } from '@astryxdesign/core/TextInput'
 import { useToast } from '@astryxdesign/core/Toast'
-import { useState } from 'react'
+
+import { ProblemMultiPickerDialog } from '@/components/problems/problem-multi-picker-dialog'
 import { useAddPracticeProblem } from '@/lib/api/practice'
-import { getReadableErrorMessage } from '@/lib/api/error-message'
-import { PRACTICE_PROVIDER_OPTIONS } from '@/lib/practice/provider-options'
+import { getProblemReferenceErrorMessage } from '@/lib/problems/problem-reference-errors'
 
 interface AddPracticeProblemModalProps {
   groupId: string
+  existingProblemIds?: readonly string[]
   practiceId: string
   isOpen: boolean
   onClose: () => void
 }
 
-export function AddPracticeProblemModal({
+export function AddPracticeProblemModal(props: AddPracticeProblemModalProps) {
+  if (!props.isOpen) return null
+
+  return <AddPracticeProblemModalContent key={props.practiceId} {...props} />
+}
+
+function AddPracticeProblemModalContent({
   groupId,
+  existingProblemIds,
   practiceId,
-  isOpen,
   onClose,
 }: AddPracticeProblemModalProps) {
-  const [providerSelect, setProviderSelect] = useState('JUNGOL')
-  const [customProvider, setCustomProvider] = useState('')
-  const [externalProblemId, setExternalProblemId] = useState('')
-  const [name, setName] = useState('')
-  const [url, setUrl] = useState('')
-
   const showToast = useToast()
   const addProblem = useAddPracticeProblem(groupId, practiceId)
+  const errorMessage = addProblem.isError
+    ? getProblemReferenceErrorMessage(
+        addProblem.error,
+        '문제를 추가하지 못했습니다.',
+      )
+    : null
 
-  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault()
-
-    const effectiveProvider =
-      providerSelect === 'CUSTOM'
-        ? customProvider.trim()
-        : providerSelect.trim()
-
-    if (!effectiveProvider) {
-      showToast({
-        body: '플랫폼을 선택하거나 직접 입력해주세요.',
-        type: 'error',
-      })
-      return
-    }
-
-    if (!externalProblemId.trim() || !name.trim() || !url.trim()) {
-      showToast({
-        body: '모든 문제 정보를 입력해주세요.',
-        type: 'error',
-      })
-      return
-    }
+  function handleSubmit(problemIds: string[]) {
+    if (addProblem.isPending || problemIds.length === 0) return
 
     addProblem.mutate(
-      {
-        provider: effectiveProvider,
-        externalProblemId: externalProblemId.trim(),
-        name: name.trim(),
-        url: url.trim(),
-      },
+      { problemIds },
       {
         onSuccess: () => {
-          showToast({ body: '문제가 성공적으로 등록되었습니다.' })
-          setProviderSelect('JUNGOL')
-          setCustomProvider('')
-          setExternalProblemId('')
-          setName('')
-          setUrl('')
+          showToast({ body: '문제를 추가했습니다.' })
           onClose()
-        },
-        onError: (error: unknown) => {
-          const message = getReadableErrorMessage(
-            error,
-            '문제 등록에 실패했습니다.',
-          )
-          showToast({ body: message, type: 'error' })
         },
       },
     )
   }
 
   return (
-    <Dialog
-      isOpen={isOpen}
-      onOpenChange={(open: boolean) => {
-        if (!open) {
-          setProviderSelect('JUNGOL')
-          setCustomProvider('')
-          setExternalProblemId('')
-          setName('')
-          setUrl('')
-          onClose()
-        }
-      }}
-    >
-      <DialogHeader
-        title="문제 추가하기"
-        onOpenChange={(open: boolean) => {
-          if (!open) {
-            setProviderSelect('JUNGOL')
-            setCustomProvider('')
-            setExternalProblemId('')
-            setName('')
-            setUrl('')
-            onClose()
-          }
-        }}
-      />
-      <form onSubmit={handleSubmit} className="p-4">
-        <FormLayout>
-          <Selector
-            htmlName="provider"
-            label="플랫폼"
-            value={providerSelect}
-            onChange={(val) => {
-              setProviderSelect(val)
-            }}
-            options={PRACTICE_PROVIDER_OPTIONS}
-            placeholder="플랫폼 선택"
-          />
-
-          {providerSelect === 'CUSTOM' && (
-            <TextInput
-              htmlName="customProvider"
-              label="플랫폼 직접 입력"
-              value={customProvider}
-              onChange={(val) => {
-                setCustomProvider(val)
-              }}
-              placeholder="플랫폼 이름을 입력하세요"
-            />
-          )}
-
-          <TextInput
-            htmlName="externalProblemId"
-            label="문제 ID"
-            value={externalProblemId}
-            onChange={(val) => {
-              setExternalProblemId(val)
-            }}
-            placeholder="예: 1000"
-          />
-          <TextInput
-            htmlName="name"
-            label="문제 이름"
-            value={name}
-            onChange={(val) => {
-              setName(val)
-            }}
-            placeholder="A+B"
-          />
-          <TextInput
-            htmlName="url"
-            label="문제 링크"
-            value={url}
-            onChange={(val) => {
-              setUrl(val)
-            }}
-            placeholder="https://"
-          />
-        </FormLayout>
-        <div className="mt-6 flex justify-end gap-2">
-          <Button label="취소" variant="secondary" onClick={onClose} />
-          <Button
-            type="submit"
-            label="추가하기"
-            variant="primary"
-            isLoading={addProblem.isPending}
-          />
-        </div>
-      </form>
-    </Dialog>
+    <ProblemMultiPickerDialog
+      existingProblemIds={existingProblemIds ?? []}
+      title="문제 추가하기"
+      description="연습에 추가할 문제를 선택해 주세요. 여러 문제를 선택할 수 있습니다."
+      isSubmitting={addProblem.isPending}
+      errorMessage={errorMessage}
+      onSelectionChange={addProblem.reset}
+      onClose={onClose}
+      onSubmit={handleSubmit}
+    />
   )
 }
