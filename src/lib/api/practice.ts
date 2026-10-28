@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from './client'
 import { problemQueryKeys } from '@/lib/problems/problem-queries'
-import { isMissingProblemReference } from '@/lib/problems/problem-reference-errors'
+import {
+  isMissingProblemReference,
+  isProblemAlreadyInPractice,
+} from '@/lib/problems/problem-reference-errors'
 
 export interface PracticeResponse {
   id?: string
@@ -215,6 +218,11 @@ export function useAddPracticeProblem(groupId: string, practiceId: string) {
       })
     },
     onError: (error) => {
+      if (isProblemAlreadyInPractice(error)) {
+        return queryClient.invalidateQueries({
+          queryKey: ['groups', groupId, 'practices', practiceId],
+        })
+      }
       if (isMissingProblemReference(error)) {
         void queryClient.invalidateQueries({
           queryKey: problemQueryKeys.lists(),
@@ -228,6 +236,7 @@ export function useRemovePracticeProblem(groupId: string, practiceId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
+    mutationKey: ['removePracticeProblem', groupId, practiceId],
     mutationFn: async (problemId: string) => {
       return apiClient(
         `/groups/${groupId}/practices/${practiceId}/problems/${problemId}`,
@@ -237,7 +246,7 @@ export function useRemovePracticeProblem(groupId: string, practiceId: string) {
       )
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({
+      return queryClient.invalidateQueries({
         queryKey: ['groups', groupId, 'practices', practiceId],
       })
     },

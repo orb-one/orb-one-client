@@ -142,6 +142,7 @@ async function chooseProblem(page: Page, name: string) {
       .getByRole('heading', { name: '문제 추가하기', exact: true })
       .count())
   ) {
+    await page.getByRole('button', { name: '선택 완료', exact: true }).click()
     await expect(
       page.getByRole('heading', { name: '문제 선택', exact: true }),
     ).toBeHidden()
@@ -272,7 +273,7 @@ for (const kind of ['create', 'add'] as const) {
             title: '보존할 초안',
             startDate: '2030-01-01T00:00:00',
             endDate: '2030-01-03T23:59:59',
-            problemIds: [catalog[0]?.problemId],
+            problemIds: [catalog[1]?.problemId, catalog[0]?.problemId],
           }
         : { problemIds: [catalog[1]?.problemId, catalog[0]?.problemId] },
     ])
@@ -500,3 +501,142 @@ for (const viewport of [
     })
   }
 }
+
+for (const width of [1280, 390]) {
+  test(`confirms and cancels multiple creation selections without saving at ${String(width)}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 800 })
+    const requests: unknown[] = []
+    await page.route(apiUrl(`${groupPath}/practices`), (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      requests.push(route.request().postDataJSON())
+      return route.fulfill(
+        requests.length === 1
+          ? {
+              status: 400,
+              json: {
+                code: 'INVALID_FIELD',
+                message: '요청 값이 올바르지 않습니다.',
+              },
+            }
+          : {
+              status: 201,
+              json: { practiceId: 'created', title: '보존할 초안' },
+            },
+      )
+    })
+    await openForm(page, 'create')
+    await openPicker(page)
+    const row = (name: string) =>
+      page
+        .getByRole('dialog')
+        .filter({
+          has: page.getByRole('heading', { name: '문제 선택', exact: true }),
+        })
+        .getByRole('button')
+        .filter({ has: page.getByText(name, { exact: true }) })
+    await row('A+B').click()
+    await row('Hello World').click()
+    await page.getByRole('button', { name: '선택 완료', exact: true }).click()
+    expect(requests).toEqual([])
+    await expect(page.getByText('2개 선택됨')).toBeVisible()
+    await page.screenshot({
+      path: test.info().outputPath('create-multiple.png'),
+    })
+
+    await openPicker(page)
+    await row('A+B').click()
+    await row('A-B').click()
+    await page.keyboard.press('Escape')
+    await expect(
+      page.getByRole('button', { name: '문제 변경', exact: true }),
+    ).toBeFocused()
+    await expect(
+      page.getByRole('button', { name: 'A+B 선택 해제', exact: true }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Hello World 선택 해제', exact: true }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'A-B 선택 해제', exact: true }),
+    ).toHaveCount(0)
+
+    await openPicker(page)
+    await page.getByRole('button', { name: '선택한 문제만 보기' }).click()
+    await row('A+B').focus()
+    await page.keyboard.press('Space')
+    await expect(row('Hello World')).toBeFocused()
+    await page.keyboard.press('Space')
+    await expect(
+      page.getByRole('button', { name: '전체 목록 보기' }),
+    ).toBeFocused()
+    await page.getByRole('button', { name: '선택 완료', exact: true }).click()
+    await expect(
+      page.getByRole('button', { name: '생성하기', exact: true }),
+    ).toBeDisabled()
+
+    await openPicker(page)
+    await row('A+B').click()
+    await row('Hello World').click()
+    await page.getByRole('button', { name: '선택 완료', exact: true }).click()
+    await page.getByRole('button', { name: '생성하기', exact: true }).click()
+    await expect(
+      page.getByTestId('practice-form-scroll-area').getByRole('alert'),
+    ).toContainText('요청 값이 올바르지 않습니다.')
+    await expect(page.getByText('2개 선택됨')).toBeVisible()
+    await expect(page.getByRole('textbox', { name: '연습 이름' })).toHaveValue(
+      '보존할 초안',
+    )
+    await page.getByRole('button', { name: '생성하기', exact: true }).click()
+    await expect(
+      page.getByRole('heading', { name: '연습 만들기', exact: true }),
+    ).toBeHidden()
+    expect(requests).toEqual(
+      Array.from({ length: 2 }, () => ({
+        title: '보존할 초안',
+        startDate: '2030-01-01T00:00:00',
+        endDate: '2030-01-03T23:59:59',
+        problemIds: [catalog[0]?.problemId, catalog[1]?.problemId],
+      })),
+    )
+  })
+}
+
+test('resets the scroll position when returning to a cached catalog page', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 430 })
+  await page.route(apiUrl('/problems') + '?**', (route) => {
+    const current = Number(
+      new URL(route.request().url()).searchParams.get('page') ?? 0,
+    )
+    return route.fulfill({
+      json: {
+        problems: Array.from({ length: 10 }, (_, i) => ({
+          ...catalog[0],
+          problemId: `page-${String(current)}-${String(i)}`,
+          name: `페이지 ${String(current + 1)} 문제 ${String(i + 1)}`,
+        })),
+        page: current,
+        size: 10,
+        totalElements: 20,
+        totalPages: 2,
+      },
+    })
+  })
+  await openForm(page, 'add')
+  const body = page.getByTestId('problem-multi-picker-scroll-area')
+  await page.getByRole('button', { name: '다음 페이지로 이동' }).click()
+  await expect(page.getByText('페이지 2 문제 1', { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: '이전 페이지로 이동' }),
+  ).toBeEnabled()
+  await body.evaluate((el) => (el.scrollTop = el.scrollHeight))
+  expect(await body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+  await page.getByRole('button', { name: '이전 페이지로 이동' }).click()
+  await expect(
+    page.getByText('페이지 1 문제 1', { exact: true }),
+  ).toBeInViewport({ ratio: 1 })
+  await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBe(0)
+})

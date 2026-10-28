@@ -1,52 +1,79 @@
 import { Button } from '@astryxdesign/core/Button'
 import { Field } from '@astryxdesign/core/Field'
-import { HStack } from '@astryxdesign/core/HStack'
+import { List, ListItem } from '@astryxdesign/core/List'
 import { Text } from '@astryxdesign/core/Text'
 import { VStack } from '@astryxdesign/core/VStack'
-import { useId } from 'react'
+import { useId, type RefObject } from 'react'
 
 import type { Problem } from '@/lib/problems/problem-model'
 
 interface PracticeProblemFieldProps {
-  selectedProblem: Problem | null
+  selectedProblems: readonly Problem[]
   onOpenPicker: () => void
+  onRemoveProblem: (problemId: string) => void
+  pickerButtonRef: RefObject<HTMLButtonElement | null>
   isDisabled: boolean
 }
 
 export function PracticeProblemField({
-  selectedProblem,
+  selectedProblems,
   onOpenPicker,
+  onRemoveProblem,
+  pickerButtonRef,
   isDisabled,
 }: PracticeProblemFieldProps) {
   const id = useId()
 
   return (
     <Field
-      label="첫 문제 (필수)"
+      label="문제"
+      isRequired
       inputID={id}
-      description="문제 목록에서 선택해 주세요."
+      description="연습에 포함할 문제를 하나 이상 선택해 주세요."
       descriptionID={`${id}-description`}
       isDisabled={isDisabled}
     >
-      <HStack width="100%" hAlign="between" vAlign="center" gap={3} wrap="wrap">
-        {selectedProblem && (
-          <VStack gap={1}>
-            <Text type="label">{selectedProblem.name}</Text>
+      <VStack width="100%" gap={3}>
+        {selectedProblems.length > 0 && (
+          <>
             <Text type="supporting" color="secondary">
-              {selectedProblem.provider} {selectedProblem.externalId}
+              {`${String(selectedProblems.length)}개 선택됨`}
             </Text>
-          </VStack>
+            <List density="balanced" hasDividers aria-label="선택한 문제">
+              {selectedProblems.map((problem) => (
+                <ListItem
+                  key={problem.id}
+                  label={problem.name}
+                  description={`${problem.provider} ${problem.externalId}`}
+                  endContent={
+                    <Button
+                      label="선택 해제"
+                      aria-label={`${problem.name} 선택 해제`}
+                      size="sm"
+                      variant="secondary"
+                      isDisabled={isDisabled}
+                      onClick={() => {
+                        onRemoveProblem(problem.id)
+                        pickerButtonRef.current?.focus()
+                      }}
+                    />
+                  }
+                />
+              ))}
+            </List>
+          </>
         )}
         <Button
+          ref={pickerButtonRef}
           id={id}
-          label={selectedProblem ? '문제 변경' : '문제 선택'}
-          aria-label={selectedProblem ? '문제 변경' : '문제 선택'}
+          label={selectedProblems.length > 0 ? '문제 변경' : '문제 선택'}
+          aria-label={selectedProblems.length > 0 ? '문제 변경' : '문제 선택'}
           aria-describedby={`${id}-description`}
           variant="secondary"
           isDisabled={isDisabled}
           onClick={onOpenPicker}
         />
-      </HStack>
+      </VStack>
     </Field>
   )
 }

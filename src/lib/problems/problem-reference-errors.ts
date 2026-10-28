@@ -1,14 +1,22 @@
 import { ApiError } from '@/lib/api/client'
 import { getReadableErrorMessage } from '@/lib/api/error-message'
 
-export function isMissingProblemReference(error: unknown) {
+function hasErrorCode(error: unknown, code: string) {
   return (
     error instanceof ApiError &&
     typeof error.body === 'object' &&
     error.body !== null &&
     'code' in error.body &&
-    error.body.code === 'PROBLEM_NOT_FOUND'
+    error.body.code === code
   )
+}
+
+export function isMissingProblemReference(error: unknown) {
+  return hasErrorCode(error, 'PROBLEM_NOT_FOUND')
+}
+
+export function isProblemAlreadyInPractice(error: unknown) {
+  return hasErrorCode(error, 'PROBLEM_ALREADY_IN_PRACTICE')
 }
 
 export function getProblemReferenceErrorMessage(

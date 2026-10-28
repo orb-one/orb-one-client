@@ -12,9 +12,9 @@ import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { useToast } from '@astryxdesign/core/Toast'
 import { useMediaQuery } from '@astryxdesign/core/hooks'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 
-import { ProblemPickerDialog } from '@/components/problems/problem-picker-dialog'
+import { ProblemMultiPickerDialog } from '@/components/problems/problem-multi-picker-dialog'
 import { PracticeProblemField } from '@/components/practice/practice-problem-field'
 import { useCreatePractice } from '@/lib/api/practice'
 import { validateAndFormatPracticeDates } from '@/lib/practice/practice-date'
@@ -40,8 +40,10 @@ function CreatePracticeModalContent({
   const [title, setTitle] = useState('')
   const [dateRange, setDateRange] = useState<DateRange | null>(null)
   const hasWideCalendar = useMediaQuery('(min-width: 640px)')
-  const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null)
+  const [selectedProblems, setSelectedProblems] = useState<Problem[]>([])
   const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const pickerButtonRef = useRef<HTMLButtonElement>(null)
+  const wasPickerOpenRef = useRef(false)
   const formId = useId()
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
@@ -56,6 +58,13 @@ function CreatePracticeModalContent({
           '연습을 만들지 못했습니다.',
         )
       : null)
+
+  useLayoutEffect(() => {
+    if (wasPickerOpenRef.current && !isPickerOpen) {
+      pickerButtonRef.current?.focus()
+    }
+    wasPickerOpenRef.current = isPickerOpen
+  }, [isPickerOpen])
 
   useEffect(() => {
     if (errorMessage && scrollAreaRef.current) {
@@ -87,7 +96,7 @@ function CreatePracticeModalContent({
       return
     }
 
-    if (!selectedProblem) {
+    if (selectedProblems.length === 0) {
       setValidationError('문제를 선택해 주세요.')
       return
     }
@@ -98,7 +107,7 @@ function CreatePracticeModalContent({
         title: title.trim(),
         startDate: dates.startDate,
         endDate: dates.endDate,
-        problemIds: [selectedProblem.id],
+        problemIds: selectedProblems.map((problem) => problem.id),
       },
       {
         onSuccess: () => {
@@ -160,8 +169,16 @@ function CreatePracticeModalContent({
                   />
                   <Divider />
                   <PracticeProblemField
-                    selectedProblem={selectedProblem}
+                    pickerButtonRef={pickerButtonRef}
+                    selectedProblems={selectedProblems}
                     isDisabled={isSubmitting}
+                    onRemoveProblem={(problemId) => {
+                      setSelectedProblems((current) =>
+                        current.filter((problem) => problem.id !== problemId),
+                      )
+                      setValidationError(null)
+                      createPractice.reset()
+                    }}
                     onOpenPicker={() => {
                       setIsPickerOpen(true)
                     }}
@@ -186,7 +203,9 @@ function CreatePracticeModalContent({
                   form={formId}
                   label="생성하기"
                   variant="primary"
-                  isDisabled={!dateRange || !selectedProblem || isSubmitting}
+                  isDisabled={
+                    !dateRange || selectedProblems.length === 0 || isSubmitting
+                  }
                   isLoading={isSubmitting}
                 />
               </HStack>
@@ -194,17 +213,25 @@ function CreatePracticeModalContent({
           }
         />
       </Dialog>
-      <ProblemPickerDialog
-        isOpen={isPickerOpen}
-        onOpenChange={setIsPickerOpen}
-        selectedProblem={selectedProblem}
-        onSelect={(problem) => {
-          setSelectedProblem(problem)
-          setValidationError(null)
-          createPractice.reset()
-        }}
-        description="연습에 추가할 문제를 선택해 주세요."
-      />
+      {isPickerOpen && (
+        <ProblemMultiPickerDialog
+          title="문제 선택"
+          description="연습에 포함할 문제를 선택해 주세요. 여러 문제를 선택할 수 있습니다."
+          initialSelectedProblems={selectedProblems}
+          submitLabel="선택 완료"
+          allowEmptySelection
+          isSubmitting={false}
+          onClose={() => {
+            setIsPickerOpen(false)
+          }}
+          onSubmit={(_, problems) => {
+            setSelectedProblems(problems)
+            setIsPickerOpen(false)
+            setValidationError(null)
+            createPractice.reset()
+          }}
+        />
+      )}
     </>
   )
 }

@@ -14,6 +14,7 @@ import { useState } from 'react'
 import { useToast } from '@astryxdesign/core/Toast'
 import { PageBackLink } from '@/components/navigation/page-back-link'
 import { getReadableErrorMessage } from '@/lib/api/error-message'
+import { useMutationState } from '@tanstack/react-query'
 
 export const Route = createFileRoute(
   '/groups_/$groupId_/practices_/$practiceId',
@@ -30,8 +31,17 @@ function PracticeDetailPage() {
   const showToast = useToast()
 
   const removeProblem = useRemovePracticeProblem(groupId, practiceId)
+  const deletingProblemIds = useMutationState<string>({
+    filters: {
+      mutationKey: ['removePracticeProblem', groupId, practiceId],
+      status: 'pending',
+      exact: true,
+    },
+    select: (mutation) => mutation.state.variables as string,
+  })
 
   const handleDeleteProblem = async (problemId: string) => {
+    if (deletingProblemIds.includes(problemId)) return
     try {
       await removeProblem.mutateAsync(problemId)
       showToast({ body: '문제가 삭제되었습니다.' })
@@ -95,6 +105,7 @@ function PracticeDetailPage() {
               <PracticeDetailTable
                 practice={practice}
                 isDeleteMode={isDeleteMode}
+                deletingProblemIds={deletingProblemIds}
                 onDeleteProblem={(problemId) => {
                   void handleDeleteProblem(problemId)
                 }}

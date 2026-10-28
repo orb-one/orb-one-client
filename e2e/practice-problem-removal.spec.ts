@@ -236,3 +236,54 @@ test('shows errors for both requests when problems are deleted consecutively', a
   await expect(page.getByText('A+B', { exact: true })).toBeVisible()
   await expect(page.getByText('A-B', { exact: true })).toBeVisible()
 })
+
+test('blocks repeat deletion of the pending problem while allowing other rows', async ({
+  page,
+}) => {
+  let requests = 0
+  let release: () => void = () => undefined
+  const ready = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route(
+    apiUrl(`${practicePath}/problems/problem-1`),
+    async (route) => {
+      requests += 1
+      await ready
+      await route.fulfill({
+        status: 404,
+        json: {
+          code: 'PROBLEM_NOT_IN_PRACTICE',
+          message: '연습에 포함된 문제를 찾을 수 없습니다.',
+        },
+      })
+    },
+  )
+  await page.goto(practicePath)
+  await page.getByRole('button', { name: '문제 삭제', exact: true }).click()
+  const first = page
+    .getByRole('row')
+    .filter({ hasText: 'A+B' })
+    .getByRole('button', { name: '삭제', exact: true })
+  const second = page
+    .getByRole('row')
+    .filter({ hasText: 'A-B' })
+    .getByRole('button', { name: '삭제', exact: true })
+  await first.click()
+  try {
+    await expect(first).toBeDisabled()
+    await expect(second).toBeEnabled()
+    await first.evaluate((button) => {
+      ;(button as HTMLButtonElement).click()
+    })
+    expect(requests).toBe(1)
+  } finally {
+    release()
+  }
+  await expect(first).toBeEnabled()
+  await expect(
+    page
+      .getByLabel('알림', { exact: true })
+      .getByText('연습에 포함된 문제를 찾을 수 없습니다.', { exact: true }),
+  ).toBeVisible()
+})

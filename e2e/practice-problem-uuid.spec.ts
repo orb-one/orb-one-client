@@ -48,7 +48,10 @@ async function selectProblem(page: Page, name: string, keyword?: string) {
     .getByRole('button', { name: /문제 선택|문제 변경/, exact: true })
     .click()
   await expect(
-    page.getByText('연습에 추가할 문제를 선택해 주세요.', { exact: true }),
+    page.getByText(
+      '연습에 포함할 문제를 선택해 주세요. 여러 문제를 선택할 수 있습니다.',
+      { exact: true },
+    ),
   ).toBeVisible()
   if (keyword)
     await page.getByRole('textbox', { name: '문제 검색' }).fill(keyword)
@@ -56,6 +59,7 @@ async function selectProblem(page: Page, name: string, keyword?: string) {
     .getByRole('button')
     .filter({ has: page.getByText(name, { exact: true }) })
     .click()
+  await page.getByRole('button', { name: '선택 완료', exact: true }).click()
   await expect(
     page.getByRole('heading', { name: '문제 선택', exact: true }),
   ).toBeHidden()
@@ -147,6 +151,7 @@ for (const viewport of [
       addBodies.push(route.request().postDataJSON())
       if (rejectAdd) {
         rejectAdd = false
+        practice.problems = catalog.slice(0, 2)
         return route.fulfill({
           status: 409,
           json: {
@@ -189,6 +194,9 @@ for (const viewport of [
       '1월 1일 – 1월 3일',
     )
     await page.screenshot({ path: test.info().outputPath('create-error.png') })
+    await page
+      .getByRole('button', { name: 'Hello World 선택 해제', exact: true })
+      .click()
     await selectProblem(page, 'A+B', '1000')
     await page.getByRole('button', { name: '생성하기', exact: true }).click()
     await expect(
@@ -232,16 +240,10 @@ for (const viewport of [
     await expect(
       page.getByText('이미 연습에 포함된 문제가 있습니다.', { exact: true }),
     ).toBeVisible()
-    await expect(page.getByText('2개 선택됨')).toBeVisible()
-    await page.getByRole('button', { name: '선택한 문제만 보기' }).click()
-    await expect(row('Hello World')).toBeVisible()
-    await expect(row('최빈수 구하기')).toBeVisible()
-    await row('Hello World').click()
     await expect(page.getByText('1개 선택됨')).toBeVisible()
-    await page.getByRole('button', { name: '전체 목록 보기' }).click()
-    await page.getByRole('textbox', { name: '문제 검색' }).fill('2557')
-    await row('Hello World').click()
     await page.getByRole('button', { name: '선택한 문제만 보기' }).click()
+    await expect(row('Hello World')).toHaveCount(0)
+    await expect(row('최빈수 구하기')).toBeVisible()
     await page.screenshot({ path: test.info().outputPath('add-selected.png') })
     await submit.click()
     await expect(
@@ -255,7 +257,7 @@ for (const viewport of [
     ).toBeVisible()
     expect(addBodies).toEqual([
       { problemIds: [catalog[1]?.problemId, catalog[2]?.problemId] },
-      { problemIds: [catalog[2]?.problemId, catalog[1]?.problemId] },
+      { problemIds: [catalog[2]?.problemId] },
     ])
   })
 }
