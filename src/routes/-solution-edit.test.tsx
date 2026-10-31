@@ -1,15 +1,10 @@
-import { FieldLabelProvider } from '@astryxdesign/core/Field'
+import { InternationalizationProvider } from '@astryxdesign/core/i18n'
+import koKR from '@astryxdesign/core/locales/ko-KR.json'
 import { LayerProvider } from '@astryxdesign/core/Layer'
 import { Theme } from '@astryxdesign/core/theme'
 import { neutralTheme } from '@astryxdesign/theme-neutral/built'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -19,7 +14,6 @@ import { ApiError, AuthSessionExpiredError } from '@/lib/api/client'
 import { getSolution, updateSolution } from '@/lib/api/solutions'
 import type { SolutionDetail } from '@/lib/solutions/solution-model'
 import { useAppStore } from '@/stores/use-app-store'
-import { messages } from '@/lib/i18n/messages'
 
 const navigate = vi.hoisted(() => vi.fn())
 
@@ -87,9 +81,11 @@ it('loads every replaceable field and preserves it on submit', async () => {
     screen.queryByRole('checkbox', { name: /임시 저장/ }),
   ).not.toBeInTheDocument()
   expect(screen.getByRole('spinbutton', { name: /메모리 사용량/ })).toHaveValue(
-    14_128,
+    '14128',
   )
-  expect(screen.getByRole('spinbutton', { name: /실행 시간/ })).toHaveValue(104)
+  expect(screen.getByRole('spinbutton', { name: /실행 시간/ })).toHaveValue(
+    '104',
+  )
 
   const descriptionMarkdown = '# 수정된 설명\n\n- 풀이 단계'
   await userEvent.clear(descriptionInput)
@@ -229,7 +225,11 @@ it('prevents submission when the existing code is empty', async () => {
     await screen.findByRole('button', { name: '변경사항 저장' }),
   )
 
-  expect(await screen.findByText('소스 코드를 입력해 주세요.')).toBeVisible()
+  expect(
+    await screen.findByText('소스 코드를 입력해 주세요.', {
+      selector: ':not([data-astryx-live-region])',
+    }),
+  ).toBeVisible()
   expect(updateSolution).not.toHaveBeenCalled()
 })
 
@@ -249,37 +249,69 @@ it('rejects execution metrics outside the server integer range', async () => {
   expect(
     await screen.findByText(
       '메모리 사용량은 -2,147,483,648부터 2,147,483,647 사이의 정수로 입력해 주세요.',
+      { selector: ':not([data-astryx-live-region])' },
     ),
   ).toBeVisible()
+  await waitFor(() => {
+    expect(
+      screen.getAllByRole('alert').map((alert) => alert.textContent),
+    ).toContain(
+      '메모리 사용량은 -2,147,483,648부터 2,147,483,647 사이의 정수로 입력해 주세요.',
+    )
+  })
   await waitFor(() => expect(memoryUsageInput).toHaveFocus())
-  expect(memoryUsageInput).toHaveValue(2_147_483_648)
+  expect(memoryUsageInput).toHaveValue('2147483648')
   expect(updateSolution).not.toHaveBeenCalled()
 })
 
-it('rejects a native bad number input without restoring the previous metric', async () => {
+it.each([
+  ['메모리 사용량', 'memoryUsage'],
+  ['실행 시간', 'timeElapsed'],
+] as const)(
+  'preserves the saved %s when a replacement is rejected',
+  async (label, field) => {
+    vi.mocked(getCurrentUser).mockResolvedValue(currentUser)
+    vi.mocked(getSolution).mockResolvedValue(solution)
+    vi.mocked(updateSolution).mockResolvedValue(solution)
+
+    renderRoute(<SolutionEditPage solutionId="solution-1" />)
+
+    const metric = await screen.findByRole('spinbutton', {
+      name: new RegExp(label),
+    })
+    await userEvent.clear(metric)
+    await userEvent.type(metric, '0x10')
+    await userEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
+
+    expect(metric).toHaveValue(String(solution[field]))
+    await waitFor(() => {
+      expect(updateSolution).toHaveBeenCalledWith(
+        'solution-1',
+        expect.objectContaining({ [field]: solution[field] }),
+      )
+    })
+  },
+)
+
+it('submits null for saved metrics cleared with the button or keyboard', async () => {
   vi.mocked(getCurrentUser).mockResolvedValue(currentUser)
   vi.mocked(getSolution).mockResolvedValue(solution)
+  vi.mocked(updateSolution).mockResolvedValue(solution)
 
   renderRoute(<SolutionEditPage solutionId="solution-1" />)
 
-  const memoryUsageInput = await screen.findByRole('spinbutton', {
-    name: /메모리 사용량/,
-  })
-  Object.defineProperty(memoryUsageInput, 'validity', {
-    configurable: true,
-    value: { badInput: true },
-  })
-  fireEvent.input(memoryUsageInput, { target: { value: '' } })
+  await userEvent.click(
+    await screen.findByRole('button', { name: '메모리 사용량 지우기' }),
+  )
+  await userEvent.clear(screen.getByRole('spinbutton', { name: /실행 시간/ }))
   await userEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
 
-  expect(
-    await screen.findByText(
-      '메모리 사용량은 -2,147,483,648부터 2,147,483,647 사이의 정수로 입력해 주세요.',
-    ),
-  ).toBeVisible()
-  await waitFor(() => expect(memoryUsageInput).toHaveFocus())
-  expect(memoryUsageInput).toHaveValue(null)
-  expect(updateSolution).not.toHaveBeenCalled()
+  await waitFor(() => {
+    expect(updateSolution).toHaveBeenCalledWith(
+      'solution-1',
+      expect.objectContaining({ memoryUsage: null, timeElapsed: null }),
+    )
+  })
 })
 
 function renderRoute(children: ReactNode) {
@@ -294,9 +326,12 @@ function renderRoute(children: ReactNode) {
     <Theme theme={neutralTheme} mode="light">
       <LayerProvider>
         <QueryClientProvider client={queryClient}>
-          <FieldLabelProvider value={messages.ko.common.fieldLabels}>
+          <InternationalizationProvider
+            locale="ko-KR"
+            messages={{ 'ko-KR': koKR }}
+          >
             {children}
-          </FieldLabelProvider>
+          </InternationalizationProvider>
         </QueryClientProvider>
       </LayerProvider>
     </Theme>,

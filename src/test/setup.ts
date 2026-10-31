@@ -1,4 +1,13 @@
 import '@testing-library/jest-dom/vitest'
+import { afterEach } from 'vitest'
+
+afterEach(() => {
+  // Astryx의 문서 단위 안내 영역이 다음 테스트에 남지 않도록 정리합니다.
+  document.querySelectorAll('[data-astryx-live-region]').forEach((region) => {
+    region.textContent = ''
+    region.remove()
+  })
+})
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

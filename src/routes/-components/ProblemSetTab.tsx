@@ -1,3 +1,4 @@
+import { getProblemReferenceErrorMessage } from '@/lib/problems/problem-reference-errors'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { EmptyState } from '@astryxdesign/core/EmptyState'
@@ -65,7 +66,12 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
       })
     },
     onError: (err) => {
-      alert(err.message || '문제집 생성 중 오류가 발생했습니다.')
+      alert(
+        getProblemReferenceErrorMessage(
+          err,
+          '문제집 생성 중 오류가 발생했습니다.',
+        ),
+      )
     },
   })
 
@@ -140,6 +146,7 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
         <Skeleton width="100%" height={48} radius={2} />
       ) : problemSetsQuery.isError ? (
         <Banner
+          role="alert"
           status="error"
           title="문제집 목록을 불러오는 데 실패했습니다."
           endContent={
@@ -220,8 +227,10 @@ export function ProblemSetTab({ groupId }: ProblemSetTabProps) {
           isSubmitting={createProblemSetMutation.isPending}
           errorMessage={
             createProblemSetMutation.error
-              ? createProblemSetMutation.error.message ||
-                '문제집 생성 중 오류가 발생했습니다.'
+              ? getProblemReferenceErrorMessage(
+                  createProblemSetMutation.error,
+                  '문제집 생성 중 오류가 발생했습니다.',
+                )
               : null
           }
           onClose={handleCloseCreateModal}

@@ -185,7 +185,7 @@ test('follows the system light and dark color schemes', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' })
 
   await expect(landing).toHaveCSS('background-color', 'rgb(38, 38, 38)')
-  await expect(registerLink).toHaveCSS('color', 'rgb(23, 23, 23)')
+  await expect(registerLink).toHaveCSS('color', 'rgb(17, 17, 17)')
   expect(await getContrastRatio(registerLink)).toBeGreaterThanOrEqual(4.5)
   await expect(jungolLogo).toHaveCSS(
     'filter',

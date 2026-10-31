@@ -54,15 +54,6 @@ export interface ProblemSetDetailResponse {
   updatedAt: string
 }
 
-// 4) [문제집 생성 요청 시 포함되는 개별 문제 DTO]
-export interface ProblemCreateItemDto {
-  provider: string
-  externalProblemId: string
-  name: string
-  url: string
-  difficulty: string
-}
-
 // 5) [문제집 생성 요청 본문 DTO] (POST /groups/{groupId}/problem-sets)
 export interface ProblemSetCreateRequest {
   name: string

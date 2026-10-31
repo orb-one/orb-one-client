@@ -29,6 +29,7 @@ export function ProblemPickerDialog({
   onOpenChange,
   selectedProblem,
   onSelect,
+  description,
 }: ProblemPickerDialogProps) {
   const { t } = useI18n()
   const copy = t.solutions.create
@@ -88,7 +89,7 @@ export function ProblemPickerDialog({
           <LayoutContent>
             <VStack gap={3} width="100%">
               <Text type="body" size="sm" color="secondary">
-                {copy.problemPickerDescription}
+                {description ?? copy.problemPickerDescription}
               </Text>
               <TextInput
                 label={copy.problemSearchLabel}
@@ -104,9 +105,12 @@ export function ProblemPickerDialog({
                 <ProblemPickerSkeleton label={copy.problemPickerLoading} />
               ) : problemsQuery.isError ? (
                 <Banner
+                  role={isAuthRequired ? 'status' : 'alert'}
                   status={isAuthRequired ? 'info' : 'error'}
                   title={
-                    isAuthRequired ? copy.authRequired : copy.problemPickerError
+                    isAuthRequired
+                      ? copy.problemPickerAuthRequired
+                      : copy.problemPickerError
                   }
                   endContent={
                     isAuthRequired ? (
@@ -133,11 +137,9 @@ export function ProblemPickerDialog({
                       ? copy.problemSearchEmptyTitle
                       : copy.problemPickerEmptyTitle
                   }
-                  description={
-                    keyword
-                      ? copy.problemSearchEmptyDescription
-                      : copy.problemPickerEmptyDescription
-                  }
+                  {...(keyword
+                    ? { description: copy.problemSearchEmptyDescription }
+                    : {})}
                   icon={
                     <Icon
                       icon={keyword ? SearchX : ListChecks}
@@ -234,4 +236,5 @@ interface ProblemPickerDialogProps {
   onOpenChange: (isOpen: boolean) => void
   selectedProblem: Problem | null
   onSelect: (problem: Problem) => void
+  description?: string
 }

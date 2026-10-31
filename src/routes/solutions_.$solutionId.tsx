@@ -94,6 +94,7 @@ export function SolutionDetailPage({ solutionId }: SolutionDetailPageProps) {
           <SolutionDetailSkeleton label={copy.loading} />
         ) : solutionQuery.isError ? (
           <Banner
+            role={isAuthRequired ? 'status' : 'alert'}
             status={isAuthRequired ? 'info' : 'error'}
             title={
               isAuthRequired

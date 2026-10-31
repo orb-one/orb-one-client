@@ -134,7 +134,7 @@ function RootAuthNav() {
             <Avatar
               name={currentUser.nickname}
               alt={copy.currentUser}
-              size="xsmall"
+              size="sm"
             />
             <Text
               type="supporting"

@@ -312,7 +312,9 @@ test('creates, fully updates and deletes with CSRF and refreshed lists', async (
   await dialog.getByRole('button', { name: '문제 등록', exact: true }).click()
   await expect(dialog).toHaveCount(0)
   await expect(
-    page.getByText('문제를 등록했습니다.', { exact: true }),
+    page
+      .getByRole('region', { name: '알림', exact: true })
+      .getByText('문제를 등록했습니다.', { exact: true }),
   ).toBeVisible()
   expect(state.writes[0]).toMatchObject({
     method: 'POST',
@@ -361,7 +363,9 @@ test('creates, fully updates and deletes with CSRF and refreshed lists', async (
     .click()
   await expect(confirmation).toHaveCount(0)
   await expect(
-    page.getByText('문제를 삭제했습니다.', { exact: true }),
+    page
+      .getByRole('region', { name: '알림', exact: true })
+      .getByText('문제를 삭제했습니다.', { exact: true }),
   ).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Two Sum updated 삭제' }),

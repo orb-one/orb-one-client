@@ -40,8 +40,8 @@
     "theme": "@astryxdesign/theme-neutral"
   },
   "dependencies": {
-    "@astryxdesign/core": "0.1.6",
-    "@astryxdesign/theme-neutral": "0.1.6",
+    "@astryxdesign/core": "0.7.4",
+    "@astryxdesign/theme-neutral": "0.7.4",
     "@codemirror/commands": "^6.10.4",
     "@codemirror/lang-cpp": "^6.0.3",
     "@codemirror/lang-go": "^6.0.1",
@@ -56,6 +56,7 @@
     "@fontsource-variable/geist": "^5.2.9",
     "@lezer/highlight": "^1.2.3",
     "@marsidev/react-turnstile": "1.6.1",
+    "@stylexjs/stylex": "0.19.0",
     "@tanstack/react-query": "^5.101.0",
     "@tanstack/react-router": "^1.170.15",
     "codemirror": "^6.0.2",
@@ -65,7 +66,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@astryxdesign/cli": "0.1.6",
+    "@astryxdesign/cli": "0.7.4",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "^4.3.0",
