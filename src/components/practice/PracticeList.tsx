@@ -1,11 +1,13 @@
 import { Button } from '@astryxdesign/core/Button'
 import { Table, pixel, proportional } from '@astryxdesign/core/Table'
 import { Text } from '@astryxdesign/core/Text'
+import { VStack } from '@astryxdesign/core/VStack'
 import type { Practice } from '@/lib/api/practice'
 import { Trash2 } from 'lucide-react'
 import { Icon } from '@astryxdesign/core/Icon'
 import { Link } from '@tanstack/react-router'
 import { sortPractices } from '@/lib/practice/sort-practices'
+import { formatPracticeDateTime } from '@/lib/practice/practice-date'
 
 interface PracticeListProps {
   practices: Practice[]
@@ -43,76 +45,79 @@ export function PracticeList({
   const sortedPractices = sortPractices(practices)
 
   return (
-    <Table<Practice & Record<string, unknown>>
-      data={sortedPractices as (Practice & Record<string, unknown>)[]}
-      idKey="id"
-      columns={[
-        {
-          key: 'title',
-          header: '제목',
-          width: proportional(2),
-          renderCell: (p: Practice) => (
-            <Link
-              to="/groups/$groupId/practices/$practiceId"
-              params={{
-                groupId: p.groupId,
-                practiceId: p.id,
-              }}
-              className="text-primary font-medium hover:underline"
-            >
-              {p.title}
-            </Link>
-          ),
-        },
-        {
-          key: 'start',
-          header: '시작일시',
-          width: proportional(1.5),
-          renderCell: (p: Practice) => (
-            <Text type="supporting">
-              {new Date(p.startDate).toLocaleString()}
-            </Text>
-          ),
-        },
-        {
-          key: 'end',
-          header: '종료일시',
-          width: proportional(1.5),
-          renderCell: (p: Practice) => (
-            <Text type="supporting">
-              {new Date(p.endDate).toLocaleString()}
-            </Text>
-          ),
-        },
-        {
-          key: 'action',
-          header: isDeleteMode ? '삭제' : '수정',
-          width: pixel(100),
-          renderCell: (p: Practice) =>
-            isDeleteMode ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                label="삭제"
-                icon={<Icon icon={Trash2} size="sm" />}
-                onClick={() => {
-                  if (confirm(`'${p.title}' 연습을 정말 삭제하시겠습니까?`)) {
-                    onDeletePractice(p.id)
-                  }
+    <VStack width="100%" gap={2}>
+      <Text type="supporting">
+        한국 시간 기준 · 종료 시각부터 연습이 종료됩니다.
+      </Text>
+      <Table<Practice & Record<string, unknown>>
+        data={sortedPractices as (Practice & Record<string, unknown>)[]}
+        idKey="id"
+        columns={[
+          {
+            key: 'title',
+            header: '제목',
+            width: proportional(2),
+            renderCell: (p: Practice) => (
+              <Link
+                to="/groups/$groupId/practices/$practiceId"
+                params={{
+                  groupId: p.groupId,
+                  practiceId: p.id,
                 }}
-              />
-            ) : (
-              <Button
-                size="sm"
-                variant="ghost"
-                label="수정"
-                onClick={() => {
-                  onEditPractice(p)
-                }}
-              />
+                className="text-primary font-medium hover:underline"
+              >
+                {p.title}
+              </Link>
             ),
-        },
-      ]}
-    />
+          },
+          {
+            key: 'start',
+            header: '시작일시',
+            width: proportional(1.5),
+            renderCell: (p: Practice) => (
+              <Text type="supporting">
+                {formatPracticeDateTime(p.startDate)}
+              </Text>
+            ),
+          },
+          {
+            key: 'end',
+            header: '종료일시',
+            width: proportional(1.5),
+            renderCell: (p: Practice) => (
+              <Text type="supporting">{formatPracticeDateTime(p.endDate)}</Text>
+            ),
+          },
+          {
+            key: 'action',
+            header: isDeleteMode ? '삭제' : '수정',
+            width: pixel(100),
+            renderCell: (p: Practice) =>
+              isDeleteMode ? (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  label="삭제"
+                  icon={<Icon icon={Trash2} size="sm" />}
+                  onClick={() => {
+                    if (confirm(`'${p.title}' 연습을 정말 삭제하시겠습니까?`)) {
+                      onDeletePractice(p.id)
+                    }
+                  }}
+                />
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  label="수정"
+                  onClick={() => {
+                    onEditPractice(p)
+                  }}
+                />
+              ),
+          },
+        ]}
+      />
+    </VStack>
   )
 }

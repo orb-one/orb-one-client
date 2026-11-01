@@ -1,4 +1,5 @@
 import type { Practice } from '@/lib/api/practice'
+import { parsePracticeInstant } from './practice-date'
 
 /**
  * 진행 중인 연습을 최상단에 배치하고, 나머지는 시작일 기준 최신순(내림차순)으로 정렬합니다.
@@ -11,13 +12,13 @@ export function sortPractices(
   now: number = Date.now(),
 ): Practice[] {
   return [...practices].sort((a, b) => {
-    const aStart = new Date(a.startDate).getTime()
-    const aEnd = new Date(a.endDate).getTime()
-    const bStart = new Date(b.startDate).getTime()
-    const bEnd = new Date(b.endDate).getTime()
+    const aStart = parsePracticeInstant(a.startDate)
+    const aEnd = parsePracticeInstant(a.endDate)
+    const bStart = parsePracticeInstant(b.startDate)
+    const bEnd = parsePracticeInstant(b.endDate)
 
-    const aOngoing = aStart <= now && now <= aEnd
-    const bOngoing = bStart <= now && now <= bEnd
+    const aOngoing = aStart <= now && now < aEnd
+    const bOngoing = bStart <= now && now < bEnd
 
     if (aOngoing && !bOngoing) return -1
     if (!aOngoing && bOngoing) return 1

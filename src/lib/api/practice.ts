@@ -160,9 +160,9 @@ export function useDeletePractice(groupId: string) {
 }
 
 export interface UpdatePracticeRequest {
-  title?: string
-  startDate?: string
-  endDate?: string
+  title: string
+  startDate: string
+  endDate: string
 }
 
 export function useUpdatePractice(groupId: string, practiceId: string) {
@@ -170,10 +170,11 @@ export function useUpdatePractice(groupId: string, practiceId: string) {
 
   return useMutation({
     mutationFn: async (data: UpdatePracticeRequest) => {
-      const payload: Record<string, string> = {}
-      if (data.title) payload.title = data.title
-      if (data.startDate) payload.startDate = data.startDate
-      if (data.endDate) payload.endDate = data.endDate
+      const payload = {
+        title: data.title,
+        startDate: data.startDate,
+        endDate: data.endDate,
+      }
 
       const response = await apiClient<PracticeResponse>(
         `/groups/${groupId}/practices/${practiceId}`,

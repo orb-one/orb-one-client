@@ -61,4 +61,26 @@ describe('sortPractices', () => {
   it('빈 배열인 경우 빈 배열을 반환합니다', () => {
     expect(sortPractices([], baseNow)).toEqual([])
   })
+
+  it.each([
+    ['2026-10-10T11:59:59.999Z', false],
+    ['2026-10-10T12:00:00Z', true],
+    ['2026-10-10T12:59:59.999Z', true],
+    ['2026-10-10T13:00:00Z', false],
+    ['2026-10-10T13:00:00.001Z', false],
+  ])('uses start <= now < end at %s', (now, ongoing) => {
+    const practice = createPractice(
+      'target',
+      '2026-10-10T21:00:00+09:00',
+      '2026-10-10T22:00:00+09:00',
+    )
+    const future = createPractice(
+      'future',
+      '2026-10-11T00:00:00Z',
+      '2026-10-12T00:00:00Z',
+    )
+    expect(
+      sortPractices([future, practice], Date.parse(now)).map((p) => p.id),
+    ).toEqual(ongoing ? ['target', 'future'] : ['future', 'target'])
+  })
 })

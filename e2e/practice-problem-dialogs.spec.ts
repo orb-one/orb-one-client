@@ -78,8 +78,8 @@ test.beforeEach(async ({ page }) => {
             practiceId: 'dialog-practice',
             groupId: 'dialog-group',
             title: '모달 테스트 연습',
-            startDate: '2030-01-01T00:00:00',
-            endDate: '2030-01-03T23:59:59',
+            startDate: '2030-01-01T00:00:00+09:00',
+            endDate: '2030-01-04T00:00:00+09:00',
             problems: catalog.slice(2, 3),
           },
         }),
@@ -218,8 +218,8 @@ for (const width of [1280, 390]) {
     expect(requests).toEqual([
       {
         title: '기간 선택 연습',
-        startDate: '2030-02-12T00:00:00',
-        endDate: '2030-02-14T23:59:59',
+        startDate: '2030-02-12T00:00:00+09:00',
+        endDate: '2030-02-15T00:00:00+09:00',
         problemIds: [catalog[1]?.problemId],
       },
     ])
@@ -271,8 +271,8 @@ for (const kind of ['create', 'add'] as const) {
       kind === 'create'
         ? {
             title: '보존할 초안',
-            startDate: '2030-01-01T00:00:00',
-            endDate: '2030-01-03T23:59:59',
+            startDate: '2030-01-01T00:00:00+09:00',
+            endDate: '2030-01-04T00:00:00+09:00',
             problemIds: [catalog[1]?.problemId, catalog[0]?.problemId],
           }
         : { problemIds: [catalog[1]?.problemId, catalog[0]?.problemId] },
@@ -344,8 +344,8 @@ for (const kind of ['create', 'add'] as const) {
               practiceId: 'dialog-practice',
               groupId: 'dialog-group',
               title: '모달 테스트 연습',
-              startDate: '2030-01-01T00:00:00',
-              endDate: '2030-01-03T23:59:59',
+              startDate: '2030-01-01T00:00:00+09:00',
+              endDate: '2030-01-04T00:00:00+09:00',
             },
           ],
         }),
@@ -595,8 +595,8 @@ for (const width of [1280, 390]) {
     expect(requests).toEqual(
       Array.from({ length: 2 }, () => ({
         title: '보존할 초안',
-        startDate: '2030-01-01T00:00:00',
-        endDate: '2030-01-03T23:59:59',
+        startDate: '2030-01-01T00:00:00+09:00',
+        endDate: '2030-01-04T00:00:00+09:00',
         problemIds: [catalog[0]?.problemId, catalog[1]?.problemId],
       })),
     )

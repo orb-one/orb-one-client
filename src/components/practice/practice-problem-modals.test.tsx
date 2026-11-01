@@ -2,7 +2,13 @@ import { LayerProvider } from '@astryxdesign/core/Layer'
 import { Theme } from '@astryxdesign/core/theme'
 import { neutralTheme } from '@astryxdesign/theme-neutral/built'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
@@ -19,6 +25,8 @@ import {
 
 import { AddPracticeProblemModal } from '@/components/practice/AddPracticeProblemModal'
 import { CreatePracticeModal } from '@/components/practice/CreatePracticeModal'
+import { EditPracticeModal } from '@/components/practice/EditPracticeModal'
+import type { Practice } from '@/lib/api/practice'
 import { usePracticeDetail } from '@/lib/api/practice'
 import { problemListQueryOptions } from '@/lib/problems/problem-queries'
 import { problemHandlers, mockProblems } from '@/mocks/problem-handlers'
@@ -136,8 +144,8 @@ it('creates a practice with the selected catalog UUID and invalidates the list',
   })
   expect(body).toEqual({
     title: '1주차 연습',
-    startDate: '2030-01-01T00:00:00',
-    endDate: '2030-01-03T23:59:59',
+    startDate: '2030-01-01T00:00:00+09:00',
+    endDate: '2030-01-04T00:00:00+09:00',
     problemIds: [mockProblems[0]?.problemId],
   })
   expect(queryClient.getQueryState(listKey)?.isInvalidated).toBe(true)
@@ -223,8 +231,8 @@ it('confirms multiple creation problems without saving and discards cancelled se
   expect(requests).toEqual([
     {
       title: '1주차 연습',
-      startDate: '2030-01-01T00:00:00',
-      endDate: '2030-01-03T23:59:59',
+      startDate: '2030-01-01T00:00:00+09:00',
+      endDate: '2030-01-04T00:00:00+09:00',
       problemIds: [mockProblems[0]?.problemId, mockProblems[1]?.problemId],
     },
   ])
@@ -773,5 +781,161 @@ it.each(['create', 'add'] as const)(
       if (originalStyle === null) document.body.removeAttribute('style')
       else document.body.setAttribute('style', originalStyle)
     }
+  },
+)
+
+const editablePractice: Practice = {
+  id: 'practice-1',
+  groupId: 'group-1',
+  title: '시각 복원',
+  startDate: '2030-01-02T00:30:00Z',
+  endDate: '2030-01-02T09:45:00Z',
+  createdAt: '2030-01-01T00:00:00Z',
+  updatedAt: '2030-01-01T00:00:00Z',
+}
+
+it('restores Korean minutes on edit and preserves the original instants on save', async () => {
+  let body: unknown
+  server.use(
+    http.put(`${practicePath}/practice-1`, async ({ request }) => {
+      body = await request.json()
+      return HttpResponse.json({ ...editablePractice, title: '이름만 변경' })
+    }),
+  )
+  renderModal(
+    <EditPracticeModal
+      groupId="group-1"
+      practice={editablePractice}
+      isOpen
+      onClose={onClose}
+    />,
+  )
+  expect(screen.getByRole('checkbox', { name: '종일' })).not.toBeChecked()
+  expect(screen.getByRole('textbox', { name: '시작 시간' })).toHaveValue(
+    '09:30',
+  )
+  expect(screen.getByRole('textbox', { name: '종료 시간' })).toHaveValue(
+    '18:45',
+  )
+  await userEvent.clear(screen.getByRole('textbox', { name: '연습 이름' }))
+  await userEvent.type(
+    screen.getByRole('textbox', { name: '연습 이름' }),
+    '이름만 변경',
+  )
+  await userEvent.click(screen.getByRole('button', { name: '저장' }))
+  await waitFor(() => {
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+  expect(body).toEqual({
+    title: '이름만 변경',
+    startDate: editablePractice.startDate,
+    endDate: editablePractice.endDate,
+  })
+})
+
+it('restores an all-day exclusive UTC end as the last selected Korean day', () => {
+  renderModal(
+    <EditPracticeModal
+      groupId="group-1"
+      practice={{
+        ...editablePractice,
+        startDate: '2030-01-01T15:00:00Z',
+        endDate: '2030-01-03T15:00:00Z',
+      }}
+      isOpen
+      onClose={onClose}
+    />,
+  )
+  expect(screen.getByRole('checkbox', { name: '종일' })).toBeChecked()
+  expect(screen.getByRole('button', { name: /^연습 기간:/ })).toHaveTextContent(
+    '2',
+  )
+  expect(screen.getByRole('button', { name: /^연습 기간:/ })).toHaveTextContent(
+    '3',
+  )
+  expect(
+    screen.queryByRole('textbox', { name: '시작 시간' }),
+  ).not.toBeInTheDocument()
+})
+
+it('blocks ambiguous offsetless responses instead of assigning a timezone on edit', () => {
+  renderModal(
+    <EditPracticeModal
+      groupId="group-1"
+      practice={{ ...editablePractice, startDate: '2030-01-02T00:30:00' }}
+      isOpen
+      onClose={onClose}
+    />,
+  )
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    '연습 기간을 확인할 수 없어 수정할 수 없습니다.',
+  )
+  expect(screen.getByRole('button', { name: '저장' })).toBeDisabled()
+})
+
+it('retains the schedule and displays server validation errors on edit', async () => {
+  server.use(
+    http.put(`${practicePath}/practice-1`, () =>
+      HttpResponse.json(
+        {
+          code: 'PRACTICE_INVALID_END_DATE',
+          message: '종료 일시를 확인해 주세요.',
+        },
+        { status: 400 },
+      ),
+    ),
+  )
+  renderModal(
+    <EditPracticeModal
+      groupId="group-1"
+      practice={editablePractice}
+      isOpen
+      onClose={onClose}
+    />,
+  )
+  await userEvent.click(screen.getByRole('button', { name: '저장' }))
+  expect(
+    await within(screen.getByRole('dialog')).findByText(
+      '종료 일시를 확인해 주세요.',
+    ),
+  ).toBeVisible()
+  expect(screen.getByRole('textbox', { name: '시작 시간' })).toHaveValue(
+    '09:30',
+  )
+  expect(onClose).not.toHaveBeenCalled()
+})
+
+it.each(['시작 시간', '종료 시간'])(
+  'commits an empty %s on Enter and rejects saving it',
+  async (label) => {
+    const update = vi.fn()
+    server.use(
+      http.put(`${practicePath}/practice-1`, () => {
+        update()
+        return HttpResponse.json(editablePractice)
+      }),
+    )
+    renderModal(
+      <EditPracticeModal
+        groupId="group-1"
+        practice={editablePractice}
+        isOpen
+        onClose={onClose}
+      />,
+    )
+    const input = screen.getByRole('textbox', { name: label })
+    await userEvent.clear(input)
+    await userEvent.keyboard('{Enter}')
+    expect(input).not.toHaveFocus()
+    expect(input).toHaveValue('')
+    expect(update).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: '저장' }))
+    expect(
+      within(screen.getByRole('dialog')).getByText(
+        '시작 시간과 종료 시간을 모두 입력해 주세요.',
+      ),
+    ).toBeVisible()
+    expect(update).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
   },
 )

@@ -78,8 +78,8 @@ for (const viewport of [
       practiceId: 'practice-uuid',
       groupId: 'uuid-group',
       title: 'UUID 연습',
-      startDate: '2030-01-01T00:00:00',
-      endDate: '2030-01-03T23:59:59',
+      startDate: '2030-01-01T00:00:00+09:00',
+      endDate: '2030-01-04T00:00:00+09:00',
       problems: catalog.slice(0, 1),
     }
     const createBodies: unknown[] = []

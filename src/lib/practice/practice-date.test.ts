@@ -1,69 +1,206 @@
 import { describe, expect, it } from 'vitest'
 import {
-  extractDateOnly,
-  formatDateInput,
+  emptyPracticeSchedule,
+  formatPracticeDateTime,
+  formatPracticePeriod,
   isValidDateString,
-  validateAndFormatPracticeDates,
+  parsePracticeInstant,
+  restorePracticeSchedule,
+  validatePracticeSchedule,
 } from './practice-date'
 
-describe('practice-date', () => {
-  describe('formatDateInput', () => {
-    it('숫자 입력을 YYYY-MM-DD 형식으로 포맷팅합니다', () => {
-      expect(formatDateInput('20261011')).toBe('2026-10-11')
-      expect(formatDateInput('202610')).toBe('2026-10')
-      expect(formatDateInput('2026')).toBe('2026')
-      expect(formatDateInput('2026-10-11')).toBe('2026-10-11')
-      expect(formatDateInput('abc20261011def')).toBe('2026-10-11')
+const now = Date.parse('2026-01-01T00:00:00Z')
+const allDay = (startDate = '2026-10-12', endDate = startDate) => ({
+  ...emptyPracticeSchedule(),
+  startDate,
+  endDate,
+})
+const timed = () => ({
+  ...allDay(),
+  isAllDay: false,
+  startTime: '09:30',
+  endTime: '18:45',
+})
+
+describe('practice schedule', () => {
+  it.each([
+    ['2026-10-12', '2026-10-13'],
+    ['2026-10-31', '2026-11-01'],
+    ['2026-12-31', '2027-01-01'],
+    ['2028-02-29', '2028-03-01'],
+    ['2100-12-31', '2101-01-01'],
+  ])('converts all-day %s into the exclusive next midnight %s', (day, next) => {
+    expect(validatePracticeSchedule(allDay(day), now)).toEqual({
+      success: true,
+      startDate: `${day}T00:00:00+09:00`,
+      endDate: `${next}T00:00:00+09:00`,
     })
   })
 
-  describe('isValidDateString', () => {
-    it('유효한 날짜를 올바르게 판단합니다', () => {
-      expect(isValidDateString('2026-10-11')).toBe(true)
-      expect(isValidDateString('2024-02-29')).toBe(true) // 윤년
-      expect(isValidDateString('2023-02-28')).toBe(true)
-    })
-
-    it('존재하지 않는 날짜나 잘못된 형식을 걸러냅니다', () => {
-      expect(isValidDateString('2023-02-29')).toBe(false) // 평년 2월 29일
-      expect(isValidDateString('2026-13-01')).toBe(false) // 13월
-      expect(isValidDateString('2026-04-31')).toBe(false) // 4월 31일
-      expect(isValidDateString('20261011')).toBe(false)
-      expect(isValidDateString('invalid')).toBe(false)
+  it('sends the selected minutes with seconds fixed at zero and an explicit offset', () => {
+    expect(validatePracticeSchedule(timed(), now)).toEqual({
+      success: true,
+      startDate: '2026-10-12T09:30:00+09:00',
+      endDate: '2026-10-12T18:45:00+09:00',
     })
   })
 
-  describe('validateAndFormatPracticeDates', () => {
-    it('유효한 시작일과 종료일을 00:00:00 및 23:59:59로 변환합니다', () => {
-      const result = validateAndFormatPracticeDates('2026-10-01', '2026-10-07')
-      expect(result).toEqual({
-        success: true,
-        startDate: '2026-10-01T00:00:00',
-        endDate: '2026-10-07T23:59:59',
+  it.each([
+    '2026-02-29',
+    '2026-04-31',
+    '2026-13-01',
+    '20261012',
+    '1969-12-31',
+    '2101-01-01',
+  ])('rejects invalid input dates: %s', (date) => {
+    expect(isValidDateString(date)).toBe(false)
+    expect(validatePracticeSchedule(allDay(date), now).success).toBe(false)
+  })
+
+  it.each([
+    { startTime: '18:45' },
+    { startTime: '19:00' },
+    { startDate: '2026-10-13' },
+    { startTime: '' },
+    { endTime: '24:00' },
+    { endTime: '18:45:30' },
+  ])('rejects equal/reversed or incomplete timed ranges: %j', (changes) => {
+    expect(
+      validatePracticeSchedule({ ...timed(), ...changes }, now).success,
+    ).toBe(false)
+  })
+
+  it('rejects reversed all-day ranges and missing dates', () => {
+    expect(
+      validatePracticeSchedule(allDay('2026-10-13', '2026-10-12'), now).success,
+    ).toBe(false)
+    expect(validatePracticeSchedule(emptyPracticeSchedule(), now).success).toBe(
+      false,
+    )
+  })
+
+  it('requires the end to be strictly in the future', () => {
+    const end = Date.parse('2026-10-12T09:45:00Z')
+    expect(validatePracticeSchedule(timed(), end - 1).success).toBe(true)
+    expect(validatePracticeSchedule(timed(), end).success).toBe(false)
+    expect(validatePracticeSchedule(timed(), end + 1).success).toBe(false)
+  })
+
+  it.each([
+    [
+      '2026-10-11T15:00:00Z',
+      '2026-10-12T15:00:00Z',
+      true,
+      '2026-10-12',
+      '2026-10-12',
+      '00:00',
+      '00:00',
+    ],
+    [
+      '2026-12-31T15:00:00Z',
+      '2027-01-02T15:00:00Z',
+      true,
+      '2027-01-01',
+      '2027-01-02',
+      '00:00',
+      '00:00',
+    ],
+    [
+      '2026-10-12T00:30:00Z',
+      '2026-10-12T09:45:00Z',
+      false,
+      '2026-10-12',
+      '2026-10-12',
+      '09:30',
+      '18:45',
+    ],
+    [
+      '2026-10-12T09:30:00+09:00',
+      '2026-10-12T18:45:00+09:00',
+      false,
+      '2026-10-12',
+      '2026-10-12',
+      '09:30',
+      '18:45',
+    ],
+    [
+      '2100-12-30T15:00:00Z',
+      '2100-12-31T15:00:00Z',
+      true,
+      '2100-12-31',
+      '2100-12-31',
+      '00:00',
+      '00:00',
+    ],
+  ])(
+    'restores and round-trips %s ~ %s',
+    (start, end, isAllDay, startDate, endDate, startTime, endTime) => {
+      const draft = restorePracticeSchedule(start, end)
+      expect(draft).toMatchObject({
+        isAllDay,
+        startDate,
+        endDate,
+        startTime,
+        endTime,
       })
-    })
+      if (!draft) throw new Error('Missing restored draft')
+      expect(validatePracticeSchedule(draft, now)).toEqual({
+        success: true,
+        startDate: start,
+        endDate: end,
+      })
+    },
+  )
 
-    it('종료일이 시작일보다 앞서면 에러를 반환합니다', () => {
-      const result = validateAndFormatPracticeDates('2026-10-07', '2026-10-01')
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        expect(result.error).toContain(
-          '종료 일시는 시작 일시보다 빠를 수 없습니다',
-        )
-      }
-    })
-
-    it('날짜가 유효하지 않으면 에러를 반환합니다', () => {
-      const result = validateAndFormatPracticeDates('2026-02-30', '2026-10-01')
-      expect(result.success).toBe(false)
+  it('preserves existing seconds on an unchanged boundary and zeros manually changed minutes', () => {
+    const draft = restorePracticeSchedule(
+      '2026-10-12T00:30:12.123Z',
+      '2026-10-12T09:45:59Z',
+    )
+    if (!draft) throw new Error('Missing restored draft')
+    expect(
+      validatePracticeSchedule({ ...draft, startTime: '10:00' }, now),
+    ).toEqual({
+      success: true,
+      startDate: '2026-10-12T10:00:00+09:00',
+      endDate: '2026-10-12T09:45:59Z',
     })
   })
 
-  describe('extractDateOnly', () => {
-    it('ISO 문자열에서 날짜만 추출합니다', () => {
-      expect(extractDateOnly('2026-10-11T00:00:00')).toBe('2026-10-11')
-      expect(extractDateOnly('2026-10-11 14:30:00')).toBe('2026-10-11')
-      expect(extractDateOnly('')).toBe('')
-    })
+  it.each([
+    '2026-10-12T09:30:00',
+    '2026-10-12 09:30:00',
+    '2026-02-30T00:00:00Z',
+    '2026-10-12T24:00:00Z',
+    '',
+    'invalid',
+  ])(
+    'does not guess a timezone or silently normalize invalid responses: %s',
+    (value) => {
+      expect(parsePracticeInstant(value)).toBeNaN()
+      expect(formatPracticeDateTime(value)).toBe('시각 확인 불가')
+      expect(restorePracticeSchedule(value, '2026-10-13T00:00:00Z')).toBeNull()
+    },
+  )
+
+  it('formats UTC values in Seoul, including the next calendar day', () => {
+    expect(formatPracticeDateTime('2026-10-11T15:00:00Z')).toBe(
+      '2026-10-12 00:00',
+    )
+    expect(formatPracticeDateTime('2026-10-12T00:30:00Z')).toBe(
+      '2026-10-12 09:30',
+    )
+    expect(formatPracticeDateTime('2026-10-12T09:30:00+09:00')).toBe(
+      '2026-10-12 09:30',
+    )
+  })
+
+  it('describes all-day dates inclusively and timed ends exclusively', () => {
+    expect(
+      formatPracticePeriod('2026-10-11T15:00:00Z', '2026-10-12T15:00:00Z'),
+    ).toBe('2026-10-12 · 종일 (한국 시간)')
+    expect(
+      formatPracticePeriod('2026-10-12T00:30:00Z', '2026-10-12T09:45:00Z'),
+    ).toContain('09:30 ~ 2026-10-12 18:45')
   })
 })
