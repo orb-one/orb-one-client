@@ -1,9 +1,5 @@
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
-import {
-  DateRangeInput,
-  type DateRange,
-} from '@astryxdesign/core/DateRangeInput'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
 import { Divider } from '@astryxdesign/core/Divider'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
@@ -11,13 +7,16 @@ import { HStack } from '@astryxdesign/core/HStack'
 import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { useToast } from '@astryxdesign/core/Toast'
-import { useMediaQuery } from '@astryxdesign/core/hooks'
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 
 import { ProblemMultiPickerDialog } from '@/components/problems/problem-multi-picker-dialog'
 import { PracticeProblemField } from '@/components/practice/practice-problem-field'
+import { PracticeScheduleField } from '@/components/practice/practice-schedule-field'
 import { useCreatePractice } from '@/lib/api/practice'
-import { validateAndFormatPracticeDates } from '@/lib/practice/practice-date'
+import {
+  emptyPracticeSchedule,
+  validatePracticeSchedule,
+} from '@/lib/practice/practice-date'
 import type { Problem } from '@/lib/problems/problem-model'
 import { getProblemReferenceErrorMessage } from '@/lib/problems/problem-reference-errors'
 
@@ -38,8 +37,7 @@ function CreatePracticeModalContent({
   onClose,
 }: CreatePracticeModalProps) {
   const [title, setTitle] = useState('')
-  const [dateRange, setDateRange] = useState<DateRange | null>(null)
-  const hasWideCalendar = useMediaQuery('(min-width: 640px)')
+  const [schedule, setSchedule] = useState(emptyPracticeSchedule)
   const [selectedProblems, setSelectedProblems] = useState<Problem[]>([])
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const pickerButtonRef = useRef<HTMLButtonElement>(null)
@@ -85,12 +83,7 @@ function CreatePracticeModalContent({
       return
     }
 
-    if (!dateRange) {
-      setValidationError('연습 기간을 선택해 주세요.')
-      return
-    }
-
-    const dates = validateAndFormatPracticeDates(dateRange.start, dateRange.end)
+    const dates = validatePracticeSchedule(schedule)
     if (!dates.success) {
       setValidationError(dates.error)
       return
@@ -153,19 +146,14 @@ function CreatePracticeModalContent({
                     placeholder="1주차"
                     isDisabled={isSubmitting}
                   />
-                  <DateRangeInput
-                    label="연습 기간"
-                    placeholder="시작일과 종료일을 선택해 주세요"
-                    value={dateRange}
+                  <PracticeScheduleField
+                    value={schedule}
                     onChange={(value) => {
-                      setDateRange(value)
+                      setSchedule(value)
                       setValidationError(null)
+                      createPractice.reset()
                     }}
-                    min="1970-01-01"
-                    max="2100-12-31"
-                    numberOfMonths={hasWideCalendar ? 2 : 1}
                     isDisabled={isSubmitting}
-                    width="100%"
                   />
                   <Divider />
                   <PracticeProblemField
@@ -204,7 +192,10 @@ function CreatePracticeModalContent({
                   label="생성하기"
                   variant="primary"
                   isDisabled={
-                    !dateRange || selectedProblems.length === 0 || isSubmitting
+                    !schedule.startDate ||
+                    !schedule.endDate ||
+                    selectedProblems.length === 0 ||
+                    isSubmitting
                   }
                   isLoading={isSubmitting}
                 />

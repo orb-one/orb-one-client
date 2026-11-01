@@ -23,8 +23,8 @@ export const mockPractices: MockPractice[] = [
     practiceId: 'p-1',
     groupId: '1',
     title: '1주차',
-    startDate: '2026-07-20T00:00:00Z',
-    endDate: '2026-08-10T23:59:59Z',
+    startDate: '2026-07-19T15:00:00Z',
+    endDate: '2026-08-10T15:00:00Z',
     problems: [
       {
         problemId: '10000000-0000-4000-8000-000000000001',
@@ -42,8 +42,8 @@ export const mockPractices: MockPractice[] = [
     practiceId: 'p-2',
     groupId: '1',
     title: '2주차',
-    startDate: '2026-08-01T00:00:00Z',
-    endDate: '2026-08-15T23:59:59Z',
+    startDate: '2026-07-31T15:00:00Z',
+    endDate: '2026-08-15T15:00:00Z',
     problems: [
       {
         problemId: '10000000-0000-4000-8000-000000000003',

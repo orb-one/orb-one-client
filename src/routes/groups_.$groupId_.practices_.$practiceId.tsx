@@ -15,6 +15,7 @@ import { useToast } from '@astryxdesign/core/Toast'
 import { PageBackLink } from '@/components/navigation/page-back-link'
 import { getReadableErrorMessage } from '@/lib/api/error-message'
 import { useMutationState } from '@tanstack/react-query'
+import { formatPracticePeriod } from '@/lib/practice/practice-date'
 
 export const Route = createFileRoute(
   '/groups_/$groupId_/practices_/$practiceId',
@@ -95,6 +96,12 @@ function PracticeDetailPage() {
               </div>
             </div>
           </div>
+
+          {practice && (
+            <Text type="supporting">
+              {formatPracticePeriod(practice.startDate, practice.endDate)}
+            </Text>
+          )}
 
           <div className="border-border bg-surface overflow-x-auto rounded-lg border">
             {isLoading ? (
