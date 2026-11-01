@@ -428,6 +428,71 @@ test.describe('difficulty selection on a touch screen', () => {
   })
 })
 
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`uses provider difficulty colors in the list, options and selection in ${colorScheme} mode`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme })
+    const state = await mockCatalog(page)
+    const samples = [
+      {
+        provider: 'BOJ',
+        difficulty: 'BRONZE_5',
+        background: 'rgb(172, 86, 0)',
+        text: 'rgb(255, 255, 255)',
+      },
+      {
+        provider: 'BOJ',
+        difficulty: 'GOLD_3',
+        background: 'rgb(236, 154, 0)',
+        text: 'rgb(17, 17, 17)',
+      },
+      {
+        provider: 'SWEA',
+        difficulty: 'D3',
+        background: 'rgb(107, 203, 119)',
+        text: 'rgb(17, 17, 17)',
+      },
+      {
+        provider: 'SWEA',
+        difficulty: 'D8',
+        background: 'rgb(255, 107, 107)',
+        text: 'rgb(17, 17, 17)',
+      },
+    ]
+    state.rows = samples.map((sample, index) => ({
+      ...firstProblem,
+      problemId: `color-${String(index)}`,
+      provider: sample.provider,
+      difficulty: sample.difficulty,
+      name: `색상 확인 ${String(index)}`,
+    }))
+    await page.goto(catalogPath)
+    for (const [index, sample] of samples.entries()) {
+      const chip = page
+        .getByRole('row')
+        .filter({ hasText: `색상 확인 ${String(index)}` })
+        .locator('.astryx-token')
+      await expect(chip).toHaveCSS('background-color', sample.background)
+      await expect(chip).toHaveCSS('color', sample.text)
+    }
+    await page.getByRole('button', { name: '문제 등록', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '문제 등록' })
+    await dialog.getByRole('combobox', { name: /플랫폼/ }).click()
+    await page.getByRole('option', { name: 'SWEA', exact: true }).click()
+    await dialog.getByLabel(/^난이도.*선택 사항$/).click()
+    const option = page.getByRole('option', { name: 'D3', exact: true })
+    await expect(option.locator('.astryx-token')).toHaveCSS(
+      'background-color',
+      'rgb(107, 203, 119)',
+    )
+    await option.click()
+    await expect(
+      dialog.getByLabel(/^난이도.*선택 사항$/).locator('.astryx-token'),
+    ).toHaveCSS('background-color', 'rgb(107, 203, 119)')
+  })
+}
+
 test('creates, fully updates and deletes with CSRF and refreshed lists', async ({
   page,
 }) => {

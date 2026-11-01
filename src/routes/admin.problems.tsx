@@ -26,6 +26,7 @@ import { createStore } from 'zustand/vanilla'
 
 import { AdminProblemDeleteDialog } from '@/components/problems/admin-problem-delete-dialog'
 import { AdminProblemFormDialog } from '@/components/problems/admin-problem-form-dialog'
+import { ProblemDifficultyChip } from '@/components/problems/problem-difficulty-chip'
 import { ApiError } from '@/lib/api/client'
 import { getReadableErrorMessage } from '@/lib/api/error-message'
 import {
@@ -410,11 +411,12 @@ function AdminProblemCatalog() {
                   {
                     key: 'difficulty',
                     header: copy.difficulty,
-                    width: pixel(112),
+                    width: pixel(144),
                     renderCell: (problem) => (
-                      <Text color="secondary" type="supporting">
-                        {problem.difficulty ?? copy.noDifficulty}
-                      </Text>
+                      <ProblemDifficultyChip
+                        provider={problem.provider}
+                        difficulty={problem.difficulty}
+                      />
                     ),
                   },
                   {
@@ -444,9 +446,10 @@ function AdminProblemCatalog() {
                           >
                             {problem.provider} · {problem.externalId}
                           </Text>
-                          <Text type="supporting" color="secondary">
-                            {problem.difficulty ?? copy.noDifficulty}
-                          </Text>
+                          <ProblemDifficultyChip
+                            provider={problem.provider}
+                            difficulty={problem.difficulty}
+                          />
                         </VStack>
                       }
                       endContent={actions(problem)}

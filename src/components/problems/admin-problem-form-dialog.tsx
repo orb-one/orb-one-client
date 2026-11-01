@@ -5,13 +5,14 @@ import { FormLayout } from '@astryxdesign/core/FormLayout'
 import { Grid } from '@astryxdesign/core/Grid'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
-import { Selector } from '@astryxdesign/core/Selector'
+import { Selector, SelectorOption } from '@astryxdesign/core/Selector'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useState, type SyntheticEvent } from 'react'
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
 
+import { ProblemDifficultyChip } from '@/components/problems/problem-difficulty-chip'
 import type { AdminProblemRequest } from '@/lib/api/problems'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { problemDifficultyOptions } from '@/lib/problems/problem-difficulty-options'
@@ -210,6 +211,24 @@ export function AdminProblemFormDialog({
                       ...difficultyOptions,
                     ]}
                     value={values.difficulty}
+                    renderOption={(option) => (
+                      <SelectorOption
+                        label={
+                          <ProblemDifficultyChip
+                            provider={values.provider}
+                            difficulty={option.value}
+                            label={option.label ?? option.value}
+                          />
+                        }
+                      />
+                    )}
+                    renderValue={(option) => (
+                      <ProblemDifficultyChip
+                        provider={values.provider}
+                        difficulty={option.value}
+                        label={option.label ?? option.value}
+                      />
+                    )}
                     onChange={(value) => {
                       setValue('difficulty', value)
                     }}
