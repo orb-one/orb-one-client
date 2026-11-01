@@ -15,6 +15,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
 
 import { PageBackLink } from '@/components/navigation/page-back-link'
+import { ProblemDifficultyChip } from '@/components/problems/problem-difficulty-chip'
 import { SolutionDeleteAction } from '@/components/solutions/solution-delete-action'
 import { SolutionStatus } from '@/components/solutions/solution-status'
 import type { CurrentUserResponse } from '@/lib/api/auth'
@@ -94,6 +95,7 @@ export function SolutionDetailPage({ solutionId }: SolutionDetailPageProps) {
           <SolutionDetailSkeleton label={copy.loading} />
         ) : solutionQuery.isError ? (
           <Banner
+            role={isAuthRequired ? 'status' : 'alert'}
             status={isAuthRequired ? 'info' : 'error'}
             title={
               isAuthRequired
@@ -229,7 +231,10 @@ function SolutionDetailContent({
               </MetadataListItem>
               {problem.difficulty ? (
                 <MetadataListItem label={copy.difficulty}>
-                  {problem.difficulty}
+                  <ProblemDifficultyChip
+                    provider={problem.provider}
+                    difficulty={problem.difficulty}
+                  />
                 </MetadataListItem>
               ) : null}
             </>

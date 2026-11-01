@@ -72,7 +72,7 @@ test('updates, deletes, and restores a solution through the real API', async ({
     await page.getByRole('link', { name: '풀이 수정' }).click()
 
     await expect(
-      page.getByRole('combobox', { name: '프로그래밍 언어' }),
+      page.getByRole('combobox', { name: /프로그래밍 언어/ }),
     ).toHaveText('PyPy3')
     await expect(page.getByRole('checkbox', { name: /임시 저장/ })).toHaveCount(
       0,

@@ -1,15 +1,18 @@
+import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog'
 import { FormLayout } from '@astryxdesign/core/FormLayout'
+import { HStack } from '@astryxdesign/core/HStack'
+import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout'
 import { TextInput } from '@astryxdesign/core/TextInput'
 import { useToast } from '@astryxdesign/core/Toast'
-import { useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { PracticeScheduleField } from '@/components/practice/practice-schedule-field'
 import { useUpdatePractice, type Practice } from '@/lib/api/practice'
 import { getReadableErrorMessage } from '@/lib/api/error-message'
 import {
-  extractDateOnly,
-  formatDateInput,
-  validateAndFormatPracticeDates,
+  restorePracticeSchedule,
+  validatePracticeSchedule,
 } from '@/lib/practice/practice-date'
 
 interface EditPracticeModalProps {
@@ -19,59 +22,67 @@ interface EditPracticeModalProps {
   onClose: () => void
 }
 
-interface EditPracticeModalContentProps {
-  groupId: string
-  practice: Practice
-  isOpen: boolean
-  onClose: () => void
-}
-
 function EditPracticeModalContent({
   groupId,
   practice,
-  isOpen,
   onClose,
-}: EditPracticeModalContentProps) {
+}: {
+  groupId: string
+  practice: Practice
+  onClose: () => void
+}) {
   const [title, setTitle] = useState(practice.title)
-  const [startDate, setStartDate] = useState(
-    extractDateOnly(practice.startDate),
+  const [schedule, setSchedule] = useState(() =>
+    restorePracticeSchedule(practice.startDate, practice.endDate),
   )
-  const [endDate, setEndDate] = useState(extractDateOnly(practice.endDate))
+  const [validationError, setValidationError] = useState<string | null>(null)
+  const formId = useId()
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
   const showToast = useToast()
-
   const updatePractice = useUpdatePractice(groupId, practice.id)
+  const isSubmitting = updatePractice.isPending
+  const errorMessage = !schedule
+    ? '연습 기간을 확인할 수 없어 수정할 수 없습니다. 새로고침 후 다시 시도해 주세요.'
+    : (validationError ??
+      (updatePractice.isError
+        ? getReadableErrorMessage(
+            updatePractice.error,
+            '연습 수정에 실패했습니다.',
+          )
+        : null))
 
-  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  useEffect(() => {
+    if (errorMessage && scrollAreaRef.current)
+      scrollAreaRef.current.scrollTop = 0
+  }, [errorMessage])
 
+  function handleClose(open: boolean) {
+    if (!open && !isSubmitting) onClose()
+  }
+
+  function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (isSubmitting || !schedule) return
     if (!title.trim()) {
-      showToast({ body: '연습 이름을 입력해주세요.', type: 'error' })
+      setValidationError('연습 이름을 입력해 주세요.')
       return
     }
-
-    const dateValidation = validateAndFormatPracticeDates(startDate, endDate)
-    if (!dateValidation.success) {
-      showToast({ body: dateValidation.error, type: 'error' })
+    const dates = validatePracticeSchedule(schedule)
+    if (!dates.success) {
+      setValidationError(dates.error)
       return
     }
-
+    setValidationError(null)
     updatePractice.mutate(
       {
         title: title.trim(),
-        startDate: dateValidation.startDate,
-        endDate: dateValidation.endDate,
+        startDate: dates.startDate,
+        endDate: dates.endDate,
       },
       {
         onSuccess: () => {
           showToast({ body: '연습이 수정되었습니다.' })
           onClose()
-        },
-        onError: (error: unknown) => {
-          const message = getReadableErrorMessage(
-            error,
-            '연습 수정에 실패했습니다.',
-          )
-          showToast({ body: message, type: 'error' })
         },
       },
     )
@@ -79,64 +90,80 @@ function EditPracticeModalContent({
 
   return (
     <Dialog
-      isOpen={isOpen}
-      onOpenChange={(open: boolean) => {
-        if (!open) onClose()
-      }}
+      isOpen
+      onOpenChange={handleClose}
+      purpose="form"
+      width={560}
+      maxHeight="calc(100dvh - 1rem)"
     >
-      <DialogHeader
-        title="연습 수정하기"
-        onOpenChange={(open: boolean) => {
-          if (!open) onClose()
-        }}
+      <Layout
+        height="fill"
+        defaultHasDividers
+        header={
+          <DialogHeader title="연습 수정하기" onOpenChange={handleClose} />
+        }
+        content={
+          <LayoutContent
+            ref={scrollAreaRef}
+            isScrollable
+            data-testid="practice-form-scroll-area"
+          >
+            <form id={formId} onSubmit={handleSubmit}>
+              <FormLayout>
+                {errorMessage && (
+                  <Banner role="alert" status="error" title={errorMessage} />
+                )}
+                <TextInput
+                  htmlName="title"
+                  label="연습 이름"
+                  hasAutoFocus
+                  value={title}
+                  onChange={(value) => {
+                    setTitle(value)
+                    setValidationError(null)
+                    updatePractice.reset()
+                  }}
+                  placeholder="1주차"
+                  isDisabled={isSubmitting}
+                />
+                {schedule && (
+                  <PracticeScheduleField
+                    value={schedule}
+                    onChange={(value) => {
+                      setSchedule(value)
+                      setValidationError(null)
+                      updatePractice.reset()
+                    }}
+                    isDisabled={isSubmitting}
+                  />
+                )}
+              </FormLayout>
+            </form>
+          </LayoutContent>
+        }
+        footer={
+          <LayoutFooter>
+            <HStack width="100%" hAlign="end" gap={2}>
+              <Button
+                label="취소"
+                variant="secondary"
+                isDisabled={isSubmitting}
+                onClick={() => {
+                  handleClose(false)
+                }}
+              />
+              <Button
+                type="submit"
+                form={formId}
+                label="저장"
+                variant="primary"
+                isDisabled={!schedule || isSubmitting}
+                isLoading={isSubmitting}
+              />
+            </HStack>
+          </LayoutFooter>
+        }
       />
-      <form
-        onSubmit={handleSubmit}
-        className="p-4"
-        style={{ overflowX: 'hidden', boxSizing: 'border-box' }}
-      >
-        <FormLayout>
-          <TextInput
-            htmlName="title"
-            label="연습 이름"
-            hasAutoFocus
-            value={title}
-            onChange={(val) => {
-              setTitle(val)
-            }}
-            placeholder="1주차"
-          />
-          <div className="flex w-full flex-col gap-4 sm:flex-row">
-            <TextInput
-              htmlName="startDate"
-              label="시작 일시"
-              value={startDate}
-              onChange={(val) => {
-                setStartDate(formatDateInput(val))
-              }}
-              placeholder="YYYYMMDD"
-            />
-            <TextInput
-              htmlName="endDate"
-              label="종료 일시"
-              value={endDate}
-              onChange={(val) => {
-                setEndDate(formatDateInput(val))
-              }}
-              placeholder="YYYYMMDD"
-            />
-          </div>
-        </FormLayout>
-        <div className="mt-6 flex justify-end gap-2">
-          <Button label="취소" variant="secondary" onClick={onClose} />
-          <Button
-            type="submit"
-            label="저장"
-            variant="primary"
-            isLoading={updatePractice.isPending}
-          />
-        </div>
-      </form>
     </Dialog>
   )
 }
@@ -147,16 +174,12 @@ export function EditPracticeModal({
   isOpen,
   onClose,
 }: EditPracticeModalProps) {
-  if (!practice || !isOpen) {
-    return null
-  }
-
+  if (!practice || !isOpen) return null
   return (
     <EditPracticeModalContent
       key={practice.id}
       groupId={groupId}
       practice={practice}
-      isOpen={isOpen}
       onClose={onClose}
     />
   )

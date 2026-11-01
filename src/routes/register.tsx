@@ -175,6 +175,7 @@ export function RegisterPage() {
               <VStack gap={4} hAlign="stretch">
                 {mutationError ? (
                   <Banner
+                    role="alert"
                     status="error"
                     title={mutationError}
                     container="card"
@@ -304,7 +305,11 @@ export function RegisterPage() {
                 />
 
                 {registerMutation.isSuccess ? (
-                  <Banner status="success" title={copy.successMessage} />
+                  <Banner
+                    role="status"
+                    status="success"
+                    title={copy.successMessage}
+                  />
                 ) : null}
 
                 <Button

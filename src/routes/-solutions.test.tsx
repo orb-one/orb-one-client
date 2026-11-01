@@ -96,7 +96,11 @@ it('renders solution rows that link to their detail pages', async () => {
     'href',
     '/solutions/solution-1',
   )
-  expect(screen.getByText('BOJ 1000 · BRONZE_5')).toBeVisible()
+  expect(screen.getByText('BOJ 1000')).toBeVisible()
+  expect(screen.getByText('Bronze V').closest('.astryx-token')).toHaveAttribute(
+    'data-color',
+    'boj-bronze',
+  )
   expect(screen.getByRole('img', { name: '풀이 완료' })).toBeVisible()
   expect(screen.getByRole('img', { name: '작성 중' })).toBeVisible()
   expect(screen.getByText(/solution-author/)).toBeVisible()
@@ -265,7 +269,10 @@ it('renders solution metadata, code, and Markdown notes', async () => {
     screen.getByRole('link', { name: '풀이 목록으로 돌아가기' }),
   ).toHaveAttribute('href', '/solutions')
   expect(screen.getByText('BOJ 1000')).toBeVisible()
-  expect(screen.getByText('BRONZE_5')).toBeVisible()
+  expect(screen.getByText('Bronze V').closest('.astryx-token')).toHaveAttribute(
+    'data-color',
+    'boj-bronze',
+  )
   expect(screen.getByRole('link', { name: /문제 원문 보기/ })).toHaveAttribute(
     'href',
     'https://www.acmicpc.net/problem/1000',
@@ -452,7 +459,7 @@ it('prevents duplicate restore requests while one is pending', async () => {
   await userEvent.click(undoButton)
   await waitFor(() => {
     expect(restoreSolution).toHaveBeenCalledOnce()
-    expect(undoButton).toBeDisabled()
+    expect(undoButton).toHaveAttribute('aria-disabled', 'true')
   })
 
   await userEvent.click(undoButton)
@@ -639,7 +646,8 @@ it('renders an empty solution description as supporting text', async () => {
   const emptyDescription =
     await screen.findByText('작성된 풀이 설명이 없습니다.')
 
-  expect(emptyDescription).toHaveClass('astryx-text', 'supporting')
+  expect(emptyDescription).toHaveClass('astryx-text')
+  expect(emptyDescription).toHaveAttribute('data-type', 'supporting')
   expect(screen.queryByTestId('solution-description')).not.toBeInTheDocument()
 })
 

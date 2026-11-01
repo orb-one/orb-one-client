@@ -7,6 +7,7 @@ const FIELD_LABEL_MAP: Record<string, string> = {
   end_date: '종료 일시',
   title: '연습 이름',
   problems: '문제',
+  problemIds: '문제',
   provider: '플랫폼',
   externalProblemId: '문제 ID',
   external_problem_id: '문제 ID',
@@ -18,6 +19,7 @@ const FIELD_LABEL_MAP: Record<string, string> = {
 const REASON_LABEL_MAP: Record<string, string> = {
   REQUIRED: '필수 입력',
   INVALID_FORMAT: '형식 오류',
+  INVALID_LENGTH: '길이 오류',
   INVALID_VALUE: '값 오류',
   DUPLICATE: '중복',
 }
@@ -34,9 +36,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function formatFieldError(item: FieldErrorItem): string | null {
   const fieldName = item.field
-  const label = fieldName ? (FIELD_LABEL_MAP[fieldName] ?? fieldName) : ''
+  const labelKey = fieldName?.replace(/\[\d+\]/g, '')
+  const label = labelKey ? (FIELD_LABEL_MAP[labelKey] ?? fieldName) : ''
   const reasonText = item.reason
-    ? (REASON_LABEL_MAP[item.reason] ?? item.reason)
+    ? (REASON_LABEL_MAP[item.reason] ?? '값 오류')
     : item.message
 
   if (label && reasonText) {
@@ -71,6 +74,9 @@ export function getReadableErrorMessage(
     if (typeof error.message === 'string' && error.message.length > 0) {
       baseMessage = error.message
     }
+  } else if (error instanceof TypeError) {
+    // fetch 실패나 요청 구성 오류의 기술 문구 대신 작업별 안내를 사용한다.
+    return fallbackMessage
   } else if (error instanceof Error) {
     return error.message || fallbackMessage
   }

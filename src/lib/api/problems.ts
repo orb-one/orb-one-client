@@ -10,7 +10,15 @@ export interface ProblemResponse {
   provider: ProblemProvider
   externalProblemId: string
   name: string
-  url: string
+  url: string | null
+  difficulty: string | null
+}
+
+export interface AdminProblemRequest {
+  provider: ProblemProvider
+  externalProblemId: string
+  name: string
+  url: string | null
   difficulty: string | null
 }
 
@@ -74,13 +82,43 @@ export async function getProblem(problemId: string): Promise<Problem> {
   return toProblem(response)
 }
 
+export async function createCatalogProblem(request: AdminProblemRequest) {
+  const response = await apiClient<ProblemResponse>('/admin/problems', {
+    method: 'POST',
+    body: request,
+  })
+
+  return toProblem(response)
+}
+
+export async function updateCatalogProblem(
+  problemId: string,
+  request: AdminProblemRequest,
+) {
+  const response = await apiClient<ProblemResponse>(
+    `/admin/problems/${encodeURIComponent(problemId)}`,
+    { method: 'PUT', body: request },
+  )
+
+  return toProblem(response)
+}
+
+export function deleteCatalogProblem(problemId: string) {
+  return apiClient<undefined>(
+    `/admin/problems/${encodeURIComponent(problemId)}`,
+    {
+      method: 'DELETE',
+    },
+  )
+}
+
 function toProblem(response: ProblemResponse): Problem {
   return {
     id: response.problemId,
     provider: response.provider,
     externalId: response.externalProblemId,
     name: response.name,
-    url: response.url,
+    url: response.url ?? '',
     difficulty: response.difficulty,
   }
 }

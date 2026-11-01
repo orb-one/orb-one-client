@@ -4,12 +4,15 @@ import type {
   AddProblemsRequest,
   AddProblemsResponse,
   GetProblemSetsResponse,
-  ProblemResponse,
   ProblemSetCreateRequest,
   ProblemSetCreateResponse,
   ProblemSetDetailResponse,
 } from '@/lib/api/problem-sets'
 
+import {
+  resolveMockProblemReferences,
+  problemReferenceError,
+} from './problem-references'
 import { mockProblemSetDetails, mockProblemSetList } from './problem-sets'
 
 export const problemSetHandlers = [
@@ -86,14 +89,8 @@ export const problemSetHandlers = [
     const newProblemSetId = crypto.randomUUID()
     const now = new Date().toISOString()
 
-    const createdProblems: ProblemResponse[] = body.problems.map((p) => ({
-      problemId: crypto.randomUUID(),
-      provider: p.provider,
-      externalProblemId: p.externalProblemId,
-      name: p.name,
-      url: p.url,
-      difficulty: p.difficulty,
-    }))
+    const createdProblems = resolveMockProblemReferences(body)
+    if (createdProblems instanceof Response) return createdProblems
 
     mockProblemSetList.unshift({
       problemSetId: newProblemSetId,
@@ -174,35 +171,50 @@ export const problemSetHandlers = [
         groupId: string
         problemSetId: string
       }
+
       const body = (await request.json()) as AddProblemsRequest
-      const now = new Date().toISOString()
-
-      const newProblems: ProblemResponse[] = body.problems.map((p) => ({
-        problemId: crypto.randomUUID(),
-        provider: p.provider,
-        externalProblemId: p.externalProblemId,
-        name: p.name,
-        url: p.url,
-        difficulty: p.difficulty,
-      }))
-
       const detail = mockProblemSetDetails[problemSetId]
-      if (detail) {
-        detail.problems = [...detail.problems, ...newProblems]
-        detail.updatedAt = now
+
+      if (detail?.groupId !== groupId) {
+        return HttpResponse.json(
+          { message: '문제집을 찾을 수 없습니다.' },
+          { status: 404 },
+        )
       }
 
+      const newProblems = resolveMockProblemReferences(body)
+      if (newProblems instanceof Response) return newProblems
+      if (
+        newProblems.some((problem) =>
+          detail.problems.some(
+            (existing) => existing.problemId === problem.problemId,
+          ),
+        )
+      ) {
+        return problemReferenceError(
+          'PROBLEM_ALREADY_IN_SET',
+          '이미 문제집에 포함된 문제가 있습니다.',
+          409,
+        )
+      }
+
+      const now = new Date().toISOString()
+
+      detail.problems = [...detail.problems, ...newProblems]
+      detail.updatedAt = now
+
       const summary = mockProblemSetList.find(
-        (ps) => ps.problemSetId === problemSetId,
+        (item) => item.problemSetId === problemSetId,
       )
+
       if (summary) {
-        summary.problemCount += newProblems.length
+        summary.problemCount = detail.problems.length
       }
 
       const responseData: AddProblemsResponse = {
         problemSetId,
         groupId,
-        problems: detail ? detail.problems : newProblems,
+        problems: detail.problems,
         updatedAt: now,
       }
 

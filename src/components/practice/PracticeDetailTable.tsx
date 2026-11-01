@@ -1,22 +1,24 @@
 import { Button } from '@astryxdesign/core/Button'
-import { Badge } from '@astryxdesign/core/Badge'
 import { Icon } from '@astryxdesign/core/Icon'
 import { Table, proportional, pixel } from '@astryxdesign/core/Table'
 import { Text } from '@astryxdesign/core/Text'
 import { Trash2, ExternalLink, List } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
+import { ProblemDifficultyChip } from '@/components/problems/problem-difficulty-chip'
 import type { Practice, PracticeProblem } from '@/lib/api/practice'
 
 interface PracticeDetailTableProps {
   practice: Practice
   isDeleteMode?: boolean
   onDeleteProblem?: (problemId: string) => void
+  deletingProblemIds?: readonly string[]
 }
 
 export function PracticeDetailTable({
   practice,
   isDeleteMode = false,
   onDeleteProblem,
+  deletingProblemIds = [],
 }: PracticeDetailTableProps) {
   if (!practice.problems || practice.problems.length === 0) {
     return (
@@ -61,7 +63,10 @@ export function PracticeDetailTable({
           width: proportional(1),
           renderCell: (prob: PracticeProblem) =>
             prob.difficulty ? (
-              <Badge label={prob.difficulty} />
+              <ProblemDifficultyChip
+                provider={prob.provider}
+                difficulty={prob.difficulty}
+              />
             ) : (
               <Text type="supporting" color="secondary">
                 -
@@ -78,6 +83,7 @@ export function PracticeDetailTable({
                 size="sm"
                 variant="secondary"
                 label="삭제"
+                isLoading={deletingProblemIds.includes(prob.problemId)}
                 icon={<Icon icon={Trash2} size="sm" />}
                 onClick={() => onDeleteProblem?.(prob.problemId)}
               />

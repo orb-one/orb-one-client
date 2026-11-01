@@ -372,6 +372,7 @@ export function MemberTab({ groupId }: MemberTabProps) {
         <MemberListSkeleton />
       ) : groupQuery.isError ? (
         <Banner
+          role={isAuthRequired ? 'status' : 'alert'}
           status={isAuthRequired ? 'info' : 'error'}
           title={
             isAuthRequired
@@ -449,10 +450,13 @@ export function MemberTab({ groupId }: MemberTabProps) {
                   cursor: isOwner && !isMemberOwner ? 'pointer' : 'default',
                   userSelect: 'none',
                   backgroundColor: isSelected
-                    ? 'var(--astryxdesign-color-bg-selected, rgba(59, 130, 246, 0.18))'
+                    ? 'var(--color-accent-muted)'
                     : isHovered
-                      ? 'var(--astryxdesign-color-bg-selected, rgba(59, 130, 246, 0.12))'
+                      ? 'var(--color-overlay-hover)'
                       : 'transparent',
+                  boxShadow: isSelected
+                    ? 'var(--shadow-inset-selected)'
+                    : undefined,
                   borderRadius: '8px',
                   transition: 'background-color 0.15s ease',
                 }}

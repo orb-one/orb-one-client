@@ -1,4 +1,4 @@
-export interface MockProblem extends Record<string, unknown> {
+export interface MockProblem {
   problemId: string
   provider: string
   externalProblemId: string
@@ -23,11 +23,11 @@ export const mockPractices: MockPractice[] = [
     practiceId: 'p-1',
     groupId: '1',
     title: '1주차',
-    startDate: '2026-07-20T00:00:00Z',
-    endDate: '2026-08-10T23:59:59Z',
+    startDate: '2026-07-19T15:00:00Z',
+    endDate: '2026-08-10T15:00:00Z',
     problems: [
       {
-        problemId: 'prob-1',
+        problemId: '10000000-0000-4000-8000-000000000001',
         provider: 'BOJ',
         externalProblemId: '1000',
         name: 'A+B',
@@ -42,15 +42,15 @@ export const mockPractices: MockPractice[] = [
     practiceId: 'p-2',
     groupId: '1',
     title: '2주차',
-    startDate: '2026-08-01T00:00:00Z',
-    endDate: '2026-08-15T23:59:59Z',
+    startDate: '2026-07-31T15:00:00Z',
+    endDate: '2026-08-15T15:00:00Z',
     problems: [
       {
-        problemId: 'prob-2',
-        provider: 'BOJ',
+        problemId: '10000000-0000-4000-8000-000000000003',
+        provider: 'SWEA',
         externalProblemId: '1204',
         name: '최빈수 구하기',
-        url: 'https://www.acmicpc.net/problem/1204',
+        url: 'https://swexpertacademy.com/main/code/problem/problemDetail.do?contestProbId=AV13zo1KAAACFAYh',
       },
     ],
     createdBy: 'user-1',

@@ -1,16 +1,16 @@
+import { getProblemReferenceErrorMessage } from '@/lib/problems/problem-reference-errors'
 import { Badge } from '@astryxdesign/core/Badge'
 import { Banner } from '@astryxdesign/core/Banner'
 import { Button } from '@astryxdesign/core/Button'
 import { Center } from '@astryxdesign/core/Center'
-import { Dialog } from '@astryxdesign/core/Dialog'
 import { EmptyState } from '@astryxdesign/core/EmptyState'
 import { Heading } from '@astryxdesign/core/Heading'
 import { HStack } from '@astryxdesign/core/HStack'
 import { Icon } from '@astryxdesign/core/Icon'
+import { Link } from '@astryxdesign/core/Link'
 import { Pagination } from '@astryxdesign/core/Pagination'
 import { Skeleton } from '@astryxdesign/core/Skeleton'
 import { Text } from '@astryxdesign/core/Text'
-import { TextInput } from '@astryxdesign/core/TextInput'
 import { VStack } from '@astryxdesign/core/VStack'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -21,20 +21,19 @@ import {
   Code2,
   ExternalLink,
   Plus,
-  Sparkles,
   Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
 
 import { PageBackLink } from '@/components/navigation/page-back-link'
+import { ProblemDifficultyChip } from '@/components/problems/problem-difficulty-chip'
+import { ProblemMultiPickerDialog } from '@/components/problems/problem-multi-picker-dialog'
 import {
   addProblemsToProblemSet,
   deleteProblemFromProblemSet,
   getProblemSetDetail,
-  toAddProblemsRequest,
   type AddProblemsRequest,
   type AddProblemsResponse,
-  type ProblemFormItem,
 } from '@/lib/api/problem-sets'
 
 export const Route = createFileRoute(
@@ -50,22 +49,6 @@ interface ApiErrorResponse extends Error {
   }
 }
 
-const PROVIDER_OPTIONS = [
-  { value: 'BOJ', label: 'BOJ' },
-  { value: 'JUNGOL', label: 'JUNGOL' },
-  { value: 'SWEA', label: 'SWEA' },
-  { value: 'PROGRAMMERS', label: 'PROGRAMMERS' },
-  { value: 'LEETCODE', label: 'LEETCODE' },
-]
-
-const INITIAL_PROBLEM: ProblemFormItem = {
-  provider: 'BOJ',
-  externalProblemId: '',
-  name: '',
-  difficulty: '',
-  url: '',
-}
-
 export function ProblemSetDetailPage() {
   const { groupId, problemSetId } = Route.useParams()
   const navigate = useNavigate()
@@ -79,11 +62,7 @@ export function ProblemSetDetailPage() {
     null,
   )
 
-  // 문제 추가 모달 상태 관리
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [problemsToAdd, setProblemsToAdd] = useState<ProblemFormItem[]>([
-    { ...INITIAL_PROBLEM },
-  ])
 
   // 2. 문제집 상세 및 문제 목록 조회 Query
   const {
@@ -124,30 +103,20 @@ export function ProblemSetDetailPage() {
     onSuccess: () => {
       alert('문제가 성공적으로 추가되었습니다.')
       handleCloseAddModal()
+
       void queryClient.invalidateQueries({
         queryKey: ['problemSetDetail', groupId, problemSetId],
       })
     },
-    onError: (err) => {
-      const status = err.response?.status
-      const serverMessage = err.response?.data?.message
-
-      if (status !== undefined) {
-        // 서버 응답 에러
-        alert(
-          serverMessage ??
-            `오류가 발생했습니다. (상태 코드: ${String(status)})`,
-        )
-      } else {
-        alert(
-          serverMessage ??
-            (err.message !== ''
-              ? err.message
-              : '문제 추가 중 오류가 발생했습니다.'),
-        )
-      }
-    },
   })
+
+  // 추가 실패 시 모달에 표시
+  const addProblemsErrorMessage = addProblemsMutation.isError
+    ? getProblemReferenceErrorMessage(
+        addProblemsMutation.error,
+        '문제 추가 중 오류가 발생했습니다.',
+      )
+    : null
 
   // 4. 문제 삭제 Mutation
   const deleteProblemMutation = useMutation({
@@ -169,7 +138,6 @@ export function ProblemSetDetailPage() {
       const serverMessage = err.response?.data?.message
 
       if (status !== undefined) {
-        // 서버 응답 에러
         alert(
           serverMessage ??
             `오류가 발생했습니다. (상태 코드: ${String(status)})`,
@@ -185,71 +153,26 @@ export function ProblemSetDetailPage() {
     },
   })
 
-  // 문제 추가 폼 유효성 검증
-  const isAddFormValid =
-    problemsToAdd.length > 0 &&
-    problemsToAdd.every(
-      (p) =>
-        Boolean(p.provider.trim()) &&
-        Boolean(p.externalProblemId.trim()) &&
-        Boolean(p.name.trim()) &&
-        Boolean(p.url.trim()),
-    )
-
   function handleOpenAddModal() {
-    setProblemsToAdd([{ ...INITIAL_PROBLEM }])
+    if (addProblemsMutation.isPending) return
+
+    // 이전 요청의 오류를 초기화
+    addProblemsMutation.reset()
     setIsAddModalOpen(true)
   }
 
   function handleCloseAddModal() {
-    setProblemsToAdd([{ ...INITIAL_PROBLEM }])
     setIsAddModalOpen(false)
   }
 
-  function handleProblemChange(
-    index: number,
-    field: keyof ProblemFormItem,
-    value: string,
-  ) {
-    setProblemsToAdd((prev) =>
-      prev.map((item, idx) =>
-        idx === index ? { ...item, [field]: value } : item,
-      ),
-    )
-  }
-
-  function handleAddProblemField() {
-    setProblemsToAdd((prev) => [...prev, { ...INITIAL_PROBLEM }])
-  }
-
-  function handleRemoveProblemField(index: number) {
-    if (problemsToAdd.length === 1) {
-      alert('최소 1개 이상의 문제가 포함되어야 합니다.')
+  function handleSubmitAddProblems(problemIds: string[]) {
+    if (addProblemsMutation.isPending || problemIds.length === 0) {
       return
     }
-    setProblemsToAdd((prev) => prev.filter((_, idx) => idx !== index))
-  }
 
-  function handleSubmitAddProblems() {
-    for (let i = 0; i < problemsToAdd.length; i++) {
-      const p = problemsToAdd[i]
-      if (!p) continue
-
-      if (
-        !p.provider.trim() ||
-        !p.externalProblemId.trim() ||
-        !p.name.trim() ||
-        !p.url.trim()
-      ) {
-        alert(
-          `${String(i + 1)}번째 문제의 모든 필수 항목(플랫폼, 번호, 이름, 링크)을 입력해 주세요.`,
-        )
-        return
-      }
-    }
-
-    const requestDto = toAddProblemsRequest(problemsToAdd)
-    addProblemsMutation.mutate(requestDto)
+    addProblemsMutation.mutate({
+      problemIds: [...new Set(problemIds)],
+    })
   }
 
   function handleToggleExpand(problemId: string) {
@@ -323,10 +246,13 @@ export function ProblemSetDetailPage() {
                 </HStack>
 
                 <Button
-                  label="문제 추가"
+                  label={
+                    addProblemsMutation.isPending ? '추가 중...' : '문제 추가'
+                  }
                   size="sm"
                   variant="primary"
                   icon={<Icon icon={Plus} size="sm" />}
+                  isDisabled={addProblemsMutation.isPending}
                   onClick={() => {
                     handleOpenAddModal()
                   }}
@@ -344,6 +270,7 @@ export function ProblemSetDetailPage() {
           </VStack>
         ) : isError ? (
           <Banner
+            role="alert"
             status="error"
             title="문제 목록을 불러오지 못했습니다."
             endContent={
@@ -360,7 +287,7 @@ export function ProblemSetDetailPage() {
         ) : problems.length === 0 ? (
           <EmptyState
             title="등록된 문제가 없습니다."
-            description="우측 상단의 '문제 추가' 버튼을 눌러 새 문제를 추가해 보세요."
+            description="우측 상단의 '문제 추가' 버튼을 눌러 문제를 선택해 보세요."
             icon={<Icon icon={Code2} size="lg" color="secondary" />}
             headingLevel={2}
           />
@@ -379,16 +306,18 @@ export function ProblemSetDetailPage() {
                 return (
                   <div
                     key={problem.problemId}
+                    data-testid="problem-set-problem"
+                    className="bg-surface"
                     style={{
-                      backgroundColor: 'var(--color-bg-surface, #ffffff)',
                       border: isExpanded
-                        ? '1px solid var(--color-border-accent, #3b82f6)'
-                        : '1px solid var(--color-border-subtle, #e2e8f0)',
-                      borderRadius: '12px',
+                        ? 'var(--border-width) solid var(--color-accent)'
+                        : 'var(--border-width) solid var(--color-border)',
+                      borderRadius: 'var(--radius-container)',
                       boxShadow: isExpanded
-                        ? '0 4px 12px rgba(0, 0, 0, 0.05)'
-                        : '0 1px 3px rgba(0, 0, 0, 0.02)',
-                      transition: 'all 0.2s ease-in-out',
+                        ? 'var(--shadow-med)'
+                        : 'var(--shadow-low)',
+                      transition:
+                        'border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard)',
                       overflow: 'hidden',
                     }}
                   >
@@ -413,9 +342,9 @@ export function ProblemSetDetailPage() {
                         {/* 번호 + 플랫폼 + 문제명 + 번호 */}
                         <HStack vAlign="center" gap={3} style={{ minWidth: 0 }}>
                           <span
+                            className="text-secondary"
                             style={{
                               fontWeight: 700,
-                              color: 'var(--color-text-secondary, #64748b)',
                               fontSize: '14px',
                               minWidth: '24px',
                             }}
@@ -427,8 +356,8 @@ export function ProblemSetDetailPage() {
                             <strong>{problem.name}</strong>
                           </Text>
                           <span
+                            className="text-secondary"
                             style={{
-                              color: 'var(--color-text-tertiary, #94a3b8)',
                               fontSize: '13px',
                             }}
                           >
@@ -463,11 +392,11 @@ export function ProblemSetDetailPage() {
                             }}
                           />
                           <div
+                            className="text-secondary"
                             style={{
                               padding: '4px',
                               display: 'flex',
                               alignItems: 'center',
-                              color: 'var(--color-text-secondary, #64748b)',
                             }}
                           >
                             <Icon
@@ -480,14 +409,14 @@ export function ProblemSetDetailPage() {
                       </HStack>
                     </div>
 
-                    {/* 상세 패널 */}
+                    {/* 문제 상세 */}
                     {isExpanded && (
                       <div
+                        className="bg-muted"
                         style={{
                           padding: '16px 20px',
-                          backgroundColor: 'var(--color-bg-subtle, #f8fafc)',
                           borderTop:
-                            '1px solid var(--color-border-subtle, #e2e8f0)',
+                            'var(--border-width) solid var(--color-border)',
                         }}
                       >
                         <VStack gap={3} width="100%">
@@ -498,15 +427,15 @@ export function ProblemSetDetailPage() {
                             vAlign="center"
                           >
                             <VStack gap={0.5}>
-                              <Text type="supporting" color="secondary">
+                              <Text type="supporting" color="primary">
                                 플랫폼
                               </Text>
                               <Text type="body">
                                 <code
+                                  className="bg-surface"
                                   style={{
                                     fontSize: '12px',
                                     padding: '2px 6px',
-                                    backgroundColor: '#e2e8f0',
                                     borderRadius: '4px',
                                   }}
                                 >
@@ -516,15 +445,15 @@ export function ProblemSetDetailPage() {
                             </VStack>
 
                             <VStack gap={0.5}>
-                              <Text type="supporting" color="secondary">
+                              <Text type="supporting" color="primary">
                                 문제 번호
                               </Text>
                               <Text type="body">
                                 <code
+                                  className="bg-surface"
                                   style={{
                                     fontSize: '12px',
                                     padding: '2px 6px',
-                                    backgroundColor: '#e2e8f0',
                                     borderRadius: '4px',
                                   }}
                                 >
@@ -534,77 +463,61 @@ export function ProblemSetDetailPage() {
                             </VStack>
 
                             <VStack gap={0.5}>
-                              <Text type="supporting" color="secondary">
+                              <Text type="supporting" color="primary">
                                 난이도 수준
                               </Text>
-                              <HStack vAlign="center" gap={1}>
-                                <Icon
-                                  icon={Sparkles}
-                                  size="sm"
-                                  color="accent"
-                                />
-                                <Text type="body">
-                                  <strong>
-                                    {problem.difficulty ?? '미지정'}
-                                  </strong>
-                                </Text>
-                              </HStack>
+                              <ProblemDifficultyChip
+                                provider={problem.provider}
+                                difficulty={problem.difficulty}
+                              />
                             </VStack>
                           </HStack>
 
-                          {/* 외부 링크 바로가기 바 */}
+                          {/* 외부 문제 링크 */}
                           {problem.url ? (
                             <div
+                              className="bg-surface"
                               style={{
                                 marginTop: '4px',
                                 padding: '10px 14px',
-                                backgroundColor: '#ffffff',
                                 borderRadius: '8px',
                                 border:
-                                  '1px solid var(--color-border-subtle, #e2e8f0)',
+                                  'var(--border-width) solid var(--color-border)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                gap: 'var(--spacing-3)',
                               }}
                             >
                               <HStack
                                 gap={2}
                                 vAlign="center"
-                                style={{ minWidth: 0 }}
+                                className="min-w-0 flex-1"
                               >
                                 <Icon
                                   icon={ExternalLink}
                                   size="sm"
                                   color="accent"
                                 />
-                                <Text type="body" color="secondary">
-                                  <span
-                                    style={{
-                                      maxWidth: '500px',
-                                      display: 'inline-block',
-                                      whiteSpace: 'nowrap',
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
-                                      verticalAlign: 'bottom',
-                                    }}
-                                  >
-                                    {problem.url}
-                                  </span>
+                                <Text
+                                  type="body"
+                                  color="secondary"
+                                  maxLines={1}
+                                  className="min-w-0"
+                                >
+                                  {problem.url}
                                 </Text>
                               </HStack>
-                              <a
+                              <Link
                                 href={problem.url}
-                                target="_blank"
-                                rel="noreferrer noopener"
-                                style={{
-                                  color: '#2563eb',
-                                  fontSize: '13px',
-                                  fontWeight: 600,
-                                  textDecoration: 'none',
-                                }}
+                                isExternalLink
+                                isStandalone
+                                newTabLabel="(새 탭에서 열림)"
+                                className="shrink-0"
                               >
-                                문제 원문 열기 ↗
-                              </a>
+                                문제 원문 열기
+                              </Link>
                             </div>
                           ) : null}
                         </VStack>
@@ -629,248 +542,17 @@ export function ProblemSetDetailPage() {
           </VStack>
         )}
 
-        {/* 문제 추가 전용 모달 */}
-        <Dialog
-          isOpen={isAddModalOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              handleCloseAddModal()
-            }
-          }}
-        >
-          <VStack
-            width="100%"
-            gap={4}
-            padding={4}
-            style={{
-              maxHeight: '80vh',
-              overflowY: 'auto',
-              overflowX: 'hidden',
-              boxSizing: 'border-box',
-            }}
-          >
-            <h2 style={{ fontWeight: 'bold', margin: 0 }}>문제 추가</h2>
-            <Text type="body">
-              현재 문제집에 추가할 문제들을 입력해 주세요.
-            </Text>
-
-            <VStack gap={3} width="100%" style={{ boxSizing: 'border-box' }}>
-              <HStack width="100%" vAlign="center">
-                <Text type="body">
-                  {`포함할 문제 목록 (${String(problemsToAdd.length)}개)`}
-                  <strong>
-                    <span style={{ color: '#ef4444', marginLeft: '2px' }}>
-                      *
-                    </span>
-                  </strong>
-                </Text>
-                <div style={{ flex: 1 }} />
-                <Button
-                  label="문제 추가"
-                  size="sm"
-                  variant="secondary"
-                  icon={<Icon icon={Plus} size="sm" />}
-                  onClick={() => {
-                    handleAddProblemField()
-                  }}
-                />
-              </HStack>
-
-              {problemsToAdd.map((problem, index) => (
-                <VStack
-                  key={index}
-                  width="100%"
-                  gap={3}
-                  padding={4}
-                  style={{
-                    border: '1px solid var(--color-border-subtle, #e2e8f0)',
-                    borderRadius: '10px',
-                    boxSizing: 'border-box',
-                    backgroundColor: '#ffffff',
-                  }}
-                >
-                  <HStack width="100%" vAlign="center">
-                    <Text type="body">
-                      <strong>{`문제 #${String(index + 1)}`}</strong>
-                    </Text>
-                    <div style={{ flex: 1 }} />
-                    {problemsToAdd.length > 1 && (
-                      <Button
-                        label="삭제"
-                        size="sm"
-                        variant="destructive"
-                        icon={<Icon icon={Trash2} size="sm" />}
-                        onClick={() => {
-                          handleRemoveProblemField(index)
-                        }}
-                      />
-                    )}
-                  </HStack>
-
-                  {/* 플랫폼 + 문제 번호 */}
-                  <HStack width="100%" gap={3}>
-                    <VStack gap={1} style={{ flex: 1, minWidth: 0 }}>
-                      <label
-                        style={{
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          color: 'var(--color-text-secondary, #6b7280)',
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        플랫폼
-                      </label>
-                      <div style={{ position: 'relative', width: '100%' }}>
-                        <select
-                          value={problem.provider}
-                          onChange={(e) => {
-                            handleProblemChange(
-                              index,
-                              'provider',
-                              e.target.value,
-                            )
-                          }}
-                          style={{
-                            width: '100%',
-                            height: '42px',
-                            padding: '0 32px 0 12px',
-                            borderRadius: '8px',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: '#ffffff',
-                            color: '#111827',
-                            fontSize: '13px',
-                            appearance: 'none',
-                            WebkitAppearance: 'none',
-                            MozAppearance: 'none',
-                            outline: 'none',
-                            cursor: 'pointer',
-                            boxSizing: 'border-box',
-                          }}
-                        >
-                          {PROVIDER_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '50%',
-                            right: '10px',
-                            transform: 'translateY(-50%)',
-                            pointerEvents: 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: '#6b7280',
-                          }}
-                        >
-                          <Icon icon={ChevronDown} size="sm" />
-                        </div>
-                      </div>
-                    </VStack>
-
-                    <div style={{ flex: 1, minWidth: 0, fontSize: '13px' }}>
-                      <TextInput
-                        label="문제 번호"
-                        placeholder="예: 1204"
-                        value={problem.externalProblemId}
-                        onChange={(v: unknown) => {
-                          const val =
-                            typeof v === 'string'
-                              ? v
-                              : v && typeof v === 'object' && 'target' in v
-                                ? (v as React.ChangeEvent<HTMLInputElement>)
-                                    .target.value
-                                : ''
-                          handleProblemChange(index, 'externalProblemId', val)
-                        }}
-                      />
-                    </div>
-                  </HStack>
-
-                  {/* 문제 이름 + 난이도 */}
-                  <HStack width="100%" gap={3}>
-                    <div style={{ flex: 1, minWidth: 0, fontSize: '13px' }}>
-                      <TextInput
-                        label="문제 이름"
-                        placeholder="예: 최빈수 구하기"
-                        value={problem.name}
-                        onChange={(v: unknown) => {
-                          const val =
-                            typeof v === 'string'
-                              ? v
-                              : v && typeof v === 'object' && 'target' in v
-                                ? (v as React.ChangeEvent<HTMLInputElement>)
-                                    .target.value
-                                : ''
-                          handleProblemChange(index, 'name', val)
-                        }}
-                      />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0, fontSize: '13px' }}>
-                      <TextInput
-                        label="난이도"
-                        placeholder="예: GOLD_3"
-                        value={problem.difficulty}
-                        onChange={(v: unknown) => {
-                          const val =
-                            typeof v === 'string'
-                              ? v
-                              : v && typeof v === 'object' && 'target' in v
-                                ? (v as React.ChangeEvent<HTMLInputElement>)
-                                    .target.value
-                                : ''
-                          handleProblemChange(index, 'difficulty', val)
-                        }}
-                      />
-                    </div>
-                  </HStack>
-
-                  {/* 문제 URL */}
-                  <div style={{ width: '100%', fontSize: '13px' }}>
-                    <TextInput
-                      label="문제 URL"
-                      placeholder="https://..."
-                      value={problem.url}
-                      onChange={(v: unknown) => {
-                        const val =
-                          typeof v === 'string'
-                            ? v
-                            : v && typeof v === 'object' && 'target' in v
-                              ? (v as React.ChangeEvent<HTMLInputElement>)
-                                  .target.value
-                              : ''
-                        handleProblemChange(index, 'url', val)
-                      }}
-                    />
-                  </div>
-                </VStack>
-              ))}
-            </VStack>
-
-            <HStack width="100%" hAlign="end" gap={2}>
-              <Button
-                label="취소"
-                variant="secondary"
-                isDisabled={addProblemsMutation.isPending}
-                onClick={() => {
-                  handleCloseAddModal()
-                }}
-              />
-              <Button
-                label={
-                  addProblemsMutation.isPending ? '추가 중...' : '추가하기'
-                }
-                variant="primary"
-                isDisabled={!isAddFormValid || addProblemsMutation.isPending}
-                onClick={() => {
-                  handleSubmitAddProblems()
-                }}
-              />
-            </HStack>
-          </VStack>
-        </Dialog>
+        {/* 성공 시에만 닫고, 실패하면 선택 상태 유지 */}
+        {isAddModalOpen && (
+          <ProblemMultiPickerDialog
+            description="문제집에 추가할 문제를 선택해 주세요. 여러 문제를 선택할 수 있습니다."
+            onSelectionChange={addProblemsMutation.reset}
+            isSubmitting={addProblemsMutation.isPending}
+            errorMessage={addProblemsErrorMessage}
+            onClose={handleCloseAddModal}
+            onSubmit={handleSubmitAddProblems}
+          />
+        )}
       </VStack>
     </Center>
   )

@@ -22,6 +22,7 @@ import { PageBackLink } from '@/components/navigation/page-back-link'
 import type { SolutionCodeEditorHandle } from '@/components/solutions/solution-code-editor'
 import { SolutionMarkdownEditor } from '@/components/solutions/solution-markdown-editor'
 import { ProblemPickerDialog } from '@/components/problems/problem-picker-dialog'
+import { ProblemMetadata } from '@/components/problems/problem-metadata'
 import { problemQueryOptions } from '@/lib/problems/problem-queries'
 import type { Problem } from '@/lib/problems/problem-model'
 import {
@@ -85,8 +86,6 @@ export function SolutionCreatePage() {
   const [isSolved, setIsSolved] = useState(false)
   const [memoryUsage, setMemoryUsage] = useState<number | null>(null)
   const [timeElapsed, setTimeElapsed] = useState<number | null>(null)
-  const [memoryUsageInput, setMemoryUsageInput] = useState('')
-  const [timeElapsedInput, setTimeElapsedInput] = useState('')
   const [formError, setFormError] = useState<SolutionCreateFormError | null>(
     null,
   )
@@ -159,8 +158,8 @@ export function SolutionCreatePage() {
       {
         description,
         isSolved,
-        memoryUsage: memoryUsageInput,
-        timeElapsed: timeElapsedInput,
+        memoryUsage: memoryUsage === null ? '' : String(memoryUsage),
+        timeElapsed: timeElapsed === null ? '' : String(timeElapsed),
       },
     )
 
@@ -205,6 +204,7 @@ export function SolutionCreatePage() {
           <VStack gap={5} hAlign="stretch">
             {createMutation.isError ? (
               <Banner
+                role={isAuthRequired ? 'status' : 'alert'}
                 status={isAuthRequired ? 'info' : 'error'}
                 title={isAuthRequired ? copy.authRequired : copy.genericError}
                 endContent={
@@ -222,7 +222,8 @@ export function SolutionCreatePage() {
 
             <FormLayout>
               <Field
-                label={`${copy.problemLabel} (${copy.requiredLabel})`}
+                label={copy.problemLabel}
+                isRequired
                 inputID="solution-problem-picker"
                 description={copy.problemSelectionDescription}
                 {...(problemFieldError
@@ -250,12 +251,11 @@ export function SolutionCreatePage() {
                   >
                     <VStack gap={1}>
                       <Text type="label">{selectedProblem.name}</Text>
-                      <Text type="supporting" color="secondary">
-                        {selectedProblem.provider} {selectedProblem.externalId}
-                        {selectedProblem.difficulty
-                          ? ` · ${selectedProblem.difficulty}`
-                          : ''}
-                      </Text>
+                      <ProblemMetadata
+                        provider={selectedProblem.provider}
+                        externalId={selectedProblem.externalId}
+                        difficulty={selectedProblem.difficulty}
+                      />
                     </VStack>
                     <Button
                       ref={problemPickerTriggerRef}
@@ -296,7 +296,8 @@ export function SolutionCreatePage() {
               </Field>
 
               <Selector
-                label={`${copy.languageLabel} (${copy.requiredLabel})`}
+                label={copy.languageLabel}
+                isRequired
                 htmlName="language"
                 value={language}
                 onChange={(nextLanguage) => {
@@ -322,7 +323,7 @@ export function SolutionCreatePage() {
               >
                 <SolutionCodeEditor
                   ref={codeInputRef}
-                  label={`${copy.codeLabel} (${copy.requiredLabel})`}
+                  label={copy.codeLabel}
                   htmlName="code"
                   value={code}
                   language={language}
@@ -345,7 +346,7 @@ export function SolutionCreatePage() {
               </Suspense>
 
               <SolutionMarkdownEditor
-                label={`${copy.solutionDescriptionLabel} (${copy.optionalLabel})`}
+                label={`${copy.solutionDescriptionLabel} (${t.common.fieldLabels.optional})`}
                 value={description}
                 onChange={(nextDescription) => {
                   setDescription(nextDescription)
@@ -371,28 +372,19 @@ export function SolutionCreatePage() {
                 isDisabled={isSubmitting}
               />
 
+              {/* 범위 검증은 폼에서 처리해 입력값이 자동 보정되지 않도록 합니다. */}
               <FormLayout direction="horizontal">
                 <NumberInput
                   ref={memoryUsageInputRef}
-                  label={`${copy.memoryUsageLabel} (${copy.optionalLabel})`}
+                  label={copy.memoryUsageLabel}
+                  isOptional
                   htmlName="memoryUsage"
                   description={copy.memoryUsageDescription}
                   value={memoryUsage}
                   onChange={(nextValue) => {
                     setMemoryUsage(nextValue)
-                    setMemoryUsageInput(
-                      nextValue === null ? '' : String(nextValue),
-                    )
                     clearFeedback('memoryUsageInvalid')
                   }}
-                  onInput={(event) => {
-                    setMemoryUsageInput(
-                      (event.currentTarget as HTMLInputElement).value,
-                    )
-                    clearFeedback('memoryUsageInvalid')
-                  }}
-                  min={0}
-                  max={2_147_483_647}
                   units="KB"
                   isIntegerOnly
                   hasClear
@@ -409,25 +401,15 @@ export function SolutionCreatePage() {
                 />
                 <NumberInput
                   ref={timeElapsedInputRef}
-                  label={`${copy.timeElapsedLabel} (${copy.optionalLabel})`}
+                  label={copy.timeElapsedLabel}
+                  isOptional
                   htmlName="timeElapsed"
                   description={copy.timeElapsedDescription}
                   value={timeElapsed}
                   onChange={(nextValue) => {
                     setTimeElapsed(nextValue)
-                    setTimeElapsedInput(
-                      nextValue === null ? '' : String(nextValue),
-                    )
                     clearFeedback('timeElapsedInvalid')
                   }}
-                  onInput={(event) => {
-                    setTimeElapsedInput(
-                      (event.currentTarget as HTMLInputElement).value,
-                    )
-                    clearFeedback('timeElapsedInvalid')
-                  }}
-                  min={0}
-                  max={2_147_483_647}
                   units="ms"
                   isIntegerOnly
                   hasClear

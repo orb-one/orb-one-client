@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Check, ListChecks, Search, SearchX } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+import { ProblemMetadata } from '@/components/problems/problem-metadata'
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import { useI18n } from '@/lib/i18n/use-translations'
 import type { Problem } from '@/lib/problems/problem-model'
@@ -29,6 +30,7 @@ export function ProblemPickerDialog({
   onOpenChange,
   selectedProblem,
   onSelect,
+  description,
 }: ProblemPickerDialogProps) {
   const { t } = useI18n()
   const copy = t.solutions.create
@@ -88,7 +90,7 @@ export function ProblemPickerDialog({
           <LayoutContent>
             <VStack gap={3} width="100%">
               <Text type="body" size="sm" color="secondary">
-                {copy.problemPickerDescription}
+                {description ?? copy.problemPickerDescription}
               </Text>
               <TextInput
                 label={copy.problemSearchLabel}
@@ -104,9 +106,12 @@ export function ProblemPickerDialog({
                 <ProblemPickerSkeleton label={copy.problemPickerLoading} />
               ) : problemsQuery.isError ? (
                 <Banner
+                  role={isAuthRequired ? 'status' : 'alert'}
                   status={isAuthRequired ? 'info' : 'error'}
                   title={
-                    isAuthRequired ? copy.authRequired : copy.problemPickerError
+                    isAuthRequired
+                      ? copy.problemPickerAuthRequired
+                      : copy.problemPickerError
                   }
                   endContent={
                     isAuthRequired ? (
@@ -133,11 +138,9 @@ export function ProblemPickerDialog({
                       ? copy.problemSearchEmptyTitle
                       : copy.problemPickerEmptyTitle
                   }
-                  description={
-                    keyword
-                      ? copy.problemSearchEmptyDescription
-                      : copy.problemPickerEmptyDescription
-                  }
+                  {...(keyword
+                    ? { description: copy.problemSearchEmptyDescription }
+                    : {})}
                   icon={
                     <Icon
                       icon={keyword ? SearchX : ListChecks}
@@ -162,7 +165,13 @@ export function ProblemPickerDialog({
                         <ListItem
                           key={problem.id}
                           label={problem.name}
-                          description={formatProblemMetadata(problem)}
+                          description={
+                            <ProblemMetadata
+                              provider={problem.provider}
+                              externalId={problem.externalId}
+                              difficulty={problem.difficulty}
+                            />
+                          }
                           isSelected={isSelected}
                           onClick={() => {
                             selectProblem(problem)
@@ -207,12 +216,6 @@ export function ProblemPickerDialog({
   )
 }
 
-function formatProblemMetadata(problem: Problem) {
-  const source = `${problem.provider} ${problem.externalId}`
-
-  return problem.difficulty ? `${source} · ${problem.difficulty}` : source
-}
-
 function ProblemPickerSkeleton({ label }: { label: string }) {
   return (
     <VStack role="status" aria-live="polite" gap={3} width="100%">
@@ -234,4 +237,5 @@ interface ProblemPickerDialogProps {
   onOpenChange: (isOpen: boolean) => void
   selectedProblem: Problem | null
   onSelect: (problem: Problem) => void
+  description?: string
 }

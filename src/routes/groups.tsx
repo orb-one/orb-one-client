@@ -174,6 +174,7 @@ export function GroupListPage() {
           <GroupListSkeleton label={copy.loading} />
         ) : groupsQuery.isError ? (
           <Banner
+            role={isAuthRequired ? 'status' : 'alert'}
             status={isAuthRequired ? 'info' : 'error'}
             title={isAuthRequired ? copy.authRequired : copy.loadError}
             endContent={
@@ -229,7 +230,7 @@ export function GroupListPage() {
                         cursor: isChecking ? 'wait' : 'pointer',
                         opacity: isChecking ? 0.6 : 1,
                         backgroundColor: isHovered
-                          ? 'var(--astryxdesign-color-bg-selected, rgba(59, 130, 246, 0.12))'
+                          ? 'var(--color-overlay-hover)'
                           : 'transparent',
                         borderRadius: '8px',
                         transition: 'background-color 0.15s ease',
