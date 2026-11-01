@@ -51,11 +51,11 @@ async function createContainer(kind: 'practices' | 'problem-sets') {
   })
   expect(response.status).toBe(201)
   const result = (await response.json()) as {
-    id?: string
+    practiceId?: string
     problemSetId?: string
     problems: unknown[]
   }
-  const id = kind === 'practices' ? result.id : result.problemSetId
+  const id = kind === 'practices' ? result.practiceId : result.problemSetId
   if (!id) throw new Error('Missing container ID')
   const detailPath = `${path}/${id}`
   createdPaths.push(detailPath)
@@ -203,8 +203,8 @@ it('practice editing preserves problem references and accepts camelCase dates', 
   expect(response.status).toBe(200)
   expect(await response.json()).toMatchObject({
     title: '수정된 연습',
-    start_date: '2030-01-02T00:00:00',
-    end_date: '2030-01-05T23:59:59',
+    startDate: '2030-01-01T15:00:00.000Z',
+    endDate: '2030-01-05T14:59:59.000Z',
     problems: [mockProblems[0]],
   })
 })
