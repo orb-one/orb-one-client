@@ -290,6 +290,144 @@ test('offers sign-in when the session cannot be refreshed', async ({
   expect(state.reads).toHaveLength(0)
 })
 
+for (const { provider, label, value } of [
+  { provider: 'BOJ', label: 'Gold III', value: 'GOLD_3' },
+  { provider: 'JUNGOL', label: 'Ruby I', value: 'RUBY_1' },
+  { provider: 'SWEA', label: 'D8', value: 'D8' },
+  { provider: 'PROGRAMMERS', label: 'Lv. 0', value: 'LEVEL_0' },
+  { provider: 'PROGRAMMERS', label: 'Lv. 5', value: 'LEVEL_5' },
+  { provider: 'LEETCODE', label: 'Medium', value: 'MEDIUM' },
+  { provider: 'BOJ', label: 'Unrated', value: 'UNRATED' },
+  { provider: 'BOJ', label: 'Not ratable', value: 'NOT_RATABLE' },
+  { provider: 'BOJ', label: 'Sprout I+', value: 'SPROUT_1_PLUS' },
+]) {
+  test(`creates ${provider} problems with selected difficulty ${label}`, async ({
+    page,
+  }) => {
+    const state = await mockCatalog(page)
+    await page.goto(catalogPath)
+    await page.getByRole('button', { name: '문제 등록', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '문제 등록' })
+    const difficulty = dialog.getByLabel(/^난이도.*선택 사항$/)
+    await expect(difficulty).toBeDisabled()
+    await expect(dialog.getByRole('textbox', { name: /난이도/ })).toHaveCount(0)
+    await dialog.getByRole('combobox', { name: /플랫폼/ }).click()
+    await page.getByRole('option', { name: provider, exact: true }).click()
+    await expect(difficulty).toBeEnabled()
+    await difficulty.click()
+    await page.getByRole('option', { name: label, exact: true }).click()
+    await expect(difficulty).toContainText(label)
+    await dialog.getByRole('textbox', { name: /문제 식별자/ }).fill('example')
+    await dialog.getByRole('textbox', { name: /제목/ }).fill('난이도 선택 확인')
+    await dialog.getByRole('button', { name: '문제 등록', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(state.writes[0]?.body).toMatchObject({ provider, difficulty: value })
+  })
+}
+
+test('resets difficulty only when the platform changes and drops the old options', async ({
+  page,
+}) => {
+  const state = await mockCatalog(page)
+  await page.goto(catalogPath)
+  await page.getByRole('button', { name: 'A+B 수정', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '문제 수정' })
+  const provider = dialog.getByRole('combobox', { name: /플랫폼/ })
+  const difficulty = dialog.getByLabel(/^난이도.*선택 사항$/)
+  await expect(difficulty).toContainText('Bronze V')
+  await provider.click()
+  await page.getByRole('option', { name: 'LEETCODE', exact: true }).click()
+  await expect(difficulty).toContainText('미지정')
+  await difficulty.click()
+  await expect(page.getByRole('option', { name: /Bronze/ })).toHaveCount(0)
+  await page.getByRole('option', { name: 'Medium', exact: true }).click()
+  await provider.click()
+  await page.getByRole('option', { name: 'LEETCODE', exact: true }).click()
+  await expect(difficulty).toContainText('Medium')
+  await provider.click()
+  await page.getByRole('option', { name: 'SWEA', exact: true }).click()
+  await expect(difficulty).toContainText('미지정')
+  await dialog.getByRole('button', { name: '변경사항 저장' }).click()
+  await expect(dialog).toHaveCount(0)
+  expect(state.writes[0]?.body).toMatchObject({
+    provider: 'SWEA',
+    difficulty: null,
+  })
+})
+
+test('preserves an unknown stored difficulty exactly and allows replacing it', async ({
+  page,
+}) => {
+  const state = await mockCatalog(page)
+  const original = '  custom-level / 2  '
+  state.rows[0] = { ...firstProblem, difficulty: original }
+  await page.goto(catalogPath)
+  await page.getByRole('button', { name: 'A+B 수정', exact: true }).click()
+  let dialog = page.getByRole('dialog', { name: '문제 수정' })
+  await expect(dialog.getByLabel(/^난이도.*선택 사항$/)).toContainText(
+    '기존 값:',
+  )
+  await dialog.getByRole('textbox', { name: /제목/ }).fill('제목만 수정')
+  await dialog.getByRole('button', { name: '변경사항 저장' }).click()
+  await expect(dialog).toHaveCount(0)
+  expect(state.writes[0]?.body).toMatchObject({ difficulty: original })
+  await page
+    .getByRole('button', { name: '제목만 수정 수정', exact: true })
+    .click()
+  dialog = page.getByRole('dialog', { name: '문제 수정' })
+  await dialog.getByLabel(/^난이도.*선택 사항$/).click()
+  await page.getByRole('option', { name: 'Silver II', exact: true }).click()
+  await dialog.getByRole('button', { name: '변경사항 저장' }).click()
+  await expect(dialog).toHaveCount(0)
+  expect(state.writes[1]?.body).toMatchObject({ difficulty: 'SILVER_2' })
+})
+
+test('clears an existing difficulty by choosing not specified', async ({
+  page,
+}) => {
+  const state = await mockCatalog(page)
+  await page.goto(catalogPath)
+  await page.getByRole('button', { name: 'A+B 수정', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '문제 수정' })
+  await dialog.getByLabel(/^난이도.*선택 사항$/).click()
+  await page.getByRole('option', { name: '미지정', exact: true }).click()
+  await dialog.getByRole('button', { name: '변경사항 저장' }).click()
+  await expect(dialog).toHaveCount(0)
+  expect(state.writes[0]?.body).toMatchObject({ difficulty: null })
+})
+
+test.describe('difficulty selection on a touch screen', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('searches tiers, returns to the form and saves the selected code', async ({
+    page,
+  }) => {
+    const state = await mockCatalog(page)
+    await page.goto(catalogPath)
+    await page.getByRole('button', { name: 'A+B 수정', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '문제 수정' })
+    await dialog.getByLabel(/^난이도.*선택 사항$/).click()
+    const search = page.getByPlaceholder('난이도 검색')
+    await search.fill('Ruby')
+    await page.getByRole('option', { name: 'Ruby V', exact: true }).click()
+    await expect(search).not.toBeVisible()
+    await expect(dialog.getByLabel(/^난이도.*선택 사항$/)).toContainText(
+      'Ruby V',
+    )
+    await expect(dialog.getByLabel(/^난이도.*선택 사항$/)).toBeFocused()
+    await expect(dialog.getByRole('textbox', { name: /제목/ })).toHaveValue(
+      'A+B',
+    )
+    await dialog.getByRole('button', { name: '변경사항 저장' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(state.writes[0]?.body).toMatchObject({ difficulty: 'RUBY_5' })
+  })
+})
+
 test('creates, fully updates and deletes with CSRF and refreshed lists', async ({
   page,
 }) => {

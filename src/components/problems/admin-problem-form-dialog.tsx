@@ -14,6 +14,7 @@ import { createStore } from 'zustand/vanilla'
 
 import type { AdminProblemRequest } from '@/lib/api/problems'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { problemDifficultyOptions } from '@/lib/problems/problem-difficulty-options'
 import { problemProviders, type Problem } from '@/lib/problems/problem-model'
 
 interface FormValues {
@@ -53,6 +54,20 @@ export function AdminProblemFormDialog({
     })),
   )
   const { values, attempted } = useStore(store)
+  const provider = problemProviders.find((item) => item === values.provider)
+  const difficultyOptions = provider ? problemDifficultyOptions[provider] : []
+  const difficultyValues = difficultyOptions.flatMap((option) =>
+    'value' in option
+      ? [option.value]
+      : option.options.map((item) => item.value),
+  )
+  const existingDifficulty =
+    problem &&
+    problem.provider === provider &&
+    problem.difficulty &&
+    !difficultyValues.includes(problem.difficulty)
+      ? problem.difficulty
+      : null
   const required = (value: string) =>
     attempted && !value.trim()
       ? { status: { type: 'error' as const, message: copy.required } }
@@ -94,7 +109,7 @@ export function AdminProblemFormDialog({
       externalProblemId: values.externalProblemId.trim(),
       name: values.name.trim(),
       url: values.url.trim() || null,
-      difficulty: values.difficulty.trim() || null,
+      difficulty: values.difficulty || null,
     })
   }
 
@@ -138,7 +153,16 @@ export function AdminProblemFormDialog({
                       options={[...problemProviders]}
                       value={values.provider}
                       onChange={(value) => {
-                        setValue('provider', value)
+                        store.setState((state) => ({
+                          values: {
+                            ...state.values,
+                            provider: value,
+                            difficulty:
+                              state.values.provider === value
+                                ? state.values.difficulty
+                                : '',
+                          },
+                        }))
                       }}
                       placeholder={copy.providerPlaceholder}
                       isRequired
@@ -168,15 +192,39 @@ export function AdminProblemFormDialog({
                     isDisabled={isSubmitting}
                     {...textStatus(values.name, 100, true)}
                   />
-                  <TextInput
+                  <Selector
                     label={copy.difficulty}
+                    options={[
+                      { value: '', label: copy.noDifficulty },
+                      ...(existingDifficulty
+                        ? [
+                            {
+                              value: existingDifficulty,
+                              label: copy.existingDifficulty.replace(
+                                '{value}',
+                                existingDifficulty,
+                              ),
+                            },
+                          ]
+                        : []),
+                      ...difficultyOptions,
+                    ]}
                     value={values.difficulty}
                     onChange={(value) => {
                       setValue('difficulty', value)
                     }}
-                    description={copy.difficultyHint}
+                    placeholder={copy.noDifficulty}
+                    description={
+                      provider
+                        ? copy.difficultyHint
+                        : copy.difficultyProviderHint
+                    }
+                    hasSearch={difficultyValues.length > 20}
+                    searchPlaceholder={copy.difficultySearch}
+                    emptySearchText={copy.noDifficultyResults}
+                    presentation="adaptive"
                     isOptional
-                    isDisabled={isSubmitting}
+                    isDisabled={isSubmitting || !provider}
                     {...textStatus(values.difficulty, 32)}
                   />
                   <TextInput
