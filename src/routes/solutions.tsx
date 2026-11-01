@@ -17,6 +17,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Code2, FilePlus2, FilterX, SearchX } from 'lucide-react'
 import { useState } from 'react'
 
+import { ProblemMetadata } from '@/components/problems/problem-metadata'
 import { SolutionStatus } from '@/components/solutions/solution-status'
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import type { Locale } from '@/lib/i18n/messages'
@@ -279,15 +280,14 @@ function SolutionListMetadata({ solution, locale }: SolutionListMetadataProps) {
   const copy = useI18n().t.solutions.list
   const createdAt = formatSolutionDate(solution.createdAt, locale)
   const authorNickname = solution.authorNickname?.trim()
-  const problemMetadata = formatSolutionProblemMetadata(solution)
 
   return (
     <VStack gap={1.5}>
-      {problemMetadata ? (
-        <Text type="supporting" color="secondary">
-          {problemMetadata}
-        </Text>
-      ) : null}
+      <ProblemMetadata
+        provider={solution.problemProvider}
+        externalId={solution.problemNumber?.trim() ?? null}
+        difficulty={solution.problemDifficulty?.trim() ?? null}
+      />
       <HStack gap={2} wrap="wrap" vAlign="center">
         <Text type="supporting" color="secondary">
           {solution.language ?? copy.unknownLanguage}
@@ -314,18 +314,6 @@ function getSolutionProblemName(solution: SolutionSummary) {
   return problemName && problemName.length > 0
     ? problemName
     : solution.problemId
-}
-
-function formatSolutionProblemMetadata(solution: SolutionSummary) {
-  const problemNumber = solution.problemNumber?.trim()
-  const problemDifficulty = solution.problemDifficulty?.trim()
-  const problemSource = solution.problemProvider
-    ? problemNumber
-      ? `${solution.problemProvider} ${problemNumber}`
-      : solution.problemProvider
-    : problemNumber
-
-  return [problemSource, problemDifficulty].filter(Boolean).join(' · ')
 }
 
 function SolutionListSkeleton({ label }: { label: string }) {

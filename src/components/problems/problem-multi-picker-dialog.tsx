@@ -18,6 +18,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
 
+import { ProblemMetadata } from '@/components/problems/problem-metadata'
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import type { Problem } from '@/lib/problems/problem-model'
 import { problemListQueryOptions } from '@/lib/problems/problem-queries'
@@ -341,7 +342,13 @@ export function ProblemMultiPickerDialog({
                           else rowRefs.current.delete(problem.id)
                         }}
                         label={problem.name}
-                        description={formatProblemMetadata(problem)}
+                        description={
+                          <ProblemMetadata
+                            provider={problem.provider}
+                            externalId={problem.externalId}
+                            difficulty={problem.difficulty}
+                          />
+                        }
                         isSelected={isSelected}
                         isDisabled={isSubmitting || isExisting}
                         onClick={() => {
@@ -422,12 +429,6 @@ export function ProblemMultiPickerDialog({
       />
     </Dialog>
   )
-}
-
-function formatProblemMetadata(problem: Problem) {
-  const source = `${problem.provider} ${problem.externalId}`
-
-  return problem.difficulty ? `${source} · ${problem.difficulty}` : source
 }
 
 function ProblemListSkeleton() {

@@ -22,6 +22,7 @@ import { PageBackLink } from '@/components/navigation/page-back-link'
 import type { SolutionCodeEditorHandle } from '@/components/solutions/solution-code-editor'
 import { SolutionMarkdownEditor } from '@/components/solutions/solution-markdown-editor'
 import { ProblemPickerDialog } from '@/components/problems/problem-picker-dialog'
+import { ProblemMetadata } from '@/components/problems/problem-metadata'
 import { problemQueryOptions } from '@/lib/problems/problem-queries'
 import type { Problem } from '@/lib/problems/problem-model'
 import {
@@ -250,12 +251,11 @@ export function SolutionCreatePage() {
                   >
                     <VStack gap={1}>
                       <Text type="label">{selectedProblem.name}</Text>
-                      <Text type="supporting" color="secondary">
-                        {selectedProblem.provider} {selectedProblem.externalId}
-                        {selectedProblem.difficulty
-                          ? ` · ${selectedProblem.difficulty}`
-                          : ''}
-                      </Text>
+                      <ProblemMetadata
+                        provider={selectedProblem.provider}
+                        externalId={selectedProblem.externalId}
+                        difficulty={selectedProblem.difficulty}
+                      />
                     </VStack>
                     <Button
                       ref={problemPickerTriggerRef}

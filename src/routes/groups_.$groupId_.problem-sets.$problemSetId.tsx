@@ -21,12 +21,12 @@ import {
   Code2,
   ExternalLink,
   Plus,
-  Sparkles,
   Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
 
 import { PageBackLink } from '@/components/navigation/page-back-link'
+import { ProblemDifficultyChip } from '@/components/problems/problem-difficulty-chip'
 import { ProblemMultiPickerDialog } from '@/components/problems/problem-multi-picker-dialog'
 import {
   addProblemsToProblemSet,
@@ -466,18 +466,10 @@ export function ProblemSetDetailPage() {
                               <Text type="supporting" color="primary">
                                 난이도 수준
                               </Text>
-                              <HStack vAlign="center" gap={1}>
-                                <Icon
-                                  icon={Sparkles}
-                                  size="sm"
-                                  color="accent"
-                                />
-                                <Text type="body">
-                                  <strong>
-                                    {problem.difficulty ?? '미지정'}
-                                  </strong>
-                                </Text>
-                              </HStack>
+                              <ProblemDifficultyChip
+                                provider={problem.provider}
+                                difficulty={problem.difficulty}
+                              />
                             </VStack>
                           </HStack>
 

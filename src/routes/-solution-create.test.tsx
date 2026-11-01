@@ -182,6 +182,10 @@ it('prefills a problem from the route search parameter', async () => {
 
   expect(await screen.findByText('문제 1')).toBeVisible()
   expect(screen.getByText(/BOJ 1000/)).toBeVisible()
+  expect(screen.getByText('Bronze V').closest('.astryx-token')).toHaveAttribute(
+    'data-color',
+    'boj-bronze',
+  )
   expect(screen.getByRole('button', { name: '문제 변경' })).toBeVisible()
   expect(getProblem).toHaveBeenCalledWith('problem-1')
 })

@@ -31,7 +31,10 @@ test('browses, copies, and collapses a saved solution across viewports', async (
     )
     .not.toBe('rgba(0, 0, 0, 0)')
 
-  await expect(page.getByText('BOJ 1000 · BRONZE_5')).toBeVisible()
+  await expect(page.getByText('BOJ 1000')).toBeVisible()
+  await expect(
+    page.locator('.astryx-token[data-color="boj-bronze"]'),
+  ).toHaveText('Bronze V')
   await page.getByRole('link', { name: /A\+B/ }).click()
 
   await expect(
@@ -45,6 +48,9 @@ test('browses, copies, and collapses a saved solution across viewports', async (
     href: '/solutions',
     headingName: 'A+B',
   })
+  await expect(
+    page.locator('.astryx-token[data-color="boj-bronze"]'),
+  ).toHaveText('Bronze V')
   await expect(
     page.getByRole('link', { name: /문제 원문 보기/ }),
   ).toHaveAttribute('href', 'https://www.acmicpc.net/problem/1000')
@@ -100,6 +106,72 @@ test('browses, copies, and collapses a saved solution across viewports', async (
       })),
     )
     .toEqual({ clientWidth: 320, scrollWidth: 320 })
+})
+
+test('truncates long problem identifiers without overflowing the picker or selected problem', async ({
+  page,
+}) => {
+  await mockCurrentUser(page)
+  const externalId = 'x'.repeat(128)
+  const source = `LEETCODE ${externalId}`
+  await page.route(matchEndpoint(apiUrl('/problems')), (route) =>
+    fulfillJson(route, {
+      problems: [
+        {
+          problemId: 'long-identifier-problem',
+          provider: 'LEETCODE',
+          externalProblemId: externalId,
+          name: '긴 식별자 문제',
+          url: null,
+          difficulty: 'HARD',
+        },
+      ],
+      page: 0,
+      size: 10,
+      totalElements: 1,
+      totalPages: 1,
+    }),
+  )
+
+  for (const width of [320, 390, 1280]) {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/solutions/new')
+    await page.getByRole('button', { name: '문제 선택', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '문제 선택', exact: true })
+    const identifier = dialog
+      .locator('.astryx-text')
+      .filter({ hasText: source })
+    await expect(identifier).toHaveCSS('text-overflow', 'ellipsis')
+    await expect
+      .poll(() =>
+        identifier.evaluate(
+          (element) => element.scrollWidth > element.clientWidth,
+        ),
+      )
+      .toBe(true)
+    await expect(dialog.getByText('Hard', { exact: true })).toBeVisible()
+    await expect
+      .poll(() =>
+        identifier.evaluate((element) => {
+          const row = element.closest('.astryx-item')
+          return row ? row.scrollWidth <= row.clientWidth : false
+        }),
+      )
+      .toBe(true)
+
+    await dialog.getByRole('button', { name: /^긴 식별자 문제/ }).click()
+    const selectedIdentifier = page
+      .locator('form')
+      .locator('.astryx-text')
+      .filter({ hasText: source })
+    await expect(selectedIdentifier).toHaveCSS('text-overflow', 'ellipsis')
+    await expect(
+      page.locator('form').getByText('Hard', { exact: true }),
+    ).toBeVisible()
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBe(width)
+  }
 })
 
 test('scopes the solution list from the problem query string', async ({

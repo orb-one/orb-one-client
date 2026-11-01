@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Check, ListChecks, Search, SearchX } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+import { ProblemMetadata } from '@/components/problems/problem-metadata'
 import { AuthSessionExpiredError } from '@/lib/api/client'
 import { useI18n } from '@/lib/i18n/use-translations'
 import type { Problem } from '@/lib/problems/problem-model'
@@ -164,7 +165,13 @@ export function ProblemPickerDialog({
                         <ListItem
                           key={problem.id}
                           label={problem.name}
-                          description={formatProblemMetadata(problem)}
+                          description={
+                            <ProblemMetadata
+                              provider={problem.provider}
+                              externalId={problem.externalId}
+                              difficulty={problem.difficulty}
+                            />
+                          }
                           isSelected={isSelected}
                           onClick={() => {
                             selectProblem(problem)
@@ -207,12 +214,6 @@ export function ProblemPickerDialog({
       />
     </Dialog>
   )
-}
-
-function formatProblemMetadata(problem: Problem) {
-  const source = `${problem.provider} ${problem.externalId}`
-
-  return problem.difficulty ? `${source} · ${problem.difficulty}` : source
 }
 
 function ProblemPickerSkeleton({ label }: { label: string }) {
