@@ -169,17 +169,6 @@ export function AdminProblemFormDialog({
                     {...textStatus(values.name, 100, true)}
                   />
                   <TextInput
-                    label={copy.url}
-                    value={values.url}
-                    onChange={(value) => {
-                      setValue('url', value)
-                    }}
-                    placeholder="https://..."
-                    isOptional
-                    isDisabled={isSubmitting}
-                    {...textStatus(values.url, 500)}
-                  />
-                  <TextInput
                     label={copy.difficulty}
                     value={values.difficulty}
                     onChange={(value) => {
@@ -189,6 +178,17 @@ export function AdminProblemFormDialog({
                     isOptional
                     isDisabled={isSubmitting}
                     {...textStatus(values.difficulty, 32)}
+                  />
+                  <TextInput
+                    label={copy.url}
+                    value={values.url}
+                    onChange={(value) => {
+                      setValue('url', value)
+                    }}
+                    placeholder="https://..."
+                    isOptional
+                    isDisabled={isSubmitting}
+                    {...textStatus(values.url, 500)}
                   />
                 </FormLayout>
               </VStack>
