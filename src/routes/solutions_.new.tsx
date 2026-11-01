@@ -22,6 +22,7 @@ import { PageBackLink } from '@/components/navigation/page-back-link'
 import type { SolutionCodeEditorHandle } from '@/components/solutions/solution-code-editor'
 import { SolutionMarkdownEditor } from '@/components/solutions/solution-markdown-editor'
 import { ProblemPickerDialog } from '@/components/problems/problem-picker-dialog'
+import { ProblemMetadata } from '@/components/problems/problem-metadata'
 import { problemQueryOptions } from '@/lib/problems/problem-queries'
 import type { Problem } from '@/lib/problems/problem-model'
 import {
@@ -221,7 +222,8 @@ export function SolutionCreatePage() {
 
             <FormLayout>
               <Field
-                label={`${copy.problemLabel} (${copy.requiredLabel})`}
+                label={copy.problemLabel}
+                isRequired
                 inputID="solution-problem-picker"
                 description={copy.problemSelectionDescription}
                 {...(problemFieldError
@@ -249,12 +251,11 @@ export function SolutionCreatePage() {
                   >
                     <VStack gap={1}>
                       <Text type="label">{selectedProblem.name}</Text>
-                      <Text type="supporting" color="secondary">
-                        {selectedProblem.provider} {selectedProblem.externalId}
-                        {selectedProblem.difficulty
-                          ? ` · ${selectedProblem.difficulty}`
-                          : ''}
-                      </Text>
+                      <ProblemMetadata
+                        provider={selectedProblem.provider}
+                        externalId={selectedProblem.externalId}
+                        difficulty={selectedProblem.difficulty}
+                      />
                     </VStack>
                     <Button
                       ref={problemPickerTriggerRef}
@@ -295,7 +296,8 @@ export function SolutionCreatePage() {
               </Field>
 
               <Selector
-                label={`${copy.languageLabel} (${copy.requiredLabel})`}
+                label={copy.languageLabel}
+                isRequired
                 htmlName="language"
                 value={language}
                 onChange={(nextLanguage) => {
@@ -321,7 +323,7 @@ export function SolutionCreatePage() {
               >
                 <SolutionCodeEditor
                   ref={codeInputRef}
-                  label={`${copy.codeLabel} (${copy.requiredLabel})`}
+                  label={copy.codeLabel}
                   htmlName="code"
                   value={code}
                   language={language}
@@ -344,7 +346,7 @@ export function SolutionCreatePage() {
               </Suspense>
 
               <SolutionMarkdownEditor
-                label={`${copy.solutionDescriptionLabel} (${copy.optionalLabel})`}
+                label={`${copy.solutionDescriptionLabel} (${t.common.fieldLabels.optional})`}
                 value={description}
                 onChange={(nextDescription) => {
                   setDescription(nextDescription)
@@ -374,7 +376,8 @@ export function SolutionCreatePage() {
               <FormLayout direction="horizontal">
                 <NumberInput
                   ref={memoryUsageInputRef}
-                  label={`${copy.memoryUsageLabel} (${copy.optionalLabel})`}
+                  label={copy.memoryUsageLabel}
+                  isOptional
                   htmlName="memoryUsage"
                   description={copy.memoryUsageDescription}
                   value={memoryUsage}
@@ -398,7 +401,8 @@ export function SolutionCreatePage() {
                 />
                 <NumberInput
                   ref={timeElapsedInputRef}
-                  label={`${copy.timeElapsedLabel} (${copy.optionalLabel})`}
+                  label={copy.timeElapsedLabel}
+                  isOptional
                   htmlName="timeElapsed"
                   description={copy.timeElapsedDescription}
                   value={timeElapsed}

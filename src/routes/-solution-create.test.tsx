@@ -1,3 +1,5 @@
+import { InternationalizationProvider } from '@astryxdesign/core/i18n'
+import koKR from '@astryxdesign/core/locales/ko-KR.json'
 import { LayerProvider } from '@astryxdesign/core/Layer'
 import { Theme } from '@astryxdesign/core/theme'
 import { neutralTheme } from '@astryxdesign/theme-neutral/built'
@@ -180,6 +182,10 @@ it('prefills a problem from the route search parameter', async () => {
 
   expect(await screen.findByText('문제 1')).toBeVisible()
   expect(screen.getByText(/BOJ 1000/)).toBeVisible()
+  expect(screen.getByText('Bronze V').closest('.astryx-token')).toHaveAttribute(
+    'data-color',
+    'boj-bronze',
+  )
   expect(screen.getByRole('button', { name: '문제 변경' })).toBeVisible()
   expect(getProblem).toHaveBeenCalledWith('problem-1')
 })
@@ -255,8 +261,8 @@ it('shows localized optional labels', () => {
 
   expect(screen.queryByText('Optional')).not.toBeInTheDocument()
   expect(screen.getByLabelText('풀이 설명 (선택)')).toBeInTheDocument()
-  expect(screen.getByLabelText('메모리 사용량 (선택)')).toBeInTheDocument()
-  expect(screen.getByLabelText('실행 시간 (선택)')).toBeInTheDocument()
+  expect(screen.getByLabelText(/메모리 사용량.*선택/)).toBeInTheDocument()
+  expect(screen.getByLabelText(/실행 시간.*선택/)).toBeInTheDocument()
 })
 
 it.each([
@@ -372,7 +378,7 @@ it('submits null for metrics cleared with the button or keyboard', async () => {
   await userEvent.type(timeInput, '45')
   await userEvent.tab()
   await userEvent.click(
-    screen.getByRole('button', { name: /^Clear 메모리 사용량/ }),
+    screen.getByRole('button', { name: '메모리 사용량 지우기' }),
   )
   await userEvent.clear(timeInput)
   await userEvent.click(screen.getByRole('button', { name: '풀이 저장' }))
@@ -459,7 +465,12 @@ function renderRoute(children: ReactNode) {
     <Theme theme={neutralTheme} mode="light">
       <LayerProvider>
         <QueryClientProvider client={queryClient}>
-          {children}
+          <InternationalizationProvider
+            locale="ko-KR"
+            messages={{ 'ko-KR': koKR }}
+          >
+            {children}
+          </InternationalizationProvider>
         </QueryClientProvider>
       </LayerProvider>
     </Theme>,

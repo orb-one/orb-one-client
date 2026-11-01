@@ -1,6 +1,6 @@
 import { HttpResponse } from 'msw'
 
-import type { ProblemResponse } from '@/lib/api/problems'
+import type { ProblemResponse } from '@/lib/api/problem-sets'
 import { mockProblems } from '@/mocks/problem-handlers'
 
 const UUID_PATTERN =
@@ -86,7 +86,7 @@ export function resolveMockProblemReferences(
         404,
       )
     }
-    problems.push({ ...problem })
+    problems.push({ ...problem, url: problem.url ?? '' })
   }
   return problems
 }

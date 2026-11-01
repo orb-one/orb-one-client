@@ -60,6 +60,7 @@ export function SolutionCodeEditor({
       label={label}
       labelID={labelID}
       isGroupLabel
+      isRequired
       description={description}
       inputID={inputID}
       descriptionID={descriptionID}

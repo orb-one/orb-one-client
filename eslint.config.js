@@ -11,6 +11,7 @@ export default defineConfig([
     'dist',
     'public/mockServiceWorker.js',
     'src/routeTree.gen.ts',
+    'src/themes/generated/**',
   ]),
   {
     files: ['**/*.{ts,tsx}'],

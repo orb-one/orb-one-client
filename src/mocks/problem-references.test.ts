@@ -76,6 +76,35 @@ for (const kind of ['practices', 'problem-sets'] as const) {
     expect(detail.problems ?? detail.items).toEqual(mockProblems)
   })
 
+  it(`${kind}: links catalog problems without a URL on create and add`, async () => {
+    const first = mockProblems[0]
+    const second = mockProblems[1]
+    if (!first || !second) throw new Error('Missing catalog fixtures')
+    const firstUrl = first.url
+    const secondUrl = second.url
+    first.url = null
+    second.url = null
+
+    try {
+      const { detailPath, result } = await createContainer(kind)
+      expect(result.problems).toEqual([{ ...first, url: '' }])
+      const response = await post(`${detailPath}/problems`, {
+        problemIds: [secondId],
+      })
+      expect(response.status).toBe(200)
+      const detail = (await fetch(`${base}${detailPath}`).then((res) =>
+        res.json(),
+      )) as { problems?: unknown[]; items?: unknown[] }
+      expect(detail.problems ?? detail.items).toEqual([
+        { ...first, url: '' },
+        { ...second, url: '' },
+      ])
+    } finally {
+      first.url = firstUrl
+      second.url = secondUrl
+    }
+  })
+
   it(`${kind}: rejects mixed missing UUIDs and already linked UUIDs atomically`, async () => {
     const { detailPath } = await createContainer(kind)
     for (const [problemIds, status, code] of [

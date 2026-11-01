@@ -1,3 +1,5 @@
+import { InternationalizationProvider } from '@astryxdesign/core/i18n'
+import koKR from '@astryxdesign/core/locales/ko-KR.json'
 import { LayerProvider } from '@astryxdesign/core/Layer'
 import { Theme } from '@astryxdesign/core/theme'
 import { neutralTheme } from '@astryxdesign/theme-neutral/built'
@@ -70,7 +72,7 @@ it('loads every replaceable field and preserves it on submit', async () => {
     screen.getByRole('link', { name: '풀이 상세로 돌아가기' }),
   ).toHaveAttribute('href', '/solutions/solution-1')
   expect(
-    screen.getByRole('combobox', { name: '프로그래밍 언어' }),
+    screen.getByRole('combobox', { name: /프로그래밍 언어/ }),
   ).toHaveTextContent('Java')
   const descriptionInput = screen.getByRole('textbox', { name: /풀이 설명/ })
   expect(descriptionInput).toHaveValue('기존 설명')
@@ -128,7 +130,7 @@ it('preserves a saved language alias and draft state without exposing draft cont
   renderRoute(<SolutionEditPage solutionId="solution-1" />)
 
   expect(
-    await screen.findByRole('combobox', { name: '프로그래밍 언어' }),
+    await screen.findByRole('combobox', { name: /프로그래밍 언어/ }),
   ).toHaveTextContent('PyPy3')
   expect(
     screen.queryByRole('checkbox', { name: /임시 저장/ }),
@@ -299,7 +301,7 @@ it('submits null for saved metrics cleared with the button or keyboard', async (
   renderRoute(<SolutionEditPage solutionId="solution-1" />)
 
   await userEvent.click(
-    await screen.findByRole('button', { name: /^Clear 메모리 사용량/ }),
+    await screen.findByRole('button', { name: '메모리 사용량 지우기' }),
   )
   await userEvent.clear(screen.getByRole('spinbutton', { name: /실행 시간/ }))
   await userEvent.click(screen.getByRole('button', { name: '변경사항 저장' }))
@@ -324,7 +326,12 @@ function renderRoute(children: ReactNode) {
     <Theme theme={neutralTheme} mode="light">
       <LayerProvider>
         <QueryClientProvider client={queryClient}>
-          {children}
+          <InternationalizationProvider
+            locale="ko-KR"
+            messages={{ 'ko-KR': koKR }}
+          >
+            {children}
+          </InternationalizationProvider>
         </QueryClientProvider>
       </LayerProvider>
     </Theme>,

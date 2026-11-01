@@ -31,7 +31,10 @@ test('browses, copies, and collapses a saved solution across viewports', async (
     )
     .not.toBe('rgba(0, 0, 0, 0)')
 
-  await expect(page.getByText('BOJ 1000 · BRONZE_5')).toBeVisible()
+  await expect(page.getByText('BOJ 1000')).toBeVisible()
+  await expect(
+    page.locator('.astryx-token[data-color="boj-bronze"]'),
+  ).toHaveText('Bronze V')
   await page.getByRole('link', { name: /A\+B/ }).click()
 
   await expect(
@@ -45,6 +48,9 @@ test('browses, copies, and collapses a saved solution across viewports', async (
     href: '/solutions',
     headingName: 'A+B',
   })
+  await expect(
+    page.locator('.astryx-token[data-color="boj-bronze"]'),
+  ).toHaveText('Bronze V')
   await expect(
     page.getByRole('link', { name: /문제 원문 보기/ }),
   ).toHaveAttribute('href', 'https://www.acmicpc.net/problem/1000')
@@ -100,6 +106,72 @@ test('browses, copies, and collapses a saved solution across viewports', async (
       })),
     )
     .toEqual({ clientWidth: 320, scrollWidth: 320 })
+})
+
+test('truncates long problem identifiers without overflowing the picker or selected problem', async ({
+  page,
+}) => {
+  await mockCurrentUser(page)
+  const externalId = 'x'.repeat(128)
+  const source = `LEETCODE ${externalId}`
+  await page.route(matchEndpoint(apiUrl('/problems')), (route) =>
+    fulfillJson(route, {
+      problems: [
+        {
+          problemId: 'long-identifier-problem',
+          provider: 'LEETCODE',
+          externalProblemId: externalId,
+          name: '긴 식별자 문제',
+          url: null,
+          difficulty: 'HARD',
+        },
+      ],
+      page: 0,
+      size: 10,
+      totalElements: 1,
+      totalPages: 1,
+    }),
+  )
+
+  for (const width of [320, 390, 1280]) {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/solutions/new')
+    await page.getByRole('button', { name: '문제 선택', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '문제 선택', exact: true })
+    const identifier = dialog
+      .locator('.astryx-text')
+      .filter({ hasText: source })
+    await expect(identifier).toHaveCSS('text-overflow', 'ellipsis')
+    await expect
+      .poll(() =>
+        identifier.evaluate(
+          (element) => element.scrollWidth > element.clientWidth,
+        ),
+      )
+      .toBe(true)
+    await expect(dialog.getByText('Hard', { exact: true })).toBeVisible()
+    await expect
+      .poll(() =>
+        identifier.evaluate((element) => {
+          const row = element.closest('.astryx-item')
+          return row ? row.scrollWidth <= row.clientWidth : false
+        }),
+      )
+      .toBe(true)
+
+    await dialog.getByRole('button', { name: /^긴 식별자 문제/ }).click()
+    const selectedIdentifier = page
+      .locator('form')
+      .locator('.astryx-text')
+      .filter({ hasText: source })
+    await expect(selectedIdentifier).toHaveCSS('text-overflow', 'ellipsis')
+    await expect(
+      page.locator('form').getByText('Hard', { exact: true }),
+    ).toBeVisible()
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBe(width)
+  }
 })
 
 test('scopes the solution list from the problem query string', async ({
@@ -404,6 +476,14 @@ test('creates a solution with CodeMirror keyboard and language behavior', async 
   const codeEditor = page.getByRole('textbox', { name: /소스 코드/ })
   const codeInput = page.locator('input[name="code"]')
 
+  await expect(languageSelector).toHaveAccessibleName(/프로그래밍 언어.*필수/)
+  await expect(languageSelector).toHaveAttribute('aria-required', 'true')
+  await expect(codeEditor).toHaveAccessibleName(/소스 코드.*필수/)
+  await expect(codeEditor).toHaveAttribute('aria-required', 'true')
+  await expect(
+    page.getByRole('spinbutton', { name: /메모리 사용량.*선택/ }),
+  ).toBeVisible()
+
   await codeEditor.click()
   await page.keyboard.press('Tab')
 
@@ -500,7 +580,7 @@ test('edits fields and preserves an author solution language alias', async ({
   const description = page.getByRole('textbox', { name: /풀이 설명/ })
 
   await expect(
-    page.getByRole('combobox', { name: '프로그래밍 언어' }),
+    page.getByRole('combobox', { name: /프로그래밍 언어/ }),
   ).toHaveText('PyPy3')
   const preview = page.getByRole('region', { name: '미리보기' })
   await expect(description).toHaveValue(editableSolution.description ?? '')

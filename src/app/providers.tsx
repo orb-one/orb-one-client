@@ -5,12 +5,12 @@ import { Theme } from '@astryxdesign/core/theme'
 import { useToast } from '@astryxdesign/core/Toast'
 import { InternationalizationProvider } from '@astryxdesign/core/i18n'
 import koKR from '@astryxdesign/core/locales/ko-KR.json'
-import { neutralTheme } from '@astryxdesign/theme-neutral/built'
 import { useState, type PropsWithChildren } from 'react'
 
 import { AstryxRouterLink } from '@/app/astryx-router-link'
 import { createAppQueryClient } from '@/app/query-client'
 import { useAppStore } from '@/stores/use-app-store'
+import { orbTheme } from '@/themes/generated/orb'
 
 const astryxMessages = { 'ko-KR': koKR }
 
@@ -22,7 +22,7 @@ export function AppProviders({ children }: PropsWithChildren) {
       locale={locale === 'ko' ? 'ko-KR' : 'en'}
       messages={astryxMessages}
     >
-      <Theme theme={neutralTheme} mode="system">
+      <Theme theme={orbTheme} mode="system">
         <LayerProvider toast={{ position: 'bottomEnd' }}>
           <LinkProvider component={AstryxRouterLink}>
             <AppQueryProvider>{children}</AppQueryProvider>

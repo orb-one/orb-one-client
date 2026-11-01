@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
             // 로컬 개발 전용 API proxy.
             // 서버 SameSite 정책을 낮추지 않고 HttpOnly 인증 cookie를 same-origin 흐름으로 검증한다.
             proxy: {
+              '/admin': createApiProxy(apiProxyTarget),
               '/auth': createApiProxy(apiProxyTarget),
               '/solutions': createApiProxy(apiProxyTarget),
               '/users': createApiProxy(apiProxyTarget),
