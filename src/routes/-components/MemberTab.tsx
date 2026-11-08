@@ -36,6 +36,7 @@ import {
   updateGroupName,
 } from '@/lib/api/groups'
 import { currentUserQueryOptions } from '@/lib/auth/auth-queries'
+import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface MemberTabProps {
   groupId: string
@@ -54,6 +55,7 @@ interface SelectedMember {
 }
 
 export function MemberTab({ groupId }: MemberTabProps) {
+  const copy = useTranslations().groups
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -76,6 +78,9 @@ export function MemberTab({ groupId }: MemberTabProps) {
   const isAuthRequired = groupQuery.error instanceof AuthSessionExpiredError
   const groupDetail = groupQuery.data
   const currentUserId = currentUserQuery.data?.id
+  const sortedMembers = [...(groupDetail?.members ?? [])].sort(
+    (a, b) => Number(b.role === 'OWNER') - Number(a.role === 'OWNER'),
+  )
 
   // 3. OWNER 권한 판별
   const currentUserMember = groupDetail?.members.find(
@@ -420,7 +425,7 @@ export function MemberTab({ groupId }: MemberTabProps) {
           density="balanced"
           hasDividers
         >
-          {groupDetail.members.map((member) => {
+          {sortedMembers.map((member) => {
             const isMemberOwner = member.role === 'OWNER'
             const isSelected = selectedMember?.userId === member.userId
             const isHovered = hoveredUserId === member.userId
@@ -470,7 +475,6 @@ export function MemberTab({ groupId }: MemberTabProps) {
               >
                 <ListItem
                   label={member.nickname}
-                  description={`User ID: ${member.userId}`}
                   startContent={
                     <Icon
                       icon={isMemberOwner ? Crown : User}
@@ -493,7 +497,11 @@ export function MemberTab({ groupId }: MemberTabProps) {
                         </HStack>
                       )}
                       <Badge
-                        label={isMemberOwner ? 'OWNER' : 'MEMBER'}
+                        label={
+                          isMemberOwner
+                            ? copy.memberRoles.owner
+                            : copy.memberRoles.member
+                        }
                         variant={isMemberOwner ? 'blue' : 'neutral'}
                       />
                     </HStack>
