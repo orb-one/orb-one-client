@@ -495,7 +495,7 @@ export function MemberTab({ groupId }: MemberTabProps) {
                         </HStack>
                       )}
                       <Badge
-                        label={isMemberOwner ? 'OWNER' : 'MEMBER'}
+                        label={isMemberOwner ? '소유자' : '멤버'}
                         variant={isMemberOwner ? 'blue' : 'neutral'}
                       />
                     </HStack>

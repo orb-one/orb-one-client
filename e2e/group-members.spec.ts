@@ -70,7 +70,7 @@ for (const width of [320, 390, 1280]) {
       for (const member of members)
         await expect(content).not.toContainText(member.userId)
       await expect(
-        rows.nth(0).getByText('OWNER', { exact: true }),
+        rows.nth(0).getByText('소유자', { exact: true }),
       ).toBeVisible()
       await expect(
         page.getByRole('button', { name: '그룹 소유권 이전', exact: true }),
