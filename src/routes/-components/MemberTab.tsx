@@ -36,6 +36,7 @@ import {
   updateGroupName,
 } from '@/lib/api/groups'
 import { currentUserQueryOptions } from '@/lib/auth/auth-queries'
+import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface MemberTabProps {
   groupId: string
@@ -54,6 +55,7 @@ interface SelectedMember {
 }
 
 export function MemberTab({ groupId }: MemberTabProps) {
+  const copy = useTranslations().groups
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -495,7 +497,11 @@ export function MemberTab({ groupId }: MemberTabProps) {
                         </HStack>
                       )}
                       <Badge
-                        label={isMemberOwner ? '소유자' : '멤버'}
+                        label={
+                          isMemberOwner
+                            ? copy.memberRoles.owner
+                            : copy.memberRoles.member
+                        }
                         variant={isMemberOwner ? 'blue' : 'neutral'}
                       />
                     </HStack>

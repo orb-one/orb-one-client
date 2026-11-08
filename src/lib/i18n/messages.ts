@@ -394,6 +394,7 @@ export const messages = {
     },
     groups: {
       title: '그룹 목록',
+      memberRoles: { owner: '소유자', member: '멤버' },
       description:
         '가입하려는 그룹을 클릭하여 선택한 후 [그룹 가입] 버튼을 눌러주세요.',
       loading: '그룹 목록을 불러오는 중입니다.',
@@ -806,6 +807,7 @@ export const messages = {
     },
     groups: {
       title: 'Group List',
+      memberRoles: { owner: 'Owner', member: 'Member' },
       description:
         'Click to select a group you want to join, then click the [Join Group] button.',
       loading: 'Loading group list...',
